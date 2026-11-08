@@ -1,5 +1,26 @@
 # Needs Michael: agent-harness-2026-11-07-3
 
+## ⚠ A4-01 given up after 2 attempts
+
+`agent-harness-2026-11-07-3/8` · since 2026-11-08T01:45:13.361Z
+
+**blocked** A4-01 (The docs as one piece: README's Notific…); nothing else waits
+
+**cost** nothing else waits behind it
+
+**why** Each feature gets MAX_ATTEMPTS (2) fresh sessions (the lane loop in lib/lane.sh, counted in attempts.json). A4-01 used them without passing, and the features after it wait (F blocked in lib/features.mjs). Its sessions' entries say what failed.
+
+**where** [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/progress.md](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-07-3/.harness/runs/agent-harness-2026-11-07-3/progress.md) · `/home/mh550/.local/state/harness/agent-harness/agent-harness-2026-11-07-3/logs/15-A4-01.jsonl`
+
+- (a) read its entries, fix or reword the feature by a brief, then continue **(recommended: a continue gives it fresh attempts)**
+- (b) a brief that drops or splits it, then continue
+- (c) leave it: the run ends blocked on A4-01
+
+```sh
+harness report agent-harness-2026-11-07-3
+harness continue agent-harness-2026-11-07-3
+```
+
 ## ⚠ A1-03 asked: EVENT_URL may hold a webhook secret but sits on curl's comm…
 
 `agent-harness-2026-11-07-3/1` · since 2026-11-07T21:19:22.952Z

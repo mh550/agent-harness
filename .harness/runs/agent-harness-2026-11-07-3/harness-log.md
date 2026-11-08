@@ -81,3 +81,6 @@
 - 2026-11-07 20:28 · verify A4: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-07 20:40 · context.md for A4: 9084 bytes
 - 2026-11-07 20:42 · verify A4: A4-01 failed the re-check, back in the queue (one more attempt)
+- 2026-11-07 20:42 · context.md for A4-01: 7925 bytes, 11 items left out
+- 2026-11-07 20:45 · A4-01: suite ran 1x (120 s) in the session
+- 2026-11-07 20:45 · A4-01 · claude-sonnet-5-5 · passes=false · 2 min · 13/14 passing · tests 1898

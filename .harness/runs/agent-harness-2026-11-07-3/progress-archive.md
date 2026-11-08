@@ -9,6 +9,15 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 20:45 · A4-01 · passes
+
+Fixed the verify's finding: docs/architecture.md's lib/debrief.sh row said the notification passes since=; it passes bundle=$WS (lib/debrief.sh:251). No other since= left in the docs.
+
+- **Files:** docs/architecture.md
+- **Verified:** grep since= in architecture.md and README: none; check.sh --fast green 1064 tests
+- **Tests:** 1064 → 1064
+- *15-A4-01 · claude-sonnet-5-5*
+
 ### 2026-11-07 20:42 · verify A4 · not yet
 
 A4-01 steps 1-5 and 7 hold (fast 1064/1064, full 1898 green). Step 6 fails: a review of the run's docs found docs/architecture.md:58 (lib/debrief.sh row) still saying the debrief notification passes `since=` its SINCE; lib/notify.sh has no since= key and debrief.sh:251 passes bundle="$WS". Fix: replace that clause with bundle=$WS.

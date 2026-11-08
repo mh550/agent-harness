@@ -9,6 +9,15 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 20:45 · A4-01 · passes
+
+Fixed the verify's finding: docs/architecture.md's lib/debrief.sh row said the notification passes since=; it passes bundle=$WS (lib/debrief.sh:251). No other since= left in the docs.
+
+- **Files:** docs/architecture.md
+- **Verified:** grep since= in architecture.md and README: none; check.sh --fast green 1064 tests
+- **Tests:** 1064 → 1064
+- *15-A4-01 · claude-sonnet-5-5*
+
 ### 2026-11-07 20:42 · verify A4 · not yet
 
 A4-01 steps 1-5 and 7 hold (fast 1064/1064, full 1898 green). Step 6 fails: a review of the run's docs found docs/architecture.md:58 (lib/debrief.sh row) still saying the debrief notification passes `since=` its SINCE; lib/notify.sh has no since= key and debrief.sh:251 passes bundle="$WS". Fix: replace that clause with bundle=$WS.
@@ -269,39 +278,9 @@ Wrote docs/plans/2026-11-07-A2-context-bundle.md: glossary rules verbatim and ho
 - **Question for Michael:** Default taken: the debrief's own context also ends with the ## Glossary section, so its session reads the IDs explained (within the context cap). Keep it, or keep the glossary in harness context bundles only? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md
 - *04-A2-01 · claude-opus-5-5*
 
-### 2026-11-07 16:40 · verify A1 · passes
-
-A1-01..03 hold. Full suite green at init (690 s, 1814); fast tier 986/986; event-run/event-hook/park-desk/needs-driver/queue-debrief 165/165; event-hook+unit-tier 503/503; notify-body-cap/origin-outage/needs-record 45/45. Mutation: pre-A1 notify turns 7/11 event-hook + 5/6 unit red; pre-A1-03 call sites turn 4/6 event-run red. Real curl 8.5.0 loopback matches the fixtures.
-
-| Feature | Step | What you ran or read | What you saw | Holds |
-|---|---|---|---|---|
-| A1-01 | 1 | cat docs/plans/2026-11-07-A1-event-hook.md | §2 A1-02 (notify.mjs, notify.sh, config, stub-curl; checks §2.5 with tiers: unit fast, event-hook.sh fast) and §3 A1-03 (call sites, event-run.sh slow, decision, docs, review §3.4); files and tiers named | yes |
-| A1-01 | 2 | plan §1 table vs jq -r 'keys_unsorted\|join(" ")' tests/fixtures/n8n-event-v1.json | same 13 keys in order v..context; id randomUUID, at ISO, project PROJECT_NAME, run RUN_ID, feature or null, priority "" stays, click/actions null, context null in A1; debrief nulls project/run/feature | yes |
-| A1-01 | 3 | plan §2.2-2.4 | POST verbatim with ${HARNESS_CURL:-curl}, Content-Type json, --max-time $EVENT_TIMEOUT, no --retry, no Authorization, -w '%{http_code}' chosen; both lines verbatim (log; note or log as debrief.sh); STUB_EVENT 200/500/timeout knobs and fixtures from real curl 8.5.0 (plan's timeout stderr line later found absent under -s, corrected in A1-02; my loopback rerun: 200/0/'200', 500/0/'500', hang/28/'000', no stderr) | yes |
-| A1-01 | 4 | plan §3.1 table vs grep -n 'notify "' lib/*.sh bin/harness | every call mapped: notify_park park, needs_you and merge_refused needs_michael, run end blocked/ended by ehigh, started, paused, deploy guard other, verified, merged, limit, debrief headline debrief, fail() other, desk other, continue-refused other; needs_notify forwards "$@" (no change) | yes |
-| A1-01 | 5 | grep -ln 'curl_\\|notify-cmd' tests/checks/*.sh vs plan §4 | 11 pre-existing files all listed 'stays' (12th hit is the new event-run.sh); new checks named in event-hook.sh, event-run.sh, tests/unit/notify.test.mjs; storage <STATE_ROOT>/events/<id>/event.json, retention A2 | yes |
-| A1-01 | 6 | bash tests/run.sh --tier fast | 986/986 checks passed, wall 115 s; init full suite green 1814 | yes |
-| A1-02 | 1 | node --test ... tests/unit/notify.test.mjs (6 'notify.mjs event:' tests read); same tests against 8e05980's notify.mjs in a scratch copy; LC_ALL=C sort -c both name files | tests assert Object.keys join == fixture keys, v 1, uuid regex, Date.parse, nulls and "", debrief nulls, CLI one line; green in unit-tier 503/503, 5/6 red on pre-A1 notify.mjs; names in check-names.txt and -fast.txt, both sorted; CLI by hand prints the v1 JSON | yes |
-| A1-02 | 2 | read tests/checks/event-hook.sh; bash tests/run.sh event-hook; same file against 8e05980's lib/notify.sh | line 2 '# tier: fast', sourced notify with NTFY_TOKEN=tok-secret-123; cases a-k assert one ntfy call, one POST with Content-Type/jq -e v1 park B/no Authorization/no token/no ntfy URL/log line, 500 and timeout diff-equal fallbacks with exact notes, ended and no-kind ntfy only, rc 0, kept event == posted, fields equal; 11/11 green, 7/11 red on pre-A1 code | yes |
-| A1-02 | 3 | grep -n EVENT lib/config.sh templates/user/config.sh; grep -c EVENT_URL ... | config.sh:71 EVENT_URL="" EVENT_TIMEOUT=5 beside NTFY_URL with one comment; template lines 9-10 commented under Notifications; counts 1 and 1 | yes |
-| A1-02 | 4 | git diff 8e05980 HEAD -- lib/notify.sh; bash -n lib/notify.sh; node --check lib/notify.mjs | kind=/feature= parsed (default other); only park\|needs_michael\|blocked\|debrief with EVENT_URL call notify_event via ask notify.mjs event; kept at events/<id>/event.json; POST --max-time EVENT_TIMEOUT, no retry/token; 2xx logs and returns 0 before ntfy/NOTIFY_CMD; else note and ntfy branch unchanged (diff shows it untouched); header names fields and routing; syntax ok | yes |
-| A1-02 | 5 | cat tests/stub-curl.sh, cat -A tests/fixtures/curl-event-*; real curl 8.5.0 on 127.0.0.1:7829; bash tests/run.sh notify-body-cap origin-outage needs-record | Content-Type json call answers STUB_EVENT 200 default/500/timeout exit 28, header names knob and fixtures; fixtures '200','500','000' match my real curl capture (no stderr under -s); STUB_CURL_FAIL path unchanged; 45/45 checks passed | yes |
-| A1-02 | 6 | bash tests/run.sh event-hook unit-tier | 503/503 checks passed | yes |
-| A1-02 | 7 | bash tests/run.sh --tier fast | 986/986 checks passed | yes |
-| A1-03 | 1 | read tests/checks/event-run.sh; bash tests/run.sh event-run ...; event-run against 308c085's call-site files in a scratch copy | line 2 '# tier: slow'; evp run with EVENT_URL appended, stub 200: one park event feature B run evp project proj title '[evp] B needs you' context null, kept, run.log 'event → n8n: park <id>' (grep -F), no ntfy with that title, no 'event hook failed'; green, red without call-site kinds | yes |
-| A1-03 | 2 | event-run.sh checks 2 and 3 | STUB_EVENT=500 run: event posted, ntfy Title/Priority/Click/Actions/data compared to kept event.json field by field, harness-log note 'event hook failed (500): park; sent to ntfy'; EVENT_URL-unset run's ntfy record diffed with evf's after run id/timestamp normalisation; both PASS | yes |
-| A1-03 | 3 | event-run.sh checks 4-6 | STUB_GIVE_UP=A run posts one blocked event, feature null, title '[evg] ended: blocked on A'; started and a done run's ended reach ntfy only, no started/ended event; harness debrief posts debrief event with null project/run/feature, title 'harness debrief', $HARNESS_STATE/queue/runner.log has 'event → n8n: debrief <id>'; PASS (4 of 6 red without call-site kinds) | yes |
-| A1-03 | 4 | grep -n 'kind=' lib/record.sh lib/driver.sh lib/lane.sh lib/debrief.sh lib/desk.sh lib/needs.sh bin/harness; sed -n 18,26p lib/needs.sh; bash -n on each | record.sh:575 park feature=$id, :553 and :1011 needs_michael, :1101 verified, :1106 merged; driver.sh:383-386 ekind blocked when ehigh==1 else ended, :563 started, :598 paused, :518 other; lane.sh:478 limit; debrief.sh:343 debrief, :35 other; desk.sh:150 other; bin/harness:269 other; needs_notify passes "$@" in both branches; no unkinded notify call left; bash -n clean | yes |
-| A1-03 | 5 | cat journal/decisions/2026-10-22-event-hook-ntfy-fallback.md; git diff 8e05980 HEAD -- docs/architecture.md README.md | title, provenance (this run, the spec), finding/choice/rejected: four routed kinds, 2xx rule, best-effort synchronous 5 s default, events/ kept; rejected NOTIFY_CMD repoint, retries, routing every kind. architecture §3 notify.sh/notify.mjs event, §4 events row, §7 Event hook fallback guard (token never sent), §10 EVENT_URL/EVENT_TIMEOUT; README ## Steering paragraph (n8n, fallback, unset unchanged) | yes |
-| A1-03 | 6 | cat docs/plans/2026-11-07-A1-review.md; A1-03 entry summary | one-round Opus review of the merge-base diff on the three questions; no Critical/Important, six minors each with what was done; my own read of the diff agrees (ntfy branch untouched, notify_event reads no NTFY_TOKEN) | yes |
-| A1-03 | 7 | bash tests/run.sh event-run event-hook park-desk needs-driver queue-debrief; grep check-names | 165/165 checks passed (event-run 6, event-hook 11, park-desk 66, queue-debrief 72, needs-driver); 6 event run names in check-names.txt only, 11 event hook names in both, both LC_ALL=C sorted | yes |
-| A1-03 | 8 | bash tests/run.sh --tier fast | 986/986 checks passed; full suite at init green 1814 in 690 s | yes |
-
-- **Discovery** (affects project): Real curl 8.5.0 with -s (no -S) prints nothing on stderr for a 500 or a --max-time timeout; stdout is the -w code ('000' on timeout), exit 28.
-- *163059-verify-A1 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-11-07 16:40 · verify A1 · passes · A1-01..03 hold. Full suite green at init (690 s, 1814); fast tier 986/986; event-run/event-hook/park… ([in full](progress-archive.md))
 - 2026-11-07 16:19 · A1-03 · passes · Every notify call site names its kind (park+feature, needs_michael, blocked/ended by ehigh, started,… ([in full](progress-archive.md))
 - 2026-11-07 16:08 · A1-02 · passes · notify takes kind=/feature=; with EVENT_URL set park/needs_michael/blocked/debrief build v1 JSON in … ([in full](progress-archive.md))
 - 2026-11-07 15:59 · A1-01 · passes · Wrote docs/plans/2026-11-07-A1-event-hook.md: the v1 event keys and who fills each, the POST verbati… ([in full](progress-archive.md))
