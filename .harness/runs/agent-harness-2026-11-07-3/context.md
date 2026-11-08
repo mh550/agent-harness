@@ -1,13 +1,15 @@
-# Context pack for `A3-04`
+# Context pack for `A3-05`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (A3-04, affects A3-05, A4): architecture.md now has Request inbox rows in §3 (lib/requests.sh, lib/requests.mjs), §4 and §7 (Request inbox, Backup window); A3-05 corrects them as built, A4 needn't add more → entries.jsonl:15
 - Discovery (A3-03, affects A3-04, A3-05): requests.sh writes no result when done/<name>.json exists (a duplicate, or a bad file named for a done id): only the log line; a symlink is moved unread and gets 'the request is not a regular file' → entries.jsonl:14
-- Discovery (A3-03, affects A3-04): requests.sh's checks are tests/checks/request-files.sh (11 names, fast, 5.5 s); A3-04's unit checks go in the same file → entries.jsonl:14
+- Discovery (A3-02, affects A3-03, A3-05): Request fixtures come from n8n-home's buildRequest (tests/fixtures/requests/README.md holds the generator): change a value with jq, never hand-type a shape → entries.jsonl:13
+- Discovery (A3-01, affects A3-02, A3-03, A3-05): n8n writes requests/<id>.json in one write, no rename (its D25); answer 1-<h> before continue 2-<h>; its card needs a string result id → entries.jsonl:12
 - Discovery (A3-01, affects A3-03, A3-04, A3-05): The check file is tests/checks/request-files.sh (the plan's intro); runner start is seen via gc-tmux.sh's tmux shim with HARNESS_NO_RUNNER unset (plan 2.5) → entries.jsonl:12
-- Discovery (A3-01, affects A3-03, A3-04): systemd: a path unit restarts its service at once while the glob holds; 5 starts in 10 s fail it. One call waits out a young file (plan 2.4) → entries.jsonl:12
+- Discovery (A3-01, affects A3-03, A3-05): A duplicate id keeps the first done/<id>.json as it is and goes to rejected/ (plan 1.3), not A3-03 step 3 ok==false result → entries.jsonl:12
 - Discovery (A2-05, affects A3, A4): The debrief's bundle is its own gather's (context.json in its workspace, copied by context.sh --from); notify's since= is gone, bundle=<dir> replaces it → entries.jsonl:10
 - Discovery (A2-05, affects A3, A4): lib/context.sh ended_of: alive first (the debrief's bytes); CTX_ENDED_FIRST=1 (harness context only) reads ended first for the end event's bundle → entries.jsonl:10
 - Discovery (A2-04, affects A2-05, run): run_context and context_glossary now read <state>/ended before alive: the driver writes ended (driver.sh:352) before its end notify, while still alive. → entries.jsonl:9
@@ -28,12 +30,9 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-11-07 19:23 · A3-03 · passes: lib/requests.sh (harness requests): flock on requests/.lock, *.json oldest by mtime then name, each judged by requests.mjs validate, claimed into done/<id>.request.json, run as one argv call (answer; queue add --continue [--brief] then queue start outside 03:15–04:30), result written to a temp name and renamed, one log line; rest to rejected/. bin/harness dispatch and header.; tests 1876 → 1887; files lib/requests.sh, bin/harness, tests/checks/request-files.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt → entries.jsonl:14
-
-## Lately in the run
-
 - 2026-11-07 19:13 · A3-02 · passes: lib/requests.mjs: validateRequest (the plan's 11 rules in order, exact reasons; id/verb/run set only once validated), inBackupWindow + BACKUP_REFUSAL, resultJson (ten keys, output cut at 2000 bytes on a char boundary), resultName, logLine (takes no text), and validate/result CLIs. 19 unit tests, fixtures made by n8n-home's buildRequest at 859b25a.; tests 1857 → 1876; files lib/requests.mjs, tests/unit/requests.test.mjs, tests/fixtures/requests/answer.json, tests/fixtures/requests/continue.json, tests/fixtures/requests/continue-brief.json, … → entries.jsonl:13
-- 2026-11-07 19:07 · A3-01 · passes: Wrote docs/plans/2026-11-07-A3-request-inbox.md: requests.mjs's validation table with exact reason strings, result JSON, log line and CLI; harness requests' pass (flock, order, claim-then-run, argv calls, backup window, real-clock grace); the runner start seen through gc-tmux's tmux shim; both units (verified with systemd-analyze here); 29 checks named with tiers.; tests 1857 → 1857; files docs/plans/2026-11-07-A3-request-inbox.md → entries.jsonl:12
+- 2026-11-07 19:23 · A3-03 · passes: lib/requests.sh (harness requests): flock on requests/.lock, *.json oldest by mtime then name, each judged by requests.mjs validate, claimed into done/<id>.request.json, run as one argv call (answer; queue add --continue [--brief] then queue start outside 03:15–04:30), result written to a temp name and renamed, one log line; rest to rejected/. bin/harness dispatch and header.; tests 1876 → 1887; files lib/requests.sh, bin/harness, tests/checks/request-files.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt → entries.jsonl:14
+- 2026-11-07 19:29 · A3-04 · passes: Shipped systemd/harness-requests.path (PathExistsGlob=%h/.local/state/harness/requests/*.json) and .service (oneshot, ExecStart the live bin/harness requests); 3 checks in request-files.sh (unit lines, systemd-analyze --user verify on copies pointed at this checkout, no XDG_CONFIG_HOME/systemd); decision 2026-10-22-request-inbox; README Steering paragraph with install; architecture §3/§4/§7.; tests 1053 → 1056; files systemd/harness-requests.path, systemd/harness-requests.service, tests/checks/request-files.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, … → entries.jsonl:15
 
 ## Current rules
 
@@ -47,9 +46,7 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - A red verify opens a fix round, not a card: at most `MAX_FIX_ROUNDS` per milestone, each one counted → journal/decisions/2026-11-04-fix-rounds.md
 - The unit tier: node evals become `node:test` files in one process, reported as the suite's PASS/FAIL lines → journal/decisions/2026-11-03-unit-tier.md
 - The trim: 22 checks removed, each with the check that makes its assertions now; five gaps closed; no covered line lost → journal/decisions/2026-11-03-trim.md
-- The suite's tiers: every check file declares `fast` or `slow` on line 2, and `tests/run.sh --tier` runs one tier → journal/decisions/2026-11-03-suite-tiers.md
-- The trace switch: `HARNESS_XTRACE=<dir>` traces every harness process, off unless set → journal/decisions/2026-11-03-suite-coverage.md
 
-_90 older rules: journal/decisions._
+_93 older rules: journal/decisions._
 
 _6 items left out at 8192 bytes: entries.jsonl has them all._
