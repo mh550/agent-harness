@@ -1,38 +1,38 @@
-# Debrief · 2026-11-07 15:06
+# Debrief · 2026-11-07 20:59
 
-_runs since 2026-11-07 05:09:46: agent-harness-2026-11-07-2 · claude-sonnet-5-5, $0.13027 · context: /home/mh550/.local/state/harness/debrief/2026-11-07-150615/context.md_
+_runs since 2026-11-07 15:06:15: agent-harness-2026-11-07-3 · claude-sonnet-5-5, $0.1715162 · context: /home/mh550/.local/state/harness/debrief/2026-11-07-205847/context.md_
 
 ## Headline
-agent-harness-2026-11-07-2 finished 12/12: M1, M2 and M3 are verified and merged to main (PRs #126, #127, #128 for the record, plus the M1 PR).
-Nothing is blocked and nothing needs you.
-Spend was $59.64 (tests 1721 → 1791). The usage window is open, with seven_day at 40% (resets Sun 17:00).
+agent-harness-2026-11-07-3 merged A1, A2 and A3 (13 features) to main. A4 (docs) is not merged: A4-01 failed verify on one wrong line in `docs/architecture.md`. The run cost $56.55. The usage window is open and seven_day is 44% (resets Sun 17:00).
 
 ## Runs
-
-### agent-harness-2026-11-07-2 (agent-harness) · done
-- **Features:** 12/12 passing, all on the first attempt. Verify failures, fix rounds, flakes and guard repairs were all 0.
-- **Milestones:** M1 (3), M2 (5) and M3 (4) were each verified, tagged `run/agent-harness-2026-11-07-2/M<n>` and merged. Branch and worktree were removed by gc.
-- **Cost and time:** $59.64, or $4.97 per feature. Build was $32.44, review $12.25, plan $8.31 and init $5.77. It took 5.06 h wall.
-- **Checks:** +75 ~7 −5, within budget in every milestone (M1 30, M2 60, M3 35).
-- **Inefficiency:** M2-05 (1436 s) and M3-04 (2074 s) each ran the full suite twice. Together that is about 55 min of the 4.29 h of session time.
-- **Retro:** nothing new. It re-raised `suite-time-budget` and `verify-evidence-rows`. It also noted 1 question each from M2-05, M3-02 and M3-04, none blocking.
+### agent-harness-2026-11-07-3 (agent-harness) · no feature left to try
+- 13/14 features pass. A1 (3), A2 (5) and A3 (5) are verified and merged. A4 (1 feature) is 0/1.
+- Tests went 1791 → 1898. There were 0 flakes and 0 fix rounds, and 107 checks were added.
+- It cost $56.55 over 5.5 h, which is $4.35 per passing feature. Build was $23.50 and review $9.32.
+- A4-01 (docs, Sonnet) failed verify at step 6: a docs review found `docs/architecture.md:58` saying the debrief notification passes `since=`.
+  - `lib/notify.sh` has no `since=` key. `lib/debrief.sh:251` passes `bundle="$WS"`.
+  - The fix is one clause. The other six steps held, including the fast suite (1064/1064) and the full suite (1898 green).
+- The retro proposed `verify-failed-recheck`: re-verify only the failed steps after a fix, instead of closing the lane as "nothing left to try". That is what happened here.
+- The memory PR #137 is open for you (`MEMORY_POLICY=pr`). It applied one op and dropped one ("add ## How to verify", not stated by `entries.jsonl:17`). The record PR #138 merged.
 
 ## Needs Michael
-Nothing.
-
-One thing to check: your INBOX answer (2026-11-07 14:02) set the M3-04 review to `fable`. `summary.json` lists M3-04 as `sonnet` ($5.96), and the by-model totals show no fable review cost (fable $5.77 is init only). The retro says the review-size guard routed both reviews to opus. Your answer may not have been applied. It's worth confirming when you look at the run record.
+- Memory PR #137 is waiting for your review and merge.
+- The A4-01 docs fix is trivial, but the run ended without it. It also leaves the live checklist at `docs/plans/2026-10-22-n8n-events-live.md` unmerged. Say whether to continue the run for it (see the next section).
 
 ## For the next interactive session
-- **Merge conflicts or held merges:** none.
-- **Open `proposed` items from the Retro backlog**, most seen first:
-  1. `verify-evidence-rows`: record per-step evidence rows from verify sessions (seen 9).
-  2. `suite-time-budget`: cap or warn on repeated suite runs (seen 8).
-  3. `suite-flake-retry`: re-run failed test files serially before declaring the suite red (seen 5).
-  4. `memlint-before-session-end` (seen 1).
-  5. `session-entry-write-guard` (seen 1).
-  6. `step-contradiction-lint` (seen 1).
-  7. `record-push-retry-noise` (seen 1).
-  8. Seen 0 times: `no-retry-on-denial`, `base-branch-runs-reverted`, `restrict-merge-tree-base`, `slot-copy-overwritten-on-merge`, `cli-verbiage-and-syntax`, `git-provider-migration`, and `rebase-pending-card`. You accepted `rebase-pending-card` as a fix at dispatch Decision 5 item 2.
-  9. The backlog shows "more: 9" entries I couldn't see.
-- **Re-raised items already `specced` or `queued`:** none visible.
-- **Retro/summary mismatch:** the retro says $59.51 and 16 sessions, while `summary.json` says $59.64 and 17 sessions. This is minor.
+- The A4-01 fix: in `docs/architecture.md:58`, replace the clause "passes `since=` its SINCE" with `bundle=$WS`. Then merge A4 (README, config template, architecture, decision files, live checklist).
+  - The run ended with "no feature left to try", so I can't queue a continuation.
+- No merge conflicts or refused merges.
+- Open `proposed` retro items, most `runs_seen` first:
+  1. `verify-evidence-rows`, record per-step evidence rows in `entries.jsonl` (10 runs).
+  2. `suite-time-budget`, cap or warn on repeated full-suite runs (9). This run's full suite took 709 s against the ~210 s in CLAUDE.md.
+  3. `suite-flake-retry`, re-run failed test files serially before calling the suite red (5).
+  4. `verify-failed-recheck`, re-verify only the failed steps (1, new this run).
+  5. `record-push-retry-noise` (1).
+  6. `memlint-before-session-end` (1).
+  7. `session-entry-write-guard` (1).
+  8. `step-contradiction-lint` (1).
+  - Unseen backlog items: `no-retry-on-denial`, `base-branch-runs-reverted`, `restrict-merge-tree-base`, `slot-copy-overwritten-on-merge`, `cli-verbiage-and-syntax`, `git-provider-migration`.
+- A discovery from `progress.md`: the spec's A4 step 6 diff, `git merge-base HEAD origin/main`, covers only A4's own files once A1–A3 have merged per milestone. The run's docs as one piece need `git diff 8e05980 HEAD`. Fix the step wording in the spec.
+- Several retro-backlog items were not re-raised by this debrief.
