@@ -84,3 +84,8 @@
 - 2026-11-07 20:42 · context.md for A4-01: 7925 bytes, 11 items left out
 - 2026-11-07 20:45 · A4-01: suite ran 1x (120 s) in the session
 - 2026-11-07 20:45 · A4-01 · claude-sonnet-5-5 · passes=false · 2 min · 13/14 passing · tests 1898
+- 2026-11-07 20:45 · lane A4 closed (given up (nothing left to try))
+- 2026-11-07 20:45 · no feature left to try: 13/14 passing
+- 2026-11-07 20:45 · run ended (no feature left to try): 13/14 passing · 20 sessions (20 real) · 14 features passed · $56.10 · 4.3 h · by kind: init 1 ($6.80), coding 15 ($42.46), verify 4 ($6.84) · by model: claude-fable-5-1 1 ($6.80), claude-opus-5-5 17 ($48.63), claude-sonnet-5-5 2 ($0.66)
+- 2026-11-07 20:56 · services stopped (no feature left to try)
+- 2026-11-07 20:56 · services stopped (no feature left to try)
