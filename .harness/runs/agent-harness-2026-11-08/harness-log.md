@@ -19,3 +19,5 @@
 - 2026-11-08 05:11 · N1-04: suite ran 2x (1491 s) in the session
 - 2026-11-08 05:11 · N1-04: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-08 05:11 · N1-04 · claude-opus-5-5 · passes=true · 46 min · 4/8 passing · tests 1911
+- 2026-11-08 05:11 · verify N1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-08 05:23 · context.md for N1: 13892 bytes
