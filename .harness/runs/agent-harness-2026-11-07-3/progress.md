@@ -9,6 +9,23 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 20:42 · verify A4 · not yet
+
+A4-01 steps 1-5 and 7 hold (fast 1064/1064, full 1898 green). Step 6 fails: a review of the run's docs found docs/architecture.md:58 (lib/debrief.sh row) still saying the debrief notification passes `since=` its SINCE; lib/notify.sh has no since= key and debrief.sh:251 passes bundle="$WS". Fix: replace that clause with bundle=$WS.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| A4-01 | 1 | grep -c EVENT_URL README.md; grep -c harness-requests.path README.md; sed -n 262,305p README.md | 3 and 3; Steering's Notifications paragraph names park/needs-you/blocked/debrief, ntfy fallback, unset = unchanged; 'Answers from the phone card' bullet: requests/, done/<id>.json result, link + enable --now commands | yes |
+| A4-01 | 2 | grep -n 'EVENT_TIMEOUT=5' lib/config.sh templates/user/config.sh | one line each (config.sh:71, template:10); template:9 '# EVENT_URL=…' with a one-line comment under Notifications; defaults EVENT_URL="" EVENT_TIMEOUT=5 match | yes |
+| A4-01 | 3 | grep -nF each name in docs/architecture.md; grep -c 'harness context\|harness requests' bin/harness | §3 rows 58-66 (notify.sh, notify.mjs event, context.sh, glossary.mjs, requests.sh/.mjs), §4 rows 163-164 (events/<id>/ 30-day retention, requests/ cite fixture + spec), §7 rows 427-429 (guards, backup window), §10 EVENT_URL row; bin/harness header 2 and 1 | yes |
+| A4-01 | 4 | head + grep Finding/Choice/Rejected on the three 2026-10-22 decision files; ls journal/decisions \| grep -vE '^YYYY-MM-DD-' | all three exist with title, provenance, Finding/Choice/Rejected; no numbered file; cited from architecture.md:63/427, :59, :54/:65 | yes |
+| A4-01 | 5 | cat docs/plans/2026-10-22-n8n-events-live.md; its sample request through node lib/requests.mjs validate in a temp dir | stages with EVENT_URL/EVENT_TIMEOUT in ~/.config/harness/config.sh, harness context test, event → n8n / event hook failed lines, undo; link + enable --now units, answer test into <state>/<project>/<run>/inbox.md and done/<id>.json, disable undo, backup window, reset-failed; sample validates 'verdict ok' | yes |
+| A4-01 | 6 | Sonnet subagent review of git diff 8e05980 HEAD (the run's docs: the step's merge-base diff is now only A4's 2 files) against bin/, lib/, systemd/, fixtures | one finding unfixed: docs/architecture.md:58 says the debrief notification passes `since=` its SINCE; lib/notify.sh:2,26 has no since key and lib/debrief.sh:251 passes bundle="$WS" | no |
+| A4-01 | 7 | bash tests/run.sh --tier fast; init's full check.sh | 1064/1064 checks passed, exit 0; full: green in 709 s, 1898 tests | yes |
+
+- **Discovery** (affects run): A4-01 step 6's diff `git diff $(git merge-base HEAD origin/main)` covers only A4's own commits once A1-A3 merged per milestone; the run's docs as one piece are `git diff 8e05980 HEAD` (main before A1's merge).
+- *204000-verify-A4 · claude-opus-5-5*
+
 ### 2026-11-07 20:28 · A4-01 · passes
 
 Docs checked against code: README, config template, lib/config.sh, decisions and architecture already held from A1-A3. Added the spec/fixture citations (contract v1) to architecture §4 and wrote docs/plans/2026-10-22-n8n-events-live.md (stages, commands, how to tell, undo). Subagent review fixed the inbox.md path.
@@ -283,20 +300,9 @@ A1-01..03 hold. Full suite green at init (690 s, 1814); fast tier 986/986; event
 - **Discovery** (affects project): Real curl 8.5.0 with -s (no -S) prints nothing on stderr for a 500 or a --max-time timeout; stdout is the -w code ('000' on timeout), exit 28.
 - *163059-verify-A1 · claude-opus-5-5*
 
-### 2026-11-07 16:19 · A1-03 · passes
-
-Every notify call site names its kind (park+feature, needs_michael, blocked/ended by ehigh, started, paused, verified, merged, limit, debrief, other); tests/checks/event-run.sh (slow, 6 checks, 5 stub runs + debrief) proves the routes end to end; decision 2026-10-22-event-hook-ntfy-fallback; architecture §3/§4/§7/§10 and README Steering; Opus review: no Critical/Important.
-
-- **Files:** lib/record.sh, lib/driver.sh, lib/lane.sh, lib/debrief.sh, lib/desk.sh, lib/needs.sh, bin/harness, tests/checks/event-run.sh, tests/fixtures/check-names.txt, journal/decisions/2026-10-22-event-hook-ntfy-fallback.md, docs/architecture.md, README.md, +1 more
-- **Verified:** event-run.sh red first (4/6 FAIL: park, refused park, blocked, debrief), then 6/6; bash tests/run.sh event-run event-hook park-desk needs-driver queue-debrief: 165/165; check.sh --fast green (986 tests); bash -n on every touched shell file, node --check lib/notify.mjs.
-- **Tests:** 1808 → 1814
-- **Discovery** (affects A2): event-run.sh's five stub runs plus the debrief take ~35 s; events are read from curl.log (Content-Type: application/json calls) and $HARNESS_STATE/events/*/event.json, filtered by .run
-- **Discovery** (affects A2): A park run with EVENT_URL set posts two events: park, then blocked (its end reason 'waiting on Michael: B' is ehigh); A2-04's context bundle check must select by kind
-- **Question for Michael:** EVENT_URL may hold a webhook secret but sits on curl's command line (ps, HARNESS_XTRACE traces) as NTFY_URL does; should lib/xtrace.sh's warning name it too, or the POST read the URL from a file (curl -K)? Default: left as is. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/docs/plans/2026-11-07-A1-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/lib/notify.sh:62
-- *03-A1-03 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-11-07 16:19 · A1-03 · passes · Every notify call site names its kind (park+feature, needs_michael, blocked/ended by ehigh, started,… ([in full](progress-archive.md))
 - 2026-11-07 16:08 · A1-02 · passes · notify takes kind=/feature=; with EVENT_URL set park/needs_michael/blocked/debrief build v1 JSON in … ([in full](progress-archive.md))
 - 2026-11-07 15:59 · A1-01 · passes · Wrote docs/plans/2026-11-07-A1-event-hook.md: the v1 event keys and who fills each, the POST verbati… ([in full](progress-archive.md))
 - 2026-11-07 15:53 · init · passes · 14 features: A1 3 (plan, event builder + routed post, call sites with folded review), A2 5 (plan, li… ([in full](progress-archive.md))

@@ -77,3 +77,6 @@
 - 2026-11-07 20:24 · lane A3: branch harness-lane/agent-harness-2026-11-07-3/A3 deleted (merged)
 - 2026-11-07 20:28 · A4-01: suite ran 1x (119 s) in the session
 - 2026-11-07 20:28 · A4-01 · claude-sonnet-5-5 · passes=true · 3 min · 14/14 passing · tests 1898
+- 2026-11-07 20:28 · merged main into harness-lane/agent-harness-2026-11-07-3/A4
+- 2026-11-07 20:28 · verify A4: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-07 20:40 · context.md for A4: 9084 bytes
