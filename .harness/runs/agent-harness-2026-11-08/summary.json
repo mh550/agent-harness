@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-11-08",
   "started": "2026-11-08T07:48:49.000Z",
-  "ended_at": "2026-11-08T10:39:47.000Z",
+  "ended_at": "2026-11-08T10:40:47.000Z",
   "end_reason": "waiting on Michael: N1",
   "continuations": 0,
   "features": {
@@ -49,6 +49,13 @@
     "full_per_session": 0.5,
     "fast_per_session": 1.5
   },
+  "memory": {
+    "ops": 1,
+    "applied": 0,
+    "dropped": 1,
+    "proposed": 0,
+    "pr": null
+  },
   "checks": {
     "added": 13,
     "source": "counts",
@@ -62,35 +69,40 @@
   },
   "resolutions": [],
   "cost": {
-    "total": 31.83,
-    "per_passing_feature": 7.96,
+    "total": 32.22,
+    "per_passing_feature": 8.06,
     "by_role": {
       "init": 5.98,
       "build": 17.56,
       "review": 5.79,
-      "verify": 2.5
+      "verify": 2.5,
+      "retro": 0.14,
+      "curator": 0.25
     },
     "by_model": {
       "claude-fable-5-1": 5.98,
-      "claude-opus-5-5": 25.85
+      "claude-opus-5-5": 26.1,
+      "claude-sonnet-5-5": 0.14
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 2.85,
-    "sessions_h": 2.45,
+    "wall_h": 2.87,
+    "sessions_h": 2.46,
     "driver_h": 0.4,
     "by_role_h": {
       "init": 0.18,
       "build": 1.23,
       "review": 0.77,
-      "verify": 0.27
+      "verify": 0.27,
+      "retro": 0.01,
+      "curator": 0.01
     }
   },
   "lanes": {
     "max_open": 1,
     "lane_hours": 2.48,
-    "wall_hours": 2.85
+    "wall_hours": 2.87
   },
   "helper": {
     "restarts": 0,
@@ -98,11 +110,11 @@
     "whys": {}
   },
   "tokens": {
-    "in": 1450,
-    "cache_read": 48613554,
-    "cache_write": 1452125,
-    "out": 421392,
-    "cache_hit_rate": 0.971,
+    "in": 1466,
+    "cache_read": 48840910,
+    "cache_write": 1501479,
+    "out": 425827,
+    "cache_hit_rate": 0.97,
     "context_peak": 240340,
     "by_role": {
       "init": {
@@ -128,6 +140,18 @@
         "cache_read": 4079870,
         "cache_write": 154302,
         "out": 22630
+      },
+      "retro": {
+        "in": 8,
+        "cache_read": 117383,
+        "cache_write": 26560,
+        "out": 2015
+      },
+      "curator": {
+        "in": 8,
+        "cache_read": 109973,
+        "cache_write": 22794,
+        "out": 2420
       }
     }
   },
@@ -144,7 +168,7 @@
   "first_attempt_pass_rate": 1,
   "verify_fail_rate": null,
   "review": {
-    "cost_pct": 18.2,
+    "cost_pct": 18,
     "found_nothing": 0,
     "reviews": 1
   },
@@ -153,8 +177,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 6,
-    "real": 6,
+    "total": 8,
+    "real": 8,
     "environmental": 0
   },
   "guards": {

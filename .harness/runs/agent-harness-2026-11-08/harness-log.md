@@ -26,3 +26,7 @@
 - 2026-11-08 05:39 · waiting on Michael: the remaining features wait on N1 (needs Michael; see harness-log.md)
 - 2026-11-08 05:39 · run ended (waiting on Michael: N1): 4/8 passing · 6 sessions (6 real) · 4 features passed · $31.83 · 2.4 h · by kind: init 1 ($5.98), coding 4 ($23.35), verify 1 ($2.50) · by model: claude-fable-5-1 1 ($5.98), claude-opus-5-5 5 ($25.85)
 - 2026-11-08 05:39 · services stopped (waiting on Michael: N1)
+- 2026-11-08 05:40 · memory: 1 ops · 0 applied · 1 dropped · 0 proposals
+- 2026-11-08 05:40 · memory: dropped add ## Gotchas (not stated by entries.jsonl:4)
+- 2026-11-08 05:40 · memory PR: none (no tier-1 change); the body is in memory.md
+- 2026-11-08 05:40 · summary.json and report.md kept in the state dir (harness report reads them after gc)
