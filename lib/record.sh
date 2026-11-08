@@ -356,19 +356,21 @@ _flakes_note() {
 }
 
 # Revert what a session changed since <base> outside what it may change: "record" (the run record), "nothing" (a
-# lane's .harness/runs/ is lane_guard's) or, inverted, "memory": the project's memory at the repo root (CLAUDE.md,
-# .harness/project.md) and nothing else. Its commits stay in history; a new commit puts the files back. Prints what it
-# reverted.
+# lane's .harness/runs/ is lane_guard's) or, inverted, "memory": the project's memory from the repo root (CLAUDE.md,
+# .harness/project.md, and the twins Claude Code loads the same way, .claude/CLAUDE.md and all of .claude/rules/:
+# decisions/2026-11-08-memory-rules-pr) and nothing else. Its commits stay in history; a new commit puts the files back.
+# Prints what it reverted.
 restrict() {   # base record|nothing|memory who
   local base=$1 spec=(. ':!.harness/runs') st path
   [[ $2 == nothing ]] && spec=(.)
-  [[ $2 == memory ]] && spec=(CLAUDE.md .harness/project.md)   # plain pathspecs from the root: docs/CLAUDE.md is code
+  [[ $2 == memory ]] && spec=(CLAUDE.md .harness/project.md .claude/CLAUDE.md .claude/rules)   # from the root: docs/CLAUDE.md and .claude/settings.json are code
   commit_all "WIP: uncommitted at session end (harness)"
-  while IFS=$'\t' read -r st path; do
+  # -z and no quotePath: a path git would quote (a rules file named café.md) is the path the revert needs
+  while IFS= read -r -d '' st && IFS= read -r -d '' path; do
     [[ -n $path ]] || continue
     if [[ $st == A ]]; then git rm -q --cached -- "$path" && rm -f -- "$path"; else git checkout -q "$base" -- "$path"; fi
     echo "$path"
-  done < <(git diff --name-status --no-renames "$base" HEAD -- "${spec[@]}")
+  done < <(git -c core.quotePath=false diff -z --name-status --no-renames "$base" HEAD -- "${spec[@]}")
   commit_all "HARNESS: reverted edits a $3 session may not make"
 }
 
@@ -399,16 +401,16 @@ memory_base() {
       MEM_BASE=$tip; if [[ $st == OPEN ]]; then MEM_URL=$(jq -r .url <<< "$pv"); else MEM_NOPR=1; fi
     else note "memory PR: none ($b is on origin and main lacks it, its PR ${st:-titled otherwise}; delete the branch to curate again)"; return 1; fi
   fi
-  rm -rf "$d"; mkdir -p "$d/.harness"
-  for f in CLAUDE.md .harness/project.md; do git -C "$RWT" show "$MEM_BASE:$f" > "$d/$f" 2> /dev/null || rm -f "$d/$f"; done
+  rm -rf "$d"; mkdir -p "$d/.harness" "$d/.claude"
+  for f in CLAUDE.md .harness/project.md .claude/CLAUDE.md; do git -C "$RWT" show "$MEM_BASE:$f" > "$d/$f" 2> /dev/null || rm -f "$d/$f"; done
 }
 
 # <base> <tip> → the first commit of base..tip memory_pr would not have written: a merge, another subject than
-# `memory: <run>: <n> facts`, or a path besides CLAUDE.md and .harness/project.md (`<sha12> "<subject>" (<paths>)`); else nothing
+# `memory: <run>: <n> facts`, or a path besides curator.mjs's FILES (`<sha12> "<subject>" (<paths>)`); else nothing
 memory_foreign() {
   local c s f
   while read -r c; do
-    s=$(git -C "$RWT" log -1 --format=%s "$c"); f=$(git -C "$RWT" diff-tree --no-commit-id --name-only -r "$c" | grep -vxE 'CLAUDE\.md|\.harness/project\.md' | paste -sd' ')
+    s=$(git -C "$RWT" log -1 --format=%s "$c"); f=$(git -C "$RWT" diff-tree --no-commit-id --name-only -r "$c" | grep -vxE 'CLAUDE\.md|\.harness/project\.md|\.claude/CLAUDE\.md' | paste -sd' ')
     if [[ -n $f || ! ${s#"memory: $RUN_ID: "} =~ ^[0-9]+\ facts$ || $(git -C "$RWT" rev-list --parents -n 1 "$c" | wc -w) != 2 ]]; then
       echo "${c:0:12} \"${s:0:80}\"${f:+ ($f)}"; return 0; fi
   done < <(git -C "$RWT" rev-list --reverse "$1..$2")

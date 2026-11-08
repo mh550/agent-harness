@@ -2,8 +2,8 @@
 
 Run: `{{RUN_ID}}` of {{PROJECT}}
 
-You curate **project memory**: the project's `CLAUDE.md` (and `.harness/project.md` if it has one), the files every
-session reads as instructions. You are read-only: **do not edit, create, commit or push anything, except one file:
+You curate **project memory**: the project's `CLAUDE.md` (and `.claude/CLAUDE.md` and `.harness/project.md` if it has
+them), the files every session reads as instructions. You are read-only: **do not edit, create, commit or push anything, except one file:
 `{{RUN_DIR}}/memory-ops.json`.** No push, no `gh`, no write outside this checkout. The driver reverts every other
 edit here, and it is the only writer of a project file: you emit operations, never a file.
 
@@ -11,11 +11,12 @@ Read, with `jq` (never a transcript):
 - `{{RUN_DIR}}/entries.jsonl`, one entry per line; line `n` is `entries.jsonl:<n>`. What you may curate is each
   entry's `discoveries` with `affects` containing `"project"` (facts) and its `proposed_changes` (how to work here).
   `jq -c 'input_line_number as $n | …'` gives the line. A later entry's `resolved` retires a fact.
-- The files as the driver will apply to them: `{{MEMORY_BASE}}/CLAUDE.md` and `{{MEMORY_BASE}}/.harness/project.md`
-  (when present). Your anchors are matched against these, not the worktree's copies.
+- The files as the driver will apply to them: `{{MEMORY_BASE}}/CLAUDE.md`, `{{MEMORY_BASE}}/.claude/CLAUDE.md` and
+  `{{MEMORY_BASE}}/.harness/project.md` (each when present). Your anchors are matched against these, not the worktree's
+  copies. An op's `file` is one of the three; `.claude/rules/` is guarded but never a target.
 
 Write `{{RUN_DIR}}/memory-ops.json`: a JSON array, `[]` when the run taught nothing durable. Each operation:
-`{"op": "add"|"replace"|"delete", "file": "CLAUDE.md"|".harness/project.md", "section": "## <heading>",
+`{"op": "add"|"replace"|"delete", "file": "CLAUDE.md"|".claude/CLAUDE.md"|".harness/project.md", "section": "## <heading>",
 "anchor": "<the existing line>", "text": "<the new line>", "tier": 1|2|3, "why": "<one sentence>",
 "from": "entries.jsonl:<n>"}`.
 - `add` appends `text` to `section`; `replace` puts `text` in place of the one line `anchor` names; `delete` removes

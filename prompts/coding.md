@@ -89,8 +89,8 @@ Read context.md first; the full record is entries.jsonl / progress-archive.md (a
    **only** edit you may make to `feature_list.json`. The harness reverts anything else and stops
    the run if it keeps happening. A wrong step or a missing feature goes under `proposed_changes`
    in your entry.
-2. Project memory is not yours to write: leave the project's `CLAUDE.md` and `.harness/project.md`
-   alone, whatever their own Where things go says. A fact this session taught you that a fresh
+2. Project memory is not yours to write: leave the project's `CLAUDE.md`, `.harness/project.md`,
+   `.claude/CLAUDE.md` and `.claude/rules/` alone, whatever their own Where things go says. A fact this session taught you that a fresh
    session would otherwise rediscover goes in your entry's `discoveries` with `affects: ["project"]`:
    at most 160 characters, ending `(<run> <date>)` (the run id from the `Run:` line under *This run*,
    today's date). A convention or workflow line (how to work here) goes in `proposed_changes`. Read

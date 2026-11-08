@@ -9,3 +9,4 @@
 - `stub-cap.json`: a `## Gotchas` add without an anchor (A's fact), the 16th on a project at 15, and a `replace` of the seeded 2nd Gotchas line (`seeded gotcha 02`) with B's fact: the add is dropped `over the cap: …`, the replace lands (M2-04; N1-03's per-op cap).
 - `stub-cap-evict.json`: B's fact added with an anchor on the 3rd of the 15 (the eviction: one edit), an add to `## Live system` (tier 3: dropped, a proposal), and a `replace` in `## Gotchas` whose anchor matches no line (dropped naming it) (M2-04).
 - `stub-proposal.json`: one `## Live system` add of `STUB_PROPOSE`'s string (tier 3: dropped, a proposal), so nothing reaches tier 1 (M2-05, a memory branch on origin with no PR).
+- `stub-dot-claude.json`: `STUB_CURATOR_OPS=dot-claude`: A's and B's `STUB_FACTS` facts as two `## Gotchas` adds to `.claude/CLAUDE.md`, on a project whose memory is that file alone (N1-02, tests/checks/memory-branch.sh).

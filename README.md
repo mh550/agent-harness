@@ -120,12 +120,13 @@ conformance check or a FAIL in a file that exited 0), and `CHECK_RERUN=auto` the
 
 **Memory lint.** `harness memlint <project>` prints what `lib/memlint.mjs` finds in a project's memory files, one
 `<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),
-`derivable-count` (a stored `<n> tests`), `run-scope` (a line tied to one run: `this run`, `as of <date>`) and `decisions` (no
-store, no current-rule-set header, a superseded entry without an `Updated in place` line). Every run segment starts
+`derivable-count` (a stored `<n> tests`), `run-scope` (a line tied to one run: `this run`, `as of <date>`), `decisions` (no
+store, no current-rule-set header, a superseded entry without an `Updated in place` line) and `twin` (both `CLAUDE.md`
+and `.claude/CLAUDE.md`: Claude Code loads both; each is linted on its own cap). Every run segment starts
 with the same lint as `memlint: …` notes in `harness-log.md`; they never stop the run. A coding session's edit to
-`CLAUDE.md` or `.harness/project.md` is reverted and noted (`<feature>: reverted its CLAUDE.md edit (project memory is
+project memory (`CLAUDE.md`, `.harness/project.md`, `.claude/CLAUDE.md` or anything under `.claude/rules/`) is reverted and noted (`<feature>: reverted its CLAUDE.md edit (project memory is
 the curator's; say it in the entry)`): a fact goes in the entry's `discoveries` with `affects: ["project"]`, a
-workflow line in `proposed_changes` (decisions/2026-11-07-memory-one-writer). The suite no longer lints this checkout:
+workflow line in `proposed_changes` (decisions/2026-11-07-memory-one-writer; the twins: decisions/2026-11-08-memory-rules-pr). The suite no longer lints this checkout:
 `memlint-self` retired, and the cap and the line lints are checked at the curator's write instead, for every project
 (decisions/2026-11-07-memory-policy). Run `harness memlint
 <project>` for each project to confirm chunk 3 Part 2's tidy held: on 2026-10-26 the projects with a `CLAUDE.md`

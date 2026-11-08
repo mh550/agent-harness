@@ -183,8 +183,19 @@ check "memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit
   'p=$(mpr mw) && [[ -n $mw0 && ! -f $p.merged && $(git -C "$O" rev-parse harness-memory/mw) == "$mw0" ]] \
   && [[ $(hlog mw | grep -c " · memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · https://example.test/pr/${p##*-}$") == 1 ]] \
   && ! grep "^gh pr merge https://example.test/pr/${p##*-} " "$T/gh-mw.log" > /dev/null'
+# md: the project's memory is .claude/CLAUDE.md alone (no root CLAUDE.md): the facts land there (N1-02)
+w=$T/seed-dot; rm -rf "$w"; git clone -q "$O" "$w" && git -C "$w" checkout -q --detach "$seed3" && mkdir -p "$w/.claude" \
+  && git -C "$w" mv CLAUDE.md .claude/CLAUDE.md && git -C "$w" -c user.name=m -c user.email=m@test commit -qm "memory in .claude/CLAUDE.md" \
+  && git -C "$w" push -q origin HEAD:refs/heads/seed-dot && git -C "$O" update-ref refs/heads/main "$(git -C "$w" rev-parse HEAD)"
+cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=pr RECORD_PR=end' >> "$T/user-config.sh"
+run md STUB_FACTS=A,B STUB_CURATOR_OPS=dot-claude
+check "memory PR: a project whose memory is .claude/CLAUDE.md alone gets its facts there on harness-memory/<run>, and no root CLAUDE.md" \
+  'grep -q "^done" "$(st md)/ended" && [[ $(git -C "$O" diff --name-only main...harness-memory/md) == .claude/CLAUDE.md ]] \
+  && git -C "$O" show harness-memory/md:.claude/CLAUDE.md > "$T/md-claude.md" && [[ $(gotchas < "$T/md-claude.md" | wc -l) == 5 ]] \
+  && gotchas < "$T/md-claude.md" | grep -x -- "- the stub'"'"'s B work sits in work-B\.txt at the root (md [0-9-]*)" > /dev/null \
+  && ! git -C "$O" cat-file -e harness-memory/md:CLAUDE.md 2> /dev/null && [[ $(hlog md | grep -c " · memory: 2 ops · 2 applied · 0 dropped · 0 proposals$") == 1 ]]'
 check "memory PR: no run leaves its scratch worktree registered or a local harness-memory branch" \
   '! git -C "$T/proj" worktree list --porcelain | grep "/memory$" > /dev/null && [[ -z $(git -C "$T/proj" branch --list "harness-memory/*") ]] \
-  && [[ $(git -C "$T/proj" worktree list --porcelain | grep -c "^worktree ") == 11 ]]'
+  && [[ $(git -C "$T/proj" worktree list --porcelain | grep -c "^worktree ") == 12 ]]'
 
 suite_end

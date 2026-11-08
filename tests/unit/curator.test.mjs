@@ -1,7 +1,7 @@
 // lib/curator.mjs: the memory curator's rules (validate, the tier, anchors, the gate, the cap, apply, the body).   node --test tests/unit/curator.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PROTECTED, apply, body, capCheck, main, matchAnchor, tierOf, validate } from "../../lib/curator.mjs";
@@ -44,7 +44,7 @@ test("curator.mjs: validate refuses a malformed file whole with its first reason
   assert.equal(why([op({ op: "delete" })]), "op 1: delete without an anchor");
   assert.equal(why([op({ from: "line 4" })]), 'op 1: from "line 4" is not entries.jsonl:<n>');
   assert.equal(why([op({ from: "entries.jsonl:0" })]), 'op 1: from "entries.jsonl:0" is not entries.jsonl:<n>');
-  assert.equal(why([op({ file: "lib/x.sh" })]), 'op 1: file "lib/x.sh" is neither CLAUDE.md nor .harness/project.md');
+  assert.equal(why([op({ file: "lib/x.sh" })]), 'op 1: file "lib/x.sh" is none of CLAUDE.md, .harness/project.md, .claude/CLAUDE.md');
   assert.equal(why([op({ text: "a gotcha without its suffix" })]), "op 1: a Gotchas text without its (<run> <date>) suffix");
   assert.equal(why([op({ text: "x".repeat(150) + " (r1 2026-11-07)" })]), "op 1: text of 166 characters, at most 160");
   assert.equal(why([op({ text: "two\nlines (r1 2026-11-07)" })]), "op 1: add without a one-line text");
@@ -376,6 +376,35 @@ test("curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSO
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
+test("curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/", () => {
+  const dc = ".claude/CLAUDE.md", why = x => validate(JSON.stringify(x)).why;
+  assert.equal(validate(JSON.stringify([op({ file: dc })])).ok, true);
+  assert.equal(why([op({ file: ".claude/rules/x.md" })]), 'op 1: file ".claude/rules/x.md" is none of CLAUDE.md, .harness/project.md, .claude/CLAUDE.md');
+  const md = gotchas(15);
+  assert.equal(capCheck(dc, md, md + "- one more (r1 2026-11-07)\n"), "## Gotchas: 16 entries, over 15");
+  assert.equal(capCheck(dc, gotchas(3, Array.from({ length: 116 }, (_, i) => `l${i}`)), gotchas(4, Array.from({ length: 116 }, (_, i) => `l${i}`))), ".claude/CLAUDE.md: 124 lines, over 120");
+  const r = apply([op({ file: dc })], { "CLAUDE.md": null, ".harness/project.md": null, [dc]: MD }, ENTRIES, RUN);
+  assert.equal(`${r.applied.length} ${r.dropped.length}`, "1 0");
+  assert.equal(gotchasLines(r.texts[dc]).at(-1), `- ${FACT}`);
+  assert.equal(r.texts["CLAUDE.md"], null);
+  const d = mkdtempSync(join(tmpdir(), "curator-"));
+  try {
+    writeFileSync(join(d, "ops.json"), JSON.stringify([op({ file: dc })]));
+    writeFileSync(join(d, "entries.jsonl"), ENTRIES.map(e => JSON.stringify(e)).join("\n") + "\n");
+    const w = mkdtempSync(join(d, "w-")), cli = () => JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl")], { env: {} }).out);
+    mkdirSync(join(w, ".claude")); writeFileSync(join(w, dc), MD);
+    const j = cli();
+    assert.equal(`${j.applied.length} ${j.files.join()}`, "1 .claude/CLAUDE.md");
+    assert.equal(gotchasLines(readFileSync(join(w, dc), "utf8")).at(-1), `- ${FACT}`);
+    // a symlinked .claude/ is no directory of the worktree: its CLAUDE.md is never read through, never written through
+    const out = join(d, "outside"); mkdirSync(out); writeFileSync(join(out, "CLAUDE.md"), MD);
+    rmSync(join(w, ".claude"), { recursive: true }); symlinkSync(out, join(w, ".claude"));
+    const link = cli();
+    assert.equal(`${link.dropped[0]?.reason} ${link.files.length}`, "no .claude/CLAUDE.md on the base 0");
+    assert.equal(readFileSync(join(out, "CLAUDE.md"), "utf8") === MD, true);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
 test("curator.mjs: the curator prompt renders with no placeholder left", () => {
   const tpl = readFileSync(new URL("../../prompts/curator.md", import.meta.url), "utf8");
   const part = readFileSync(new URL("../../prompts/parts/where-things-go-readonly.md", import.meta.url), "utf8");
@@ -383,7 +412,7 @@ test("curator.mjs: the curator prompt renders with no placeholder left", () => {
   const env = { HARNESS_RUN_ID: RUN, HARNESS_PROJECT: "p", HARNESS_RUN_DIR: ".harness/runs/r1", HARNESS_MEMORY_BASE: "/tmp/s/memory-base", HARNESS_DECISIONS: "one file per decision" };
   const out = assemble(tpl, [{ title: null, body: part }], env);
   assert.equal((out.match(/\{\{/g) ?? []).length, 0);
-  for (const w of [".harness/runs/r1/memory-ops.json", "`add`", "`replace`", "`delete`", "write gate", "never a file", "/tmp/s/memory-base/CLAUDE.md", "This session is read-only"])
+  for (const w of [".harness/runs/r1/memory-ops.json", "`add`", "`replace`", "`delete`", "write gate", "never a file", "/tmp/s/memory-base/CLAUDE.md", "/tmp/s/memory-base/.claude/CLAUDE.md", "This session is read-only"])
     assert.equal(out.includes(w), true, w);
   assert.equal(/^## Where things go/m.test(tpl), false);   // the part brings its own heading
 });
