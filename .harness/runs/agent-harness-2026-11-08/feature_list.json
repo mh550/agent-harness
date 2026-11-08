@@ -1,7 +1,10 @@
 {
   "run": "agent-harness-2026-11-08",
   "branch": "harness/agent-harness-2026-11-08",
-  "check_budget": { "N1": 50, "N2": 30 },
+  "check_budget": {
+    "N1": 50,
+    "N2": 30
+  },
   "features": [
     {
       "id": "N1-03",
@@ -19,7 +22,7 @@
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N1-02",
@@ -36,7 +39,9 @@
         "`bash tests/run.sh memory-one-writer memlint-run memory-branch` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["N1-03"],
+      "after": [
+        "N1-03"
+      ],
       "passes": false
     },
     {
@@ -55,7 +60,9 @@
         "`bash tests/run.sh memory-branch curator-run` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["N1-02"],
+      "after": [
+        "N1-02"
+      ],
       "passes": false
     },
     {
@@ -71,7 +78,11 @@
         "`journal/decisions/2026-11-08-memory-rules-pr.md` is complete: title, provenance, finding, choice (N1-01, N1-02, N1-03 rows), rejected (`harness-memory/<run>/rules` as a ref, rules stacked on the facts commit, `.claude/rules/*.md` as an operation target, a cap budget shared across the twins, the whole-commit refusal); the N1 check names added, replaced and removed are counted against the budget of 50 (`git diff $(git merge-base HEAD origin/main) -- tests/fixtures/check-names.txt | grep -c '^+[^+]'` and `grep -c '^-[^-]'`) and the count, with any overrun's reason, is in the decision file and the entry's `checks` field.",
         "`bash tests/run.sh` (in the background, a timeout of at least 1,500,000 ms) ends with every check passing (its `N/M checks passed` line with N = M); the suite is green."
       ],
-      "after": ["N1-01", "N1-02", "N1-03"],
+      "after": [
+        "N1-01",
+        "N1-02",
+        "N1-03"
+      ],
       "passes": false
     },
     {
@@ -88,7 +99,9 @@
         "`bash tests/run.sh curator-run queue-debrief` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["N1"],
+      "after": [
+        "N1"
+      ],
       "passes": false
     },
     {
@@ -104,7 +117,9 @@
         "`bash tests/run.sh memory-branch` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["N2-01"],
+      "after": [
+        "N2-01"
+      ],
       "passes": false
     },
     {
@@ -121,7 +136,9 @@
         "`bash tests/run.sh memory-branch curator-run` ends with every check passing (its `N/N checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
       ],
-      "after": ["N2-02"],
+      "after": [
+        "N2-02"
+      ],
       "passes": false
     },
     {
@@ -137,7 +154,11 @@
         "`journal/decisions/2026-11-08-memory-session-and-answers.md` is complete: title, provenance, finding, choice (N2-01, N2-02, N2-03 rows), rejected (a `--settings` JSON deny list, a retry of the edit inside the segment, a verdict matched by section, a copy of the answers in the run record); the N2 check names added, replaced and removed are counted against the budget of 30 (`git diff $(git merge-base HEAD origin/main) -- tests/fixtures/check-names.txt | grep -c '^+[^+]'` and `grep -c '^-[^-]'`) and the count, with any overrun's reason, is in the decision file and the entry's `checks` field.",
         "`bash tests/run.sh` (in the background, a timeout of at least 1,500,000 ms) ends with every check passing (its `N/M checks passed` line with N = M); the suite is green."
       ],
-      "after": ["N2-01", "N2-02", "N2-03"],
+      "after": [
+        "N2-01",
+        "N2-02",
+        "N2-03"
+      ],
       "passes": false
     }
   ]

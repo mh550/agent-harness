@@ -9,6 +9,20 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-08 03:26 · N1-03 · passes
+
+curator.mjs apply checks the cap per tier-1 op (order delete, replace, anchored add, plain add; a breach drops that op alone `over the cap: …`); an anchored add appends while it fits, evicts only past the cap (`evicted`, body `(in place of: …)`, an eviction note); `refused` retired from apply, body and memory_pr. stub-cap gains a replace; decision 2026-11-08-memory-rules-pr created.
+
+- **Files:** lib/curator.mjs, lib/record.sh, prompts/curator.md, tests/unit/curator.test.mjs, tests/checks/memory-branch.sh, tests/fixtures/memory/stub-cap.json, tests/fixtures/memory/README.md, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-08-memory-rules-pr.md, journal/decisions/2026-11-07-memory-tiers.md, docs/architecture.md, +1 more
+- **Verified:** unit tests failed first, then curator.test.mjs 26/26; memory-branch: the eviction-note check failed before the record.sh change, then 23/23; fast tier green (check.sh --fast); bash -n record.sh and memory-branch.sh, node --check curator.mjs. Opus review: 0 Critical, 0 Important; its finding 1 fixed (test first), the stale notes line fixed.
+- **Tests:** 1898 → 1900
+- **Dead end:** the main-apply test asserting every dropped reason on gotchas(15) — that fixture has no ## Code rules, so the second op drops `no section`; the test now reads the first reason
+- **Discovery** (affects N1-01): N1-01's tier-2 union shadow can reuse apply's per-op step: capCheck(file, text, next, maxLines) after each write, a breach dropping that op alone; apply iterates op indices sorted by ORDER, so `keep` (built in op order) is unchanged.
+- **Discovery** (affects N1-01, N1-04): An anchored add whose anchor matches no line now lands as a plain add when the append fits the cap (tier 1 only); a replace or delete with no match is still dropped naming the anchor.
+- **Question for Michael:** The write order puts anchored adds before plain adds (the spec's order, written when an anchored add always evicted). Now that an anchored add appends while it fits, on a file at 14 Gotchas [plain add F2, anchored add F1] appends F1 and drops F2, where plain adds first would land both (F1 then evicting). Default kept: the spec's order. Swap to delete, replace, plain add, anchored add? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-0/lib/curator.mjs:144, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-0/journal/decisions/2026-11-08-memory-rules-pr.md
+- **Proposed change:** N1-04's review should look at the write order question above (plain adds before anchored adds) and at [replace A→B, delete A] in one list, where the delete now wins
+- *01-N1-03 · claude-opus-5-5*
+
 ### 2026-11-08 03:11 · init · passes
 
 8 features: N1 4 (per-op cap N1-03, twin guard N1-02, rules PR N1-01, Opus review N1-04), N2 4 (deny list N2-01, auto merge only with its body N2-02, accept/decline verbs N2-03, Opus review N2-04). N2 after N1; N1 ordered by dependency: N1-03, N1-02, N1-01. Check budgets 50/30 from the spec. Every spec default taken; no question.
