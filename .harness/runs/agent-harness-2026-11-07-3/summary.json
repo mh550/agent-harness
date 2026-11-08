@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-11-07-3",
   "started": "2026-11-07T20:28:37.000Z",
-  "ended_at": "2026-11-08T01:56:54.000Z",
+  "ended_at": "2026-11-08T01:58:06.000Z",
   "end_reason": "no feature left to try",
   "continuations": 0,
   "features": {
@@ -63,6 +63,13 @@
     "full_per_session": 0.1,
     "fast_per_session": 0.9
   },
+  "memory": {
+    "ops": 2,
+    "applied": 1,
+    "dropped": 1,
+    "proposed": 0,
+    "pr": "https://github.com/mh550/agent-harness/pull/137"
+  },
   "checks": {
     "added": 107,
     "replaced": 0,
@@ -96,40 +103,44 @@
   },
   "resolutions": [],
   "cost": {
-    "total": 56.1,
-    "per_passing_feature": 4.32,
+    "total": 56.55,
+    "per_passing_feature": 4.35,
     "by_role": {
       "init": 6.8,
       "plan": 8.99,
       "build": 23.5,
       "verify": 6.84,
       "review": 9.32,
-      "docs": 0.66
+      "docs": 0.66,
+      "retro": 0.17,
+      "curator": 0.28
     },
     "by_model": {
       "claude-fable-5-1": 6.8,
-      "claude-opus-5-5": 48.65,
-      "claude-sonnet-5-5": 0.66
+      "claude-opus-5-5": 48.93,
+      "claude-sonnet-5-5": 0.83
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 5.47,
-    "sessions_h": 4.27,
-    "driver_h": 1.2,
+    "wall_h": 5.49,
+    "sessions_h": 4.29,
+    "driver_h": 1.21,
     "by_role_h": {
       "init": 0.23,
       "plan": 0.51,
       "build": 1.88,
       "verify": 0.57,
       "review": 1.01,
-      "docs": 0.1
+      "docs": 0.1,
+      "retro": 0.01,
+      "curator": 0.01
     }
   },
   "lanes": {
     "max_open": 2,
     "lane_hours": 4.86,
-    "wall_hours": 5.47
+    "wall_hours": 5.49
   },
   "helper": {
     "restarts": 0,
@@ -137,11 +148,11 @@
     "whys": {}
   },
   "tokens": {
-    "in": 2508,
-    "cache_read": 81914645,
-    "cache_write": 2894891,
-    "out": 779060,
-    "cache_hit_rate": 0.966,
+    "in": 2530,
+    "cache_read": 82266963,
+    "cache_write": 2950559,
+    "out": 784351,
+    "cache_hit_rate": 0.965,
     "context_peak": 191185,
     "by_role": {
       "init": {
@@ -179,12 +190,24 @@
         "cache_read": 1041761,
         "cache_write": 132369,
         "out": 10417
+      },
+      "retro": {
+        "in": 12,
+        "cache_read": 203572,
+        "cache_write": 30641,
+        "out": 2693
+      },
+      "curator": {
+        "in": 10,
+        "cache_read": 148746,
+        "cache_write": 25027,
+        "out": 2598
       }
     }
   },
   "per_verified_feature": {
-    "cost": 4.32,
-    "tokens": 6583931
+    "cost": 4.35,
+    "tokens": 6615723
   },
   "orientation": {
     "tokens": 852986,
@@ -197,7 +220,7 @@
   "first_attempt_pass_rate": 0.93,
   "verify_fail_rate": 0.07,
   "review": {
-    "cost_pct": 16.6,
+    "cost_pct": 16.5,
     "found_nothing": 0,
     "reviews": 2
   },
@@ -206,8 +229,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 20,
-    "real": 20,
+    "total": 22,
+    "real": 22,
     "environmental": 0
   },
   "guards": {

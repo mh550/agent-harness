@@ -89,3 +89,7 @@
 - 2026-11-07 20:45 · run ended (no feature left to try): 13/14 passing · 20 sessions (20 real) · 14 features passed · $56.10 · 4.3 h · by kind: init 1 ($6.80), coding 15 ($42.46), verify 4 ($6.84) · by model: claude-fable-5-1 1 ($6.80), claude-opus-5-5 17 ($48.63), claude-sonnet-5-5 2 ($0.66)
 - 2026-11-07 20:56 · services stopped (no feature left to try)
 - 2026-11-07 20:56 · services stopped (no feature left to try)
+- 2026-11-07 20:58 · memory: 2 ops · 1 applied · 1 dropped · 0 proposals
+- 2026-11-07 20:58 · memory: dropped add ## How to verify (not stated by entries.jsonl:17)
+- 2026-11-07 20:58 · memory PR opened; left for Michael (MEMORY_POLICY=pr) · https://github.com/mh550/agent-harness/pull/137
+- 2026-11-07 20:58 · summary.json and report.md kept in the state dir (harness report reads them after gc)
