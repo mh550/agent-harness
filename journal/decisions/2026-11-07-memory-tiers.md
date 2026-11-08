@@ -48,9 +48,9 @@ invariants by M2-05); spec `docs/specs/2026-11-07-memory-curator.md` §M2; plan 
     meant is Michael's); a CRLF file keeps its line ends; a symlinked `CLAUDE.md` or `.harness/` is no file (apply
     never reads or writes through a link); `why` is one line, a `section` at most 200 characters, and an `@login` outside a fence in the body (the section names included, M2-05) is broken
     with a zero-width space so the PR notifies no one.
-  - **The cap**: `lintText` re-run on the result; over 120 lines or 15 `## Gotchas` entries, and grown on that
-    measure (*default*), refuses the tier-1 commit whole with one note. An `add` past the cap passes only with an
-    anchor, the line it evicts.
+  - **The cap**: `lintText` re-run on each tier-1 op's result; over 120 lines or 15 `## Gotchas` entries, and grown
+    on that measure (*default*), drops that op alone (`over the cap: …`; per op since N1-03, it refused the whole
+    commit before). An `add` past the cap passes only with an anchor, the line it evicts.
   - **`memory_pr`, as built (M2-04, `lib/record.sh`)**, called by `curator()` after its restrict and the rescue:
     - **The base** (`memory_base`, before the session, which reads its texts in `$SCRATCH/memory-base/`):
       `origin/<main>`, unless origin has `harness-memory/<run>` and main lacks its tip. Then it is that tip when the
@@ -80,14 +80,15 @@ invariants by M2-05); spec `docs/specs/2026-11-07-memory-curator.md` §M2; plan 
       The body (`curator.mjs body`: the counts, the applied ops, tier 2 to paste, the tier-3 proposals, every dropped
       op with its reason and `from`) is kept as `memory.md` in the run record (*default*), so tier 2 and 3 reach
       Michael through the record PR even when no memory PR opens.
-    - **The cap refusal**: a breach refuses the tier-1 commit whole: no commit, no push, no PR, one note `memory:
-      tier-1 commit refused (<breach>)` and `memory PR: none (no tier-1 change); the body is in memory.md`
-      (*default*). The same add with an anchor evicts that line and lands as one edit. `MERGE_POLICY=off` pushes
-      and opens nothing, noted the same way (*default*, as `record_pr`). An `apply` that answers nothing is
-      `memory: apply failed (see run.log)`, treated as refused.
+    - **The cap drop** (N1-03; the whole-commit refusal and its `memory: tier-1 commit refused (<breach>)` note
+      retired): a breaching op is noted as every dropped op is, the ops that fit are committed. The same add with an
+      anchor evicts that line past the cap and lands as one edit. `MERGE_POLICY=off` pushes and opens nothing, noted
+      `memory PR: none (MERGE_POLICY=off)` (*default*, as `record_pr`). An `apply` that answers nothing is
+      `memory: apply failed (see run.log)`: no commit, no PR.
     - **The notes**, each outcome once in `harness-log.md`: `memory: <ops> ops · <applied> applied · <dropped>
       dropped · <proposed> proposals` (*default* wording), one `memory: dropped <op> <section> (<reason>)` per dropped
-      op (the refused ones aside: their one note covers them), `memory: tier re-derived for <n> ops`, then the PR's
+      op (a cap drop among them, since N1-03), one `memory: evicted "<line>" for add ## Gotchas` per eviction,
+      `memory: tier re-derived for <n> ops`, then the PR's
       `memory PR opened; left for Michael (MEMORY_POLICY=pr) · <url>`, `memory PR updated · <url>` or why none.
     - **`$STATE/memory.json`**: `{ops, applied, dropped, proposed, pr}` (the PR's URL or `null`; `invalid` beside
       them for a refused file), for M3's summary (*default*).
@@ -141,6 +142,9 @@ Updated in place 2026-11-07: Michael — M2-01's cap question: the default stand
 grow). Todo: prune hit_list, n8n-home and portfolio_site by hand under the cap before the first curator run, one session
 per project. Separately, `capCheck`'s refusal of the whole tier-1 commit when one op breaches (`apply`, every applied op
 to Dropped) is to become per-op: apply what fits, drop the breaching ops with the reason.
+Updated in place 2026-11-08: N1-03 (run agent-harness-2026-11-08) built it: the cap is checked per op in the order
+delete, replace, anchored add, plain add, a breaching op dropped `over the cap: …` alone, and an anchored add evicts its
+anchor only past the cap; `refused` and the refusal note retired (decisions/2026-11-08-memory-rules-pr).
 Updated in place 2026-11-07: Michael — M2-02's question: the default stands; a `proposed_changes` string never gates a
 tier-1 Gotchas commit. A classifier (a jev-style decision model) may revisit the fact-or-rule line later, on evidence,
 never as the gate itself.

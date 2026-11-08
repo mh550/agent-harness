@@ -20,7 +20,9 @@ Write `{{RUN_DIR}}/memory-ops.json`: a JSON array, `[]` when the run taught noth
 "from": "entries.jsonl:<n>"}`.
 - `add` appends `text` to `section`; `replace` puts `text` in place of the one line `anchor` names; `delete` removes
   it. `anchor` is required for `replace` and `delete`; give it on an `add` only when `## Gotchas` already has 15
-  lines or the file 120: then it names the line your add evicts (the least useful one). Copy the anchor from the
+  lines or the file 120: then it names the line your add evicts (the least useful one). The cap is checked per op
+  (deletes first, then replaces, anchored adds, plain adds): an add that would pass 15 Gotchas or 120 lines without an
+  anchor is dropped alone, and an anchored add that still fits is appended, its anchor kept. Copy the anchor from the
   file: spacing, case and emphasis may differ, its first 40 characters may not. A section must already exist.
 - `text`: one line, at most 160 characters, no leading `- `; in `## Gotchas` it ends `({{RUN_ID}} <date>)`.
 - `from`: the entry that states it. **The write gate**: write only a fact or proposal an entry of this run states as

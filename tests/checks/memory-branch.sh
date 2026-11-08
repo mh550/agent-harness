@@ -4,7 +4,7 @@ source "$(dirname "$0")/../lib.sh" && suite_setup
 # ---- the memory PR (M2-04): the curator's ops applied on harness-memory/<run> cut from main, tier 1 one commit under
 # the cap, tier 2 and 3 and every dropped op in the body of a `memory: <run>` PR left for Michael ----
 # Origin's main gets a CLAUDE.md with Code rules, Live system and Gotchas (3 lines; 15 for the cap runs) before each run.
-# mp carries the three ops and its continue; mc is refused at the cap; me evicts, with a Live system op and an
+# mp carries the three ops and its continue; mc drops its 16th add at the cap and lands its replace; me evicts, with a Live system op and an
 # unmatched anchor beside it; mn, mk, mf and mz meet a memory branch already on origin. Each run gets its own gh.log.
 st() { echo "$HARNESS_STATE/proj/$1"; }
 rec() { echo "$T/wt/proj/$1/.harness/runs/$1"; }
@@ -87,14 +87,17 @@ check "ledger: a memory PR is one row of memory.jsonl, committed with the ledger
   && [[ $(git -C "$T/ledger" log --format=%s -- memory.jsonl | grep -c "^ledger: mp (proj): ") == 2 && -z $(git -C "$T/ledger" status --porcelain -- memory.jsonl) ]] \
   && [[ $(hlog mp | grep -c " · ledger: memory PR https://example.test/pr/${p##*-} in memory.jsonl (2 applied · 0 dropped · 1 proposals)$") == 1 ]]'
 
-# mc: a project at 15 Gotchas lines, a 16th add without an anchor
+# mc: a project at 15 Gotchas lines, a 16th add without an anchor and a replace of the 2nd line beside it
 git -C "$O" update-ref refs/heads/main "$seed15"
-run mc STUB_FACTS=A STUB_CURATOR_OPS=cap
-check "memory PR: a 16th Gotchas add without an anchor refuses the tier-1 commit; no branch, no PR" \
-  'grep -q "^done" "$(st mc)/ended" && [[ $(hlog mc | grep -c " · memory: tier-1 commit refused (## Gotchas: 16 entries, over 15)$") == 1 ]] \
-  && hlog mc | grep -F " · memory PR: none (no tier-1 change); the body is in memory.md" > /dev/null && ! hlog mc | grep " · memory: dropped " > /dev/null \
-  && [[ -z $(git -C "$O" ls-remote --heads . harness-memory/mc) ]] && ! titles | grep -x "memory: mc" > /dev/null \
-  && jq -e ".pr == null and .applied == 0 and .dropped == 1" "$(st mc)/memory.json" > /dev/null && titles | grep -x "mc: run record" > /dev/null'
+run mc STUB_FACTS=A,B STUB_CURATOR_OPS=cap
+git -C "$O" show harness-memory/mc:CLAUDE.md > "$T/mc-claude.md" 2> /dev/null
+check "memory PR: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands and its PR opens" \
+  'p=$(mpr mc) && grep -q "^done" "$(st mc)/ended" && [[ $(hlog mc | grep -c " · memory: dropped add ## Gotchas (over the cap: ## Gotchas: 16 entries, over 15)$") == 1 ]] \
+  && [[ $(hlog mc | grep -c " · memory: dropped ") == 1 ]] && ! hlog mc | grep -F "tier-1 commit refused" > /dev/null \
+  && [[ $(git -C "$O" log --oneline main..harness-memory/mc | wc -l) == 1 && $(gotchas < "$T/mc-claude.md" | wc -l) == 15 ]] \
+  && gotchas < "$T/mc-claude.md" | grep -x -- "- the stub'"'"'s B work sits in work-B\.txt at the root (mc [0-9-]*)" > /dev/null && ! grep -F "seeded gotcha 02" "$T/mc-claude.md" > /dev/null \
+  && [[ $(cat "$p") == harness-memory/mc && ! -f $p.merged ]] && sed -n "/^## Dropped$/,\$p" "$p.body" | grep -F "## Gotchas: 16 entries, over 15" > /dev/null \
+  && ! grep -F "refused" "$p.body" > /dev/null && jq -e ".applied == 1 and .dropped == 1" "$(st mc)/memory.json" > /dev/null'
 
 # me: the same add with an anchor (the eviction), an op on Live system and a replace whose anchor matches no line
 git -C "$O" update-ref refs/heads/main "$seed15"
@@ -108,7 +111,9 @@ check "memory PR: an op on Live system is dropped with a note and carried as a p
   && sed -n "/^## Dropped$/,\$p" "$p.body" | grep -F "a gotcha no line of this CLAUDE.md has ever said" > /dev/null \
   && ! sed -n "/^## Live system$/,/^## /p" "$T/me-claude.md" | grep -F "stub proposal" > /dev/null'
 check "memory PR: the same add with an anchor lands as one edit" \
-  '[[ $(gotchas < "$T/me-claude.md" | wc -l) == 15 ]] && ! grep -F "seeded gotcha 03" "$T/me-claude.md" > /dev/null \
+  'p=$(mpr me) && [[ $(gotchas < "$T/me-claude.md" | wc -l) == 15 ]] && ! grep -F "seeded gotcha 03" "$T/me-claude.md" > /dev/null \
+  && sed -n "/^## Applied (tier 1)$/,/^## /p" "$p.body" | grep -F "(in place of: - seeded gotcha 03: the seeded project keeps its fact number 3 (seed 2026-11-01))" > /dev/null \
+  && [[ $(hlog me | grep -c " · memory: evicted \"- seeded gotcha 03: the seeded project keeps its fact number 3 (seed 2026-11-01)\" for add ## Gotchas$") == 1 ]] \
   && [[ $(hlog me | grep -c " · memory: 3 ops · 1 applied · 2 dropped · 1 proposals$") == 1 ]] \
   && [[ $(git -C "$O" show "$seed15:CLAUDE.md" > "$T/me-main.md" && node -e "import(\"'$HERE'/../lib/memlint.mjs\").then(m => { const f = require(\"fs\"); console.log(JSON.stringify(m.gotchasDiff(f.readFileSync(process.argv[1], \"utf8\"), f.readFileSync(process.argv[2], \"utf8\")))) })" "$T/me-main.md" "$T/me-claude.md") == "{\"added\":0,\"edited\":1,\"deleted\":0}" ]]'
 

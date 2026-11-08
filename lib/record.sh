@@ -421,12 +421,12 @@ memory_json() {
 }
 
 # The curator's memory-ops.json (rescued to $SCRATCH) → applied on harness-memory/<run> in a detached scratch worktree
-# at MEM_BASE: tier 1 one commit (refused whole past the cap), tier 2 and 3 and every dropped op in the body of a
-# `memory: <run>` PR left for Michael (MEMORY_POLICY=pr) or merged at the pushed head (auto: only a push of a tier-1
-# commit merges; never --delete-branch, as record_pr); the body kept as memory.md in the run record. The record
-# branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
+# at MEM_BASE: tier 1 one commit (each op under the cap, a breaching one dropped), tier 2 and 3 and every dropped op in
+# the body of a `memory: <run>` PR left for Michael (MEMORY_POLICY=pr) or merged at the pushed head (auto: only a push
+# of a tier-1 commit merges; never --delete-branch, as record_pr); the body kept as memory.md in the run record. The
+# record branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
 memory_pr() {
-  local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" o a d p rd refused x files=() b=harness-memory/$RUN_ID
+  local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" o a d p rd x files=() b=harness-memory/$RUN_ID
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
     why=$(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)
     note "curator: memory-ops.json invalid: $why"; memory_json 0 0 0 0 "$MEM_URL" "$why"; return 0; }
@@ -436,16 +436,17 @@ memory_pr() {
   git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
     || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 "$MEM_URL"; memory_wt_gone; return 0; }
   node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" > "$r" 2>> "$STATE/run.log"
-  # an apply that threw prints nothing: refused, no commit and no PR (tests/checks/no-answer.sh's rule)
-  IFS=$'\t' read -r o a d p rd refused < <(jq -r '[.ops, (.applied | length), (.dropped | length), (.proposed | length), .rederived, (.refused // "-")] | @tsv' "$r" 2> /dev/null)
+  # an apply that threw prints nothing: no commit and no PR (tests/checks/no-answer.sh's rule)
+  IFS=$'\t' read -r o a d p rd < <(jq -r '[.ops, (.applied | length), (.dropped | length), (.proposed | length), .rederived] | @tsv' "$r" 2> /dev/null)
   if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; memory_json "$n" 0 0 0 "$MEM_URL"; memory_wt_gone; return 0; fi
   note "memory: $o ops · $a applied · $d dropped · $p proposals"
-  while IFS= read -r x; do note "${x:0:200}"; done < <(jq -r '.dropped[] | select(.reason | startswith("refused: ") | not) | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"' "$r")
+  # a cap breach is a dropped op as any other (N1-03); an anchored add that evicted names the line it cut
+  while IFS= read -r x; do note "${x:0:200}"; done < <(jq -r '(.dropped[] | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"),
+    (.applied[] | select(.evicted != null) | "memory: evicted \"\(.evicted[0:80])\" for \(.op) \(.section)")' "$r")
   (( rd > 0 )) && note "memory: tier re-derived for $rd ops"
-  [[ $refused != - ]] && note "memory: tier-1 commit refused ($refused)"
   memory_body "$r"
   mapfile -t files < <(jq -r '.files[]?' "$r")
-  if (( a == 0 || ${#files[@]} == 0 )) || [[ $refused != - ]]; then
+  if (( a == 0 || ${#files[@]} == 0 )); then
     if [[ $MEM_URL == http* && $MERGE_POLICY != off ]]; then memory_edit "$MEM_URL" " (no tier-1 change)"   # its proposals still reach Michael
     elif [[ -n $MEM_NOPR && $MERGE_POLICY != off ]]; then memory_open   # an earlier segment's commit, still without its PR
     else note "memory PR: none (no tier-1 change); the body is in memory.md"; fi

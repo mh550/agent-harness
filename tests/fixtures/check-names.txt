@@ -403,13 +403,15 @@ coverage: shScan keeps a multi-line array and a quoted string inside a $( ) insi
 coverage: shScan leaves out comments, closing words, a case's bare pattern, a function's header and a comment's quote or backslash
 coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
 coverage: two processes' V8 documents add up: a character ran when it did in either
-curator.mjs: a 16th Gotchas add without an anchor refuses the tier-1 commit, naming the breach
+curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands
+curator.mjs: a delete and an anchorless add in one list on a file at 15 Gotchas both land, the delete first
 curator.mjs: a fact a later entry resolved, or already in its section, is dropped
-curator.mjs: a file already over the cap takes a replace or a delete
+curator.mjs: a file already over the cap takes a replace or a delete and drops an anchorless add naming the cap
 curator.mjs: a heading inside a code fence, a repeated heading or CRLF line ends never misplace a write
-curator.mjs: a result over 120 lines refuses the tier-1 commit
 curator.mjs: a tier-1 op whose text memlint finds a derivable count or run scope in is dropped, naming the lint
 curator.mjs: an anchor with no match or two matches drops its op, naming the anchor
+curator.mjs: an anchored add appends while the file is under both caps, and evicts its anchor at 15 Gotchas
+curator.mjs: an anchored add whose anchor a delete in the same list removed lands as a plain add when it fits
 curator.mjs: an op on a protected section is dropped and carried as a proposal
 curator.mjs: an op whose write would change a protected section's lines is dropped
 curator.mjs: apply derives the tier from the heading and counts a claim that disagrees
@@ -421,7 +423,7 @@ curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSON line
 curator.mjs: matchAnchor matches a line whose whitespace, backticks, emphasis or bullet differ
 curator.mjs: only tier 1 is written; a tier-2 op leaves the texts as they were
 curator.mjs: the curator prompt renders with no placeholder left
-curator.mjs: the same add with an anchor evicts that line and is accepted
+curator.mjs: the op that crosses 120 lines is dropped naming the cap; the ops before and after it land
 curator.mjs: the write gate drops a text the entry its from names does not state, and keeps a delete with an existing anchor
 curator.mjs: tierOf gives every heading of the eight projects its fixture tier
 curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suffix aside
@@ -1009,7 +1011,7 @@ memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
 memory PR: MEMORY_POLICY=auto merges the memory PR into main and notes it
 memory PR: MERGE_POLICY=auto merges the milestones and leaves the memory PR open under MEMORY_POLICY=pr
-memory PR: a 16th Gotchas add without an anchor refuses the tier-1 commit; no branch, no PR
+memory PR: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands and its PR opens
 memory PR: a continued run reuses its open memory PR
 memory PR: a memory branch on origin with no PR gets its PR when nothing new reaches tier 1
 memory PR: a memory branch on origin with no PR is the base, and its PR opens on it

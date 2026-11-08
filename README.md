@@ -140,7 +140,7 @@ reverted). The driver applies them (`lib/curator.mjs`) in a scratch worktree at 
 checkout: the tier comes from the heading, never from the session (`## Gotchas` is tier 1 and committed; any other
 heading is tier 2, a line for you to paste; `Live system`, `Off-limits`, `On-limits`, `Hardware facts`, `Hardware and
 Mixxx rules` and `This repo runs Michael's harness runs` are tier 3, a proposal only); an op whose text no entry states
-as a `project` fact is dropped, and so is a tier-1 op whose text `memlint` finds a stored count or a run-scope word in; a result over 120 lines or 15 Gotchas is refused unless the add evicts a line. Tier 1 is
+as a `project` fact is dropped, and so is a tier-1 op whose text `memlint` finds a stored count or a run-scope word in; the cap is checked per op, in the order delete, replace, anchored add, plain add: an op that would grow a file past 120 lines or 15 Gotchas is dropped `over the cap: …` while the ops beside it land, and an anchored add appends while it fits and evicts its anchor's line only when it would not (the PR body and a note name that line). Tier 1 is
 one commit on `harness-memory/<run>`, and its `memory: <run>` PR is left for you; its body (also `memory.md` in the run
 record) lists what was applied, what to paste, the proposals and every dropped op with its reason. A `harness continue`
 adds to the open PR. `harness-log.md` says `memory: <n> ops · <a> applied · <d> dropped · <p> proposals` and the PR's

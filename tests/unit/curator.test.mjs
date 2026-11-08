@@ -110,33 +110,70 @@ test("curator.mjs: an anchor with no match or two matches drops its op, naming t
   assert.equal(none.texts["CLAUDE.md"] === MD && two.texts["CLAUDE.md"] === twice, true);
 });
 
-test("curator.mjs: a 16th Gotchas add without an anchor refuses the tier-1 commit, naming the breach", () => {
-  const md = gotchas(15), r = apply([op()], T(md), ENTRIES, RUN);
-  assert.equal(r.refused, "## Gotchas: 16 entries, over 15");
-  assert.equal(r.applied.length, 0);
-  assert.equal(reasons(r), "refused: ## Gotchas: 16 entries, over 15");
-  assert.equal(r.texts["CLAUDE.md"] === md, true);
+const G = n => `gotcha number ${n} is about its own thing (r0 2026-11-01)`;
+const ES2 = [...ENTRIES, E({ feature: "B", discoveries: [{ text: "B's fact (r1 2026-11-07)", affects: ["project"] }] })];
+
+test("curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands", () => {
+  const md = gotchas(15), r = apply([op(), op({ op: "replace", anchor: G(2), text: "B's fact (r1 2026-11-07)", from: "entries.jsonl:3" })], T(md), ES2, RUN);
+  assert.equal(reasons(r), "over the cap: ## Gotchas: 16 entries, over 15");
+  assert.equal(r.dropped[0].op.op, "add");
+  assert.equal(r.applied.map(o => o.op).join(), "replace");
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"]).length, 15);
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"])[1], "- B's fact (r1 2026-11-07)");
+  assert.equal("refused" in r, false);
   assert.equal(capCheck("CLAUDE.md", md, md + "- one more (r1 2026-11-07)\n"), "## Gotchas: 16 entries, over 15");
   assert.equal(capCheck(".harness/project.md", md, md + "- one more (r1 2026-11-07)\n"), null);   // only CLAUDE.md is capped
 });
 
-test("curator.mjs: the same add with an anchor evicts that line and is accepted", () => {
-  const md = gotchas(15), r = apply([op({ anchor: "gotcha number 3 is about its own thing (r0 2026-11-01)" })], T(md), ENTRIES, RUN);
-  assert.equal(r.refused, null);
-  assert.equal(r.applied.length, 1);
-  const after = r.texts["CLAUDE.md"];
-  assert.equal(gotchasLines(after).length, 15);
-  assert.equal(gotchasLines(after)[2], `- ${FACT}`);
-  assert.equal(JSON.stringify(gotchasDiff(md, after)), '{"added":0,"edited":1,"deleted":0}');
+test("curator.mjs: the op that crosses 120 lines is dropped naming the cap; the ops before and after it land", () => {
+  const md = gotchas(3, [...Array.from({ length: 111 }, (_, i) => `line ${i}`), ""]);
+  assert.equal(lineCount(md), 119);
+  const r = apply([op({ text: "B's fact (r1 2026-11-07)", from: "entries.jsonl:3" }), op(),
+    op({ op: "replace", anchor: G(1), text: "B's fact, corrected later (r1 2026-11-07)", from: "entries.jsonl:4" })], T(md),
+    [...ES2, E({ feature: "C", discoveries: [{ text: "B's fact, corrected later (r1 2026-11-07)", affects: ["project"] }] })], RUN);
+  assert.equal(reasons(r), "over the cap: CLAUDE.md: 121 lines, over 120");
+  assert.equal(r.dropped[0].op.text, FACT);   // the second add: the first fit, the replace (written first) kept the count
+  assert.equal(r.applied.map(o => o.op).join(), "replace,add");
+  assert.equal(lineCount(r.texts["CLAUDE.md"]), 120);
+  assert.equal(apply([op()], T(gotchas(3, [...Array.from({ length: 112 }, (_, i) => `line ${i}`), ""])), ENTRIES, RUN, { maxLines: 130 }).applied.length, 1);   // MEMLINT_LINES's cap
 });
 
-test("curator.mjs: a result over 120 lines refuses the tier-1 commit", () => {
-  const md = gotchas(3, [...Array.from({ length: 112 }, (_, i) => `line ${i}`), ""]);
-  assert.equal(lineCount(md), 120);
-  const r = apply([op()], T(md), ENTRIES, RUN);
-  assert.equal(r.refused, "CLAUDE.md: 121 lines, over 120");
-  assert.equal(r.applied.length, 0);
-  assert.equal(apply([op()], T(md), ENTRIES, RUN, { maxLines: 130 }).refused, null);   // MEMLINT_LINES's cap
+test("curator.mjs: a delete and an anchorless add in one list on a file at 15 Gotchas both land, the delete first", () => {
+  const md = gotchas(15), r = apply([op(), op({ op: "delete", text: undefined, anchor: G(4) })], T(md), ENTRIES, RUN);
+  assert.equal(reasons(r), "");
+  assert.equal(r.applied.map(o => o.op).join(), "delete,add");
+  const g = gotchasLines(r.texts["CLAUDE.md"]);
+  assert.equal(`${g.length} ${g.at(-1) === `- ${FACT}`} ${g.includes(`- ${G(4)}`)}`, "15 true false");
+});
+
+test("curator.mjs: an anchored add appends while the file is under both caps, and evicts its anchor at 15 Gotchas", () => {
+  const md = gotchas(3), r = apply([op({ anchor: G(2) })], T(md), ENTRIES, RUN);
+  assert.equal(r.applied.length, 1);
+  assert.equal(r.applied[0].evicted, undefined);
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"]).at(-1), `- ${FACT}`);
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"]).includes(`- ${G(2)}`), true);   // its anchor line kept
+  assert.equal(JSON.stringify(gotchasDiff(md, r.texts["CLAUDE.md"])), '{"added":1,"edited":0,"deleted":0}');
+  const b = body(r, RUN);
+  assert.equal(b.includes("in place of"), false);
+  const full = gotchas(15), e = apply([op({ anchor: G(3) })], T(full), ENTRIES, RUN), after = e.texts["CLAUDE.md"];
+  assert.equal(e.applied.length, 1);
+  assert.equal(e.applied[0].evicted, `- ${G(3)}`);
+  assert.equal(gotchasLines(after).length, 15);
+  assert.equal(gotchasLines(after)[2], `- ${FACT}`);
+  assert.equal(JSON.stringify(gotchasDiff(full, after)), '{"added":0,"edited":1,"deleted":0}');
+  assert.equal(body(e, RUN).includes(`- \`add\` CLAUDE.md · ## Gotchas: ${FACT} (in place of: - ${G(3)}) — w (entries.jsonl:2)`), true);
+  const lines = gotchas(3, [...Array.from({ length: 112 }, (_, i) => `line ${i}`), ""]), l = apply([op({ anchor: G(1) })], T(lines), ENTRIES, RUN);
+  assert.equal(`${lineCount(lines)} ${l.applied[0].evicted === `- ${G(1)}`} ${lineCount(l.texts["CLAUDE.md"])}`, "120 true 120");   // the line cap alone evicts
+});
+
+test("curator.mjs: an anchored add whose anchor a delete in the same list removed lands as a plain add when it fits", () => {
+  const md = gotchas(15), r = apply([op({ anchor: G(3) }), op({ op: "delete", text: undefined, anchor: G(3) })], T(md), ENTRIES, RUN);
+  assert.equal(reasons(r), "");
+  assert.equal(r.applied.map(o => `${o.op}${o.evicted ? " evicted" : ""}`).join(), "delete,add");
+  const g = gotchasLines(r.texts["CLAUDE.md"]);
+  assert.equal(`${g.length} ${g.at(-1) === `- ${FACT}`} ${g.includes(`- ${G(3)}`)}`, "15 true false");
+  const none = apply([op({ anchor: "no such gotcha (r0 2026-11-01)" })], T(md), ENTRIES, RUN);   // at the cap it still needs its anchor
+  assert.equal(reasons(none), 'anchor "no such gotcha (r0 2026-11-01)" matches no line');
 });
 
 // memlint-self's "this checkout lints clean" for what the driver writes: the two line lints hold at the write too
@@ -150,13 +187,12 @@ test("curator.mjs: a tier-1 op whose text memlint finds a derivable count or run
   assert.equal(apply([op({ section: "## Code rules", text: count })], T(MD), es, RUN).proposed.length, 1);   // tier 2: Michael's to judge
 });
 
-test("curator.mjs: a file already over the cap takes a replace or a delete", () => {
+test("curator.mjs: a file already over the cap takes a replace or a delete and drops an anchorless add naming the cap", () => {
   const md = gotchas(16, [...Array.from({ length: 120 }, (_, i) => `line ${i}`), ""]);
-  const r = apply([op({ op: "replace", anchor: "gotcha number 1 is about its own thing (r0 2026-11-01)" }),
-    op({ op: "delete", text: undefined, anchor: "gotcha number 9 is about its own thing (r0 2026-11-01)" })], T(md), ENTRIES, RUN);
-  assert.equal(r.refused, null);
-  assert.equal(reasons(r), "");
-  assert.equal(r.applied.length, 2);
+  const r = apply([op({ text: "B's fact (r1 2026-11-07)", from: "entries.jsonl:3" }), op({ op: "replace", anchor: "gotcha number 1 is about its own thing (r0 2026-11-01)" }),
+    op({ op: "delete", text: undefined, anchor: "gotcha number 9 is about its own thing (r0 2026-11-01)" })], T(md), ES2, RUN);
+  assert.equal(reasons(r), `over the cap: CLAUDE.md: ${lineCount(md)} lines, over 120`);   // after the delete: one line out, one in
+  assert.equal(r.applied.map(o => o.op).join(), "delete,replace");
   assert.equal(gotchasLines(r.texts["CLAUDE.md"]).length, 15);
   assert.equal(lineCount(r.texts["CLAUDE.md"]), lineCount(md) - 1);
 });
@@ -291,8 +327,9 @@ test("curator.mjs: body lists the applied and tier-2 ops with their from, then t
   assert.equal(/(^|[^`])@mh550/.test(sec.replace(/@\u200b/g, "")), false);
   const empty = body(apply([], T(MD), ENTRIES, RUN), RUN);
   assert.equal(/## (Applied|For you|Proposals|Dropped)/.test(empty), false);
-  const refused = body(apply([op()], T(gotchas(15)), ENTRIES, RUN), RUN);
-  assert.equal(refused.includes("refused: ## Gotchas: 16 entries, over 15"), true);
+  const capped = body(apply([op()], T(gotchas(15)), ENTRIES, RUN), RUN);
+  assert.equal(capped.includes("over the cap: ## Gotchas: 16 entries, over 15"), true);
+  assert.equal(capped.includes("tier-1 commit was refused"), false);
 });
 
 test("curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSON line", () => {
@@ -307,7 +344,7 @@ test("curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSO
     assert.equal(r.rc, 0);
     assert.equal(r.out.split("\n").length, 2);   // one line and its newline
     const j = JSON.parse(r.out);
-    assert.equal(`${j.ops} ${j.applied.length} ${j.proposed.length} ${j.dropped.length} ${j.rederived} ${j.refused}`, "2 1 1 0 1 null");
+    assert.equal(`${j.ops} ${j.applied.length} ${j.proposed.length} ${j.dropped.length} ${j.rederived} ${"refused" in j}`, "2 1 1 0 1 false");
     assert.equal(j.files.join(), "CLAUDE.md");
     assert.equal(j.texts, undefined);
     assert.equal(gotchasLines(readFileSync(join(w, "CLAUDE.md"), "utf8")).at(-1), `- ${FACT}`);
@@ -324,11 +361,11 @@ test("curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSO
     assert.match(JSON.parse(badApply.out).invalid, /^not JSON: /);
     writeFileSync(join(w, "CLAUDE.md"), gotchas(3, [...Array.from({ length: 112 }, (_, i) => `line ${i}`), ""]));
     const capped = JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl")], { env: { MEMLINT_LINES: "200" } }).out);
-    assert.equal(capped.refused, null);   // MEMLINT_LINES raises the cap
+    assert.equal(capped.applied.length, 1);   // MEMLINT_LINES raises the cap
     const full = gotchas(15);
     writeFileSync(join(w, "CLAUDE.md"), full);
     const no = JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl")], { env: {} }).out);
-    assert.equal(`${no.refused} ${no.files.length}`, "## Gotchas: 16 entries, over 15 0");
+    assert.equal(`${no.dropped[0].reason} ${no.files.length}`, "over the cap: ## Gotchas: 16 entries, over 15 0");
     assert.equal(readFileSync(join(w, "CLAUDE.md"), "utf8") === full, true);
     // a symlinked CLAUDE.md is no file: never read through, never written through
     const outside = join(d, "outside.md");
