@@ -1,4 +1,4 @@
-# Context pack for `N1-03`
+# Context pack for `N1-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
@@ -9,12 +9,17 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): Earlier runs' coding sessions on this code took 8–41 min (the 2026-11-07-2 run: builds 9–25, reviews 37–41); N1-01 is the largest feature of this run (curator.mjs, record.sh memory_pr, summary.mjs, memory-branch.sh together) and the brief fixes four features per milestone, so it may run long. The full suite was 701 s at init: a full-suite step gets a 1,500,000 ms timeout. → entries.jsonl:1
 - Discovery (init, affects N1): The brief adds one behaviour to N1-03 beyond the spec: an add that carries an anchor while ## Gotchas is under 15 and the file under 120 lines is applied as a plain add (no eviction), and the PR body (and a harness-log note, a default) name the evicted line of a real eviction as `(in place of: …)`. The `me` run at 15 Gotchas still evicts; a new unit test covers the under-cap case. → entries.jsonl:1
 
+## What it builds on
+
+- 2026-11-08 03:26 · N1-03 · passes: curator.mjs apply checks the cap per tier-1 op (order delete, replace, anchored add, plain add; a breach drops that op alone `over the cap: …`); an anchored add appends while it fits, evicts only past the cap (`evicted`, body `(in place of: …)`, an eviction note); `refused` retired from apply, body and memory_pr. stub-cap gains a replace; decision 2026-11-08-memory-rules-pr created.; tests 1898 → 1900; files lib/curator.mjs, lib/record.sh, prompts/curator.md, tests/unit/curator.test.mjs, tests/checks/memory-branch.sh, … → entries.jsonl:2
+
 ## Lately in the run
 
 - 2026-11-08 03:11 · init · passes: 8 features: N1 4 (per-op cap N1-03, twin guard N1-02, rules PR N1-01, Opus review N1-04), N2 4 (deny list N2-01, auto merge only with its body N2-02, accept/decline verbs N2-03, Opus review N2-04). N2 after N1; N1 ordered by dependency: N1-03, N1-02, N1-01. Check budgets 50/30 from the spec. Every spec default taken; no question. → entries.jsonl:1
 
 ## Current rules
 
+- The tiers and the files: tier 2 is a PR, the twins are guarded, the cap is per operation → journal/decisions/2026-11-08-memory-rules-pr.md
 - The memory curator: itemized operations, a tier the driver derives, a protected list that is fixed → journal/decisions/2026-11-07-memory-tiers.md
 - The gate replaces the lint: `memlint-self` retired, `MEMORY_POLICY`, and the curator's acceptance counted → journal/decisions/2026-11-07-memory-policy.md
 - One writer for project memory: a coding session's `CLAUDE.md` edit is reverted, a fact goes in the entry → journal/decisions/2026-11-07-memory-one-writer.md
@@ -26,6 +31,5 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - The unit tier: node evals become `node:test` files in one process, reported as the suite's PASS/FAIL lines → journal/decisions/2026-11-03-unit-tier.md
 - The trim: 22 checks removed, each with the check that makes its assertions now; five gaps closed; no covered line lost → journal/decisions/2026-11-03-trim.md
 - The suite's tiers: every check file declares `fast` or `slow` on line 2, and `tests/run.sh --tier` runs one tier → journal/decisions/2026-11-03-suite-tiers.md
-- The trace switch: `HARNESS_XTRACE=<dir>` traces every harness process, off unless set → journal/decisions/2026-11-03-suite-coverage.md
 
-_91 older rules: journal/decisions._
+_92 older rules: journal/decisions._
