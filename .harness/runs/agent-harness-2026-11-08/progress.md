@@ -9,6 +9,22 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-08 03:48 · N1-02 · passes
+
+Twins guarded: restrict memory reverts CLAUDE.md, .harness/project.md, .claude/CLAUDE.md and .claude/rules (now -z, unquoted paths); curator FILES, memory_base, memory_foreign, capCheck and the prompt take .claude/CLAUDE.md; memlint lints it on its own cap plus `twin`; STUB_DOT_CLAUDE; decision row, docs, prompts.
+
+- **Files:** lib/record.sh, lib/curator.mjs, lib/memlint.mjs, prompts/curator.md, prompts/coding.md, prompts/parts/where-things-go.md, prompts/parts/where-things-go-readonly.md, tests/stub-claude.sh, tests/checks/memory-one-writer.sh, tests/checks/memlint-run.sh, tests/checks/memory-branch.sh, tests/unit/curator.test.mjs, +8 more
+- **Verified:** Each new check watched red first (one-writer 5/8, memlint-run 1/3, memory-branch 22/23 with the lib changes set aside; the café.md case 7/8 on the old read loop). tests/run.sh memory-one-writer memlint-run memory-branch 35/35; slow files using restrict (entries-survive, curator-run, run-scopes-services-gc, retro-backlog, memory-branch) 188/188; check.sh --fast green, 1069 tests.
+- **Tests:** 1066 → 1069
+- **Dead end:** git stash push -- <files> to watch a red with tests/fixtures/memory/stub-dot-claude.json intent-to-add (git add -N) — stash refuses: 'Entry … not uptodate. Cannot merge'; nothing was stashed, used a saved copy instead
+- **Discovery** (affects N1-04): restrict reads git diff -z with core.quotePath=false: a path git quotes (non-ASCII, tab, quote) was noted as reverted yet stayed tracked (N1-02 review)
+- **Discovery** (affects N1-04, run): lib/prompt.sh checks only a root CLAUDE.md: a project whose memory is .claude/CLAUDE.md alone gets 'this project has no CLAUDE.md' and the harness's routing block (N1-02 review, not fixed)
+- **Discovery** (affects project): memory-branch.sh's last check counts registered worktrees (12 since N1-02's md run): a new run in that file bumps it (agent-harness-2026-11-08 2026-11-08)
+- **Question for Michael:** CLAUDE.local.md is unguarded (*default*, the spec's choice), but it is ignored only when the project's .gitignore names it; this repo's .gitignore and templates/project/ don't, so a session's write would be committed by git add -A and merge. Guard it in restrict's memory spec, or add it to templates/project/.gitignore? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-0/journal/decisions/2026-11-08-memory-rules-pr.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-0/lib/record.sh:366
+- **Proposed change:** N1-04's review should look at lib/prompt.sh:93-99 (the 'no CLAUDE.md' header and routing block for a .claude/CLAUDE.md-only project) and at a symlinked .claude/ getting past restrict (recorded as rejected in the decision; the curator refuses one)
+- **Proposed change:** memory_foreign's admission of .claude/CLAUDE.md has no check: a continue of a .claude-only project reusing its harness-memory branch would cover it
+- *02-N1-02 · claude-opus-5-5*
+
 ### 2026-11-08 03:26 · N1-03 · passes
 
 curator.mjs apply checks the cap per tier-1 op (order delete, replace, anchored add, plain add; a breach drops that op alone `over the cap: …`); an anchored add appends while it fits, evicts only past the cap (`evicted`, body `(in place of: …)`, an eviction note); `refused` retired from apply, body and memory_pr. stub-cap gains a replace; decision 2026-11-08-memory-rules-pr created.
