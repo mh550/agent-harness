@@ -1,0 +1,9 @@
+# One pass of the request inbox (harness requests), started by harness-requests.path. ExecStart is the live checkout's
+# bin/harness; PATH holds no nvm directory: lib/requests.sh finds node through nvm.sh (journal/decisions/2026-10-22-request-inbox.md).
+[Unit]
+Description=harness requests: process the request inbox once
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/projects/agent-harness/bin/harness requests

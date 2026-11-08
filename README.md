@@ -64,6 +64,7 @@ in `queue/runner.log`, prefixed `gc <project>:`; no git prompt, killed after `HA
 | `harness report [--md]` · `trends [--all] [--md] [--by version]` · `attach` | look (on a terminal `report` is a card and a not-passing table, `trends` the newest 15 runs as columns with `<k> older: harness trends --all` and the total; off one, or with `--md`, both are the markdown; `report` reads a run's worktree, else the copy `finish` keeps in its state dir, else the ledger's, so a run gc removed still reports; `report`'s `Lanes` row: the most lanes open at once and lane hours against wall hours; its `Flakes` row: the suite runs that went green only on check.sh's rerun, by check file (`3 · <name> ×2, <name>`, `0` for none); its `Suite runs` row: full and fast suite runs per coding session (`0.2 full and 1.6 fast per coding session (2 full, 16 fast in 10; 20 runs in all)`, `0` for none; the coding prompt asks for one fast-tier run, last); its `Helper` row: the resident helpers that restarted or went off, with each reason (`0 restarts`, or `2 restarts · 1 off (the helper went away ×2, no reply in 120 s)`); `trends --by version`: runs grouped by harness version, medians of cost, cache hit, orientation) |
 | `harness needs [<run>] [--all] [--json]` · `needs done <run>/<n> [--why "<text>"]` | every open item that waits on Michael (a park, a give-up, a failed verify or merge, a run that stopped on its own) as a card: what waits on it, the question or why (the mechanism and its file), where (files with lines, GitHub links), options with one recommended, the commands; block before warn, oldest first; `COLUMNS=60` for the phone; `--all` adds those resolved in the last 7 days; `done` resolves one by hand (read-only but for `done`); each item is a JSON file, `<STATE_ROOT>/<project>/<run>/needs/*.json` (resolved ones in `needs/done/`), what n8n reads |
 | `harness parked [<run>] [--json]` | `harness needs` for text; `--json`: each parked feature (run, project, feature, since, why, question, running, ending, queued, commands) with its needs item's `ref` and `card` (read-only) |
+| `harness requests` | the request inbox once: every pending `~/.local/state/harness/requests/*.json` from n8n's card, a result in `requests/done/<id>.json` each (the path unit runs it; see Steering) |
 | `harness debrief [--dry-run]` | the triage note for every run since the last one (`--dry-run`: print the gathered context only) |
 | `harness context <run-id>` · `context --since "<YYYY-MM-DD HH:MM:SS>"` `[--out <dir>]` | the context bundle without a session: `context.md` (the debrief's context plus a `## Glossary`) and `context.json`, in `--out <dir>` or `~/.local/state/harness/events/<id>/`; prints the directory; read-only |
 | `harness eval run` · `compare` · `probes` | replay a fixed task set under a harness version and compare two results (see [Evals](#evals); costs money) |
@@ -282,6 +283,26 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   <id>`. Anything else (n8n down, a 500, the timeout) is noted `event hook failed (…): <kind>; sent to ntfy` and the
   ntfy post (or `NOTIFY_CMD`) goes out exactly as without it. `NTFY_TOKEN` is never sent to n8n. Every other
   notification goes to ntfy as before; unset, nothing changes (decisions/2026-10-22-event-hook-ntfy-fallback).
+- **Answers from the phone card (the request inbox):** n8n's card writes `~/.local/state/harness/requests/<id>.json`
+  (v1: `answer` or `continue`); the systemd path unit runs `harness requests`, which takes every pending file oldest
+  first under `flock` on `requests/.lock`. An `answer` becomes `harness answer <run> <text>`, a `continue` `harness
+  queue add --continue <run> [--brief …]` then `harness queue start`, except between 03:15 and 04:30 (the backup
+  window: queued, runner not started). Both run as argv calls, never through a shell. Anything else (a third verb, an
+  unknown run, a bad id, an oversize text, `v` not 1, an id already done, a brief that is one option word such as
+  `--now`, a file still unparsable after 10 s, anything that isn't a readable regular file) moves to
+  `requests/rejected/`. Every request gets a result, `requests/done/<id>.json` (`ok`, `exit`, `output`,
+  `runner_started`, `refused`), which the card shows back: "has your answer", "is starting again", "is queued to start
+  again" or "refused: <why>"; the request itself moves to `requests/done/<id>.request.json`, and `requests/requests.log`
+  gets one line (time, id, verb, run, ok or refused, exit; never the text). Install it once (the harness never does):
+  ```
+  harness requests     # makes ~/.local/state/harness/requests (mode 700); prints "requests: none pending (…)"
+  systemctl --user link ~/projects/agent-harness/systemd/harness-requests.path ~/projects/agent-harness/systemd/harness-requests.service
+  systemctl --user enable --now harness-requests.path
+  ```
+  The path unit watches `~/.local/state/harness/requests`; a `HARNESS_STATE` elsewhere needs its glob edited. A call
+  killed mid-request leaves its card a result saying "interrupted after its claim: it may have run".
+  After a unit file changes in git, `systemctl --user daemon-reload`. Undo: `systemctl --user disable --now
+  harness-requests.path harness-requests.service`; the request files stay (decisions/2026-10-22-request-inbox).
 - **Permissions:** the policy (agents merge, push and clean up; only the irreversible is denied; production is gated
   per project) lives in `~/.claude/CLAUDE.md` § "Git, merges and permissions" and the user settings. Install or
   refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.

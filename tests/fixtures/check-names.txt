@@ -712,6 +712,22 @@ harness parked is read-only
 harness parked: an unknown or glob run id is an error
 harness parked: id, why, question, both commands
 harness queue list shows the parked entry with not in origin/main in its reason
+harness requests installs nothing: no systemd directory under XDG_CONFIG_HOME
+harness requests: a bad verb, an unknown run, a parent-directory run, 4001 characters and v 2 are rejected with a result each and reach no inbox.md
+harness requests: a claimed request with no result gets one saying its outcome is unknown
+harness requests: a continue queues the run requested with its brief and starts the runner
+harness requests: a continue that replaces a queued entry keeps a multi-line brief one argument
+harness requests: a duplicate id goes to rejected/ and the first result stands
+harness requests: a half-written file younger than 10 s is left alone and rejected once it is 10 s old
+harness requests: a second call waits on requests/.lock and nothing runs twice
+harness requests: a symlink request is rejected unread
+harness requests: an answer lands in the run's inbox.md byte for byte, quotes, backticks, a command substitution and newlines included
+harness requests: an answer's result is ok, its request moves to done/ and requests.log has one line without the text
+harness requests: an unreadable file, a FIFO and a directory named *.json are rejected, so none is left for the path unit
+harness requests: in the backup window a continue is queued and no runner starts
+harness requests: on the real clock one call waits out a young file's grace
+harness requests: requests run oldest first by mtime, then by name
+harness requests: under a systemd unit the runner starts through systemd-run --user --scope, and outside one directly
 harness start --base: persisted, and the record branch and every lane start from it
 harness start refuses a run id whose tmux session another live run holds; its session lives
 harness start refuses the run id lanes (the slots' directory)
@@ -1335,6 +1351,7 @@ queue.mjs: main gives the CLI's bytes for decode, projects and facts: NUL-separa
 queue.mjs: main with no question is a usage error
 queue.mjs: main's add with no verb or first argument is a usage error and writes nothing
 queue.mjs: main's add writes the entry, makes done and held, prints its path, and numbers past a parked entry
+queue.mjs: main's write replaces an entry with its arguments encoded, a multi-line one on one line
 real limit message: not counted, run completes
 record PR: RECORD_PR=off opens none, noted
 record PR: a harness continue after finish ends again and reuses the open record PR (one pr create for it), its body refreshed
@@ -1383,6 +1400,28 @@ render.mjs: main gives the CLI's bytes, HARNESS_ variables from io.env, a titled
 report shows tokens and quality
 report.md lists the session that peaked at its cap among the peaks over 2 GB
 report: the Flakes row after Tests (n · name ×k), 0 for none, none for an older summary
+requests.mjs: a NUL byte in the text is rejected as a NUL
+requests.mjs: a brief of 2001 characters is rejected, 2000 is ok
+requests.mjs: a brief that is one option word is refused, so no queue or continue loop reads it as a flag
+requests.mjs: a run not among the real runs is rejected with state_of's words
+requests.mjs: a run with a parent-directory segment is rejected by its pattern before any lookup
+requests.mjs: a valid answer is ok and keeps its text byte for byte
+requests.mjs: a valid continue is ok with and without a brief, and an empty brief is none
+requests.mjs: an array, a string and null are not a request object
+requests.mjs: an empty text and a text of 4001 characters are rejected, 4000 is ok
+requests.mjs: an id already in done is a duplicate
+requests.mjs: an id of 7 characters or with a slash is rejected and named nowhere
+requests.mjs: logLine names id, verb, run, the status and exit and never the text
+requests.mjs: resultJson has the contract's ten keys in order and cuts output at 2000 bytes on a character boundary
+requests.mjs: resultName is the id, else the file name when it passes the id rule, else none
+requests.mjs: the backup window holds 03:15:00 and 04:29:59 local, not 03:14:59 or 04:30:00
+requests.mjs: the result CLI prints the result JSON and appends its log line, and none for a missing name
+requests.mjs: the result CLI's --backup-window 1 gives the backup refusal
+requests.mjs: the validate CLI prints labelled lines and writes text and brief byte for byte
+requests.mjs: the validate CLI rejects a symlink unread, whatever it points at
+requests.mjs: unparsable text waits at 5 s and is rejected at 11 s
+requests.mjs: v 2 is rejected
+requests.mjs: verb merge is rejected
 resolve fallbacks: a lane's sync_main hands its conflict to resolve: refused is 2 with no record, unresolved the main_conflict record with tried
 resolve fallbacks: a refused session is deferred: no needs record, rebase-M2 back, then it re-bases and merges after the wait
 resolve fallbacks: a session that gives up counts as escalated in summary.json and report.md's Conflicts row
@@ -1704,6 +1743,8 @@ the queue runner runs harness gc <project> --all-merged --deps once per project,
 the queue starts no run past the weekly budget
 the rendered coding prompt has the deepEqual and bounded-rerun rule
 the report lists the review role when a review ran
+the request units pass systemd-analyze --user verify, or the check says it skipped
+the request units: a path unit on requests/*.json starts a oneshot service running bin/harness requests
 the restart line says why: no reply in <n> s, a bad header, a wrong id, the helper gone
 the retro prompt carries the end reason
 the run end goes out before the retro, once report.md is pushed
