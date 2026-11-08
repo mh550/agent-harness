@@ -394,6 +394,17 @@ harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref
 harness parked --json: today's keys for parked features only, plus ref and card
 harness parked is harness needs for text: the parked card's question from INBOX.md, run, do
 harness queue list shows the parked entry with not in origin/main in its reason
+harness requests: a bad verb, an unknown run, a parent-directory run, 4001 characters and v 2 are rejected with a result each and reach no inbox.md
+harness requests: a continue queues the run requested with its brief and starts the runner
+harness requests: a duplicate id goes to rejected/ and the first result stands
+harness requests: a half-written file younger than 10 s is left alone and rejected once it is 10 s old
+harness requests: a second call waits on requests/.lock and nothing runs twice
+harness requests: a symlink request is rejected unread
+harness requests: an answer lands in the run's inbox.md byte for byte, quotes, backticks, a command substitution and newlines included
+harness requests: an answer's result is ok, its request moves to done/ and requests.log has one line without the text
+harness requests: in the backup window a continue is queued and no runner starts
+harness requests: on the real clock one call waits out a young file's grace
+harness requests: requests run oldest first by mtime, then by name
 harness start refuses a run id whose tmux session another live run holds; its session lives
 helper health: build adds helper from the state dir's run.log, every segment's; zeros for a run with none or no log
 helper health: helperHealth counts run.log's helper restarted: and helper off: lines and each distinct reason, zeros for none

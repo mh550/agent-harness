@@ -59,6 +59,11 @@
 #   harness pause|resume|stop <run-id>           between sessions; the current session finishes first
 #   harness stop <run-id> --why "<text>"         the same, and harness-log.md and ended say "stopped by Michael: <text>"
 #   harness answer <run-id> <text>               an answer for the sessions (lands in the run's INBOX.md)
+#   harness requests                             the request inbox: each <state>/requests/*.json (from n8n), oldest first
+#                                                under flock: answer → harness answer, continue → queue add --continue and
+#                                                queue start (never 03:15–04:30); a result in requests/done/<id>.json and a
+#                                                requests.log line (never the text); anything else to requests/rejected/.
+#                                                The systemd path unit runs it (systemd/, README Steering)
 #   harness parked [<run-id>] [--json]           harness needs (text); --json: the parked features with their ref and card
 #   harness needs [<run-id>] [--all] [--json]    every open item that waits on Michael (--all: and those resolved in 7 days)
 #   harness needs done <run>/<n> [--why "<t>"]   resolve one by hand
@@ -898,6 +903,7 @@ case ${1:-help} in
   memlint) p=$(project_dir "${2:?usage: harness memlint <project>}") && node "$HARNESS_HOME/lib/memlint.mjs" "$p" ;;
   debrief) shift; exec "$HARNESS_HOME/lib/debrief.sh" "$@" ;;
   context) shift; exec "$HARNESS_HOME/lib/context.sh" "$@" ;;
+  requests) shift; exec "$HARNESS_HOME/lib/requests.sh" "$@" ;;
   sync) shift; exec "$HARNESS_HOME/lib/sync.sh" "$@" ;;
   backlog) shift; exec "$HARNESS_HOME/lib/backlog.sh" "$@" ;;
   memory) shift; exec "$HARNESS_HOME/lib/memory.sh" "$@" ;;
