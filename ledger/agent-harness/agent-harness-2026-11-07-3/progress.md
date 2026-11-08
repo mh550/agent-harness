@@ -1,0 +1,287 @@
+<!-- harness: rendered from entries.jsonl after every session; edits here are overwritten -->
+# Progress — run `agent-harness-2026-11-07-3` (agent-harness)
+
+What this file is: the run's journal, rendered by the harness from `entries.jsonl`, newest entry first (the 15 newest in full; every entry is in `progress-archive.md`). Each entry is one session: its feature, outcome, summary, what it tried, what it found.
+
+The run builds A1–A4 of `docs/specs/2026-10-22-n8n-events.md`, four milestones in series: **A1** `notify` learns `kind=`/`feature=` and, with `EVENT_URL` set, POSTs a v1 event for park, needs_michael, blocked and debrief through the stub curl, ntfy as the fallback; **A2** the debrief's gatherer moves into `lib/context.sh`, `harness context` writes a bundle (context.md with an ID glossary by `lib/glossary.mjs`, context.json) that a routed event points at; **A3** `harness requests` turns n8n's request files (`answer`, `continue`) into `harness answer` and `harness queue add --continue`, under a systemd path unit Michael installs; **A4** the docs and the live checklist. Inert unless `EVENT_URL` or the request inbox is configured; never a real HTTP request.
+
+How to read the feature list: `feature_list.json` is in priority order; a feature runs when it isn't passing and its `after` all pass. Each milestone's plan feature writes `docs/plans/2026-11-07-A<n>-….md`; A2 and A3 end in a review feature, A1's review is folded into A1-03, A4 is one docs feature. When every feature of a milestone passes the harness verifies it and merges it into `main` (`MERGE_POLICY=auto`).
+
+How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
+
+### 2026-11-07 20:45 · A4-01 · passes
+
+Fixed the verify's finding: docs/architecture.md's lib/debrief.sh row said the notification passes since=; it passes bundle=$WS (lib/debrief.sh:251). No other since= left in the docs.
+
+- **Files:** docs/architecture.md
+- **Verified:** grep since= in architecture.md and README: none; check.sh --fast green 1064 tests
+- **Tests:** 1064 → 1064
+- *15-A4-01 · claude-sonnet-5-5*
+
+### 2026-11-07 20:42 · verify A4 · not yet
+
+A4-01 steps 1-5 and 7 hold (fast 1064/1064, full 1898 green). Step 6 fails: a review of the run's docs found docs/architecture.md:58 (lib/debrief.sh row) still saying the debrief notification passes `since=` its SINCE; lib/notify.sh has no since= key and debrief.sh:251 passes bundle="$WS". Fix: replace that clause with bundle=$WS.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| A4-01 | 1 | grep -c EVENT_URL README.md; grep -c harness-requests.path README.md; sed -n 262,305p README.md | 3 and 3; Steering's Notifications paragraph names park/needs-you/blocked/debrief, ntfy fallback, unset = unchanged; 'Answers from the phone card' bullet: requests/, done/<id>.json result, link + enable --now commands | yes |
+| A4-01 | 2 | grep -n 'EVENT_TIMEOUT=5' lib/config.sh templates/user/config.sh | one line each (config.sh:71, template:10); template:9 '# EVENT_URL=…' with a one-line comment under Notifications; defaults EVENT_URL="" EVENT_TIMEOUT=5 match | yes |
+| A4-01 | 3 | grep -nF each name in docs/architecture.md; grep -c 'harness context\|harness requests' bin/harness | §3 rows 58-66 (notify.sh, notify.mjs event, context.sh, glossary.mjs, requests.sh/.mjs), §4 rows 163-164 (events/<id>/ 30-day retention, requests/ cite fixture + spec), §7 rows 427-429 (guards, backup window), §10 EVENT_URL row; bin/harness header 2 and 1 | yes |
+| A4-01 | 4 | head + grep Finding/Choice/Rejected on the three 2026-10-22 decision files; ls journal/decisions \| grep -vE '^YYYY-MM-DD-' | all three exist with title, provenance, Finding/Choice/Rejected; no numbered file; cited from architecture.md:63/427, :59, :54/:65 | yes |
+| A4-01 | 5 | cat docs/plans/2026-10-22-n8n-events-live.md; its sample request through node lib/requests.mjs validate in a temp dir | stages with EVENT_URL/EVENT_TIMEOUT in ~/.config/harness/config.sh, harness context test, event → n8n / event hook failed lines, undo; link + enable --now units, answer test into <state>/<project>/<run>/inbox.md and done/<id>.json, disable undo, backup window, reset-failed; sample validates 'verdict ok' | yes |
+| A4-01 | 6 | Sonnet subagent review of git diff 8e05980 HEAD (the run's docs: the step's merge-base diff is now only A4's 2 files) against bin/, lib/, systemd/, fixtures | one finding unfixed: docs/architecture.md:58 says the debrief notification passes `since=` its SINCE; lib/notify.sh:2,26 has no since key and lib/debrief.sh:251 passes bundle="$WS" | no |
+| A4-01 | 7 | bash tests/run.sh --tier fast; init's full check.sh | 1064/1064 checks passed, exit 0; full: green in 709 s, 1898 tests | yes |
+
+- **Discovery** (affects run): A4-01 step 6's diff `git diff $(git merge-base HEAD origin/main)` covers only A4's own commits once A1-A3 merged per milestone; the run's docs as one piece are `git diff 8e05980 HEAD` (main before A1's merge).
+- *204000-verify-A4 · claude-opus-5-5*
+
+### 2026-11-07 20:28 · A4-01 · passes
+
+Docs checked against code: README, config template, lib/config.sh, decisions and architecture already held from A1-A3. Added the spec/fixture citations (contract v1) to architecture §4 and wrote docs/plans/2026-10-22-n8n-events-live.md (stages, commands, how to tell, undo). Subagent review fixed the inbox.md path.
+
+- **Files:** docs/architecture.md, docs/plans/2026-10-22-n8n-events-live.md
+- **Verified:** grep counts (EVENT_URL 3, harness-requests.path 3, harness context 2, harness requests 1), EVENT_TIMEOUT=5 in both config files, 3 decision files, none numbered; subagent review of docs diff, 1 finding fixed; check.sh --fast green 1064 tests
+- **Tests:** 1064 → 1064
+- *14-A4-01 · claude-sonnet-5-5*
+
+### 2026-11-07 20:24 · verify A3 · passes
+
+A3-01..05 hold. Full suite 1898/1898 (710 s), fast 1064/1064, unit 538/538. Re-ran every step by hand in a throwaway state: verbatim answer, continue+runner via tmux shim, 03:30 refusal, 6 rejections, grace, lock, unit PATH without nvm, systemd-analyze. Reverting C1's fix turns its check red. Plan-recorded deviations accepted: request-files.sh name, duplicate keeps first result, unit PATH, --out.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| A3-01 | 1 | read docs/plans/2026-11-07-A3-request-inbox.md | §1 A3-02 (requests.mjs, unit tier), §2 A3-03 (requests.sh, bin/harness, request-files.sh # tier: fast), §3 A3-04 (units, decision, README, architecture, checks in the same fast file); each names files and checks first | yes |
+| A3-01 | 2 | compared plan §1.1/§1.3/§1.4 with spec §A3 and Contracts | 11-rule table matches spec (v==1, id ^[A-Za-z0-9-]{8,64}$ + not in done, verb, run ^[A-Za-z0-9._-]+$ + state_of, text 1-4000, brief <=2000, NUL, 10 s grace) each with an exact reason string; result's ten keys in contract order, output 2000 bytes; log line fields without text | yes |
+| A3-01 | 3 | read plan §2.1-2.5 | flock requests/.lock, find ... sort mtime then name, umask 077 mkdir (700), argv calls for answer/continue/queue start, 03:15-04:30 refusal, temp name + rename, claim to done/<id>.request.json or rejected/; runner start seen by unsetting HARNESS_NO_RUNNER with gc-tmux's tmux shim, asserting runner_started and the 'queue runner started' line | yes |
+| A3-01 | 4 | read plan §3.1, §3.2, §3.4 | path unit PathExistsGlob=…/requests/*.json, Unit=, WantedBy=default.target; service Type=oneshot, absolute ExecStart; both install commands; systemd-analyze check with skip note. Environment=PATH holds no node dir: plan's recorded default (requests.sh sources nvm.sh); I confirmed node is found under that PATH | yes |
+| A3-01 | 5 | read plan §1.7, §2.7, §3.2 and the defaults | checks named for verbatim answer, continue+runner, 03:30, each rejection incl ../x, 4001, v 2, duplicate, young file, log without text, units verified; defaults no third verb, no batching, live-run continue. File is tests/checks/request-files.sh not requests-inbox.sh: the name lint (suite-runner.sh, decisions/2026-11-05-suite-shape) forbids inbox being part of a name; plan intro says so | yes |
+| A3-01 | 6 | bash tests/run.sh --tier fast | 1064/1064 checks passed | yes |
+| A3-02 | 1 | node --test --test-isolation=none --test-name-pattern requests.mjs tests/unit/requests.test.mjs; read assertions; grep both check-name fixtures | 22/22 pass; asserts ok answer/continue with and without brief, each named rejection with its reason (v 2, 7-char id, id with /, done duplicate, merge, ../x with x in runs, nosuch, empty, 4001, 2001 brief, NUL), wait at 5 s/rejected at 11 s, window 03:15:00/04:29:59 true 03:14:59/04:30:00 false, ten keys joined in order, 2000-byte cut on é, logLine without rm -rf; all 22 names in both fixtures, LC_ALL=C sort -c ok. Red phase not re-observable | yes |
+| A3-02 | 2 | head -3 lib/requests.mjs; grep ^export; node --check; node lib/requests.mjs validate <file> --runs parked,stopped --done <d> --now <epoch> --out <d> | usage header; exports validateRequest, inBackupWindow, resultJson, logLine (+resultName); node --check ok; labelled lines verdict/name/id/verb/run/window; text written byte for byte to --out (the plan's added required flag; without it rc 2 usage); requests.sh has no jq/JSON parsing | yes |
+| A3-02 | 3 | node --test --test-isolation=none tests/unit/*.test.mjs; bash tests/run.sh unit-tier | 538 pass 0 fail; 539/539 checks passed | yes |
+| A3-02 | 4 | bash tests/run.sh --tier fast; bash tests/run.sh | 1064/1064; full 1898/1898 checks passed | yes |
+| A3-03 | 1 | own script (tests/lib.sh suite_setup+status_stubs): the step's exact request JSON in requests/, harness requests | cmp of jq -r .text with proj/parked/inbox.md identical; done/req-0001-aaaa.json ok true exit 0 verb answer; request in done/req-0001-aaaa.request.json; one log line 'id=req-0001-aaaa verb=answer run=parked ok exit=0', grep -c 'rm -rf' 0; requests/ made by harness is 700 (a pre-existing 775 dir keeps its mode: recorded default). Check request-files.sh asserts the same | yes |
+| A3-03 | 2 | continue request for stopped with brief, PATH=tmux shim, HARNESS_NO_RUNNER= ; then HARNESS_NOW+12600 (03:30 UTC) | queue/0002-continue-stopped.args decodes continue\|stopped\|--queued\|--requested\|--brief\|Do the brief thing.; runner_started true, refused null, output has 'queue runner started (tmux h-queue)', shim logged new-session -d -s h-queue; at 03:30 entry queued, no tmux calls, no h-queue session, refused 'backup window 03:15–04:30: queued, runner not started' | yes |
+| A3-03 | 3 | six bad requests in one pass; half-written {"v":1, 2 s old then HARNESS_NOW+10; flock holder 2 s + two concurrent calls | 5 in rejected/ with done/<id>.json ok false exit null and the reason; inbox md5s unchanged; duplicate in rejected/, first result cmp-identical (plan §1.3 default: no second result over the first, spec 'ignored: idempotent'); half file left, no result, then rejected with not-JSON reason; both lock calls rc 0 after ~1.8 s, one result, one log line, text once | yes |
+| A3-03 | 4 | grep -c 'eval\\|bash -c' lib/requests.sh; bash -n lib/requests.sh bin/harness; read requests.sh and bin/harness | 0; bash -n ok; set -uo pipefail and header; bin/harness:906 dispatch, header lines 62-66; "$H" answer "$run" "$text"; result to done/.<n>.json.tmp then mv -f | yes |
+| A3-03 | 5 | bash tests/run.sh requests-inbox queue-view; bash tests/run.sh request-files queue-view | literal name matches only queue-view (13/13); with the file's real name 31/31 checks passed; all 18 request-files names in both fixtures | yes |
+| A3-03 | 6 | bash tests/run.sh --tier fast; bash tests/run.sh | 1064/1064; 1898/1898 | yes |
+| A3-04 | 1 | read systemd/*; copied both with ExecStart=$PWD/bin/harness, XDG_CONFIG_HOME=<tmp> systemd-analyze --user verify; read request-files.sh checks | PathExistsGlob=%h/.local/state/harness/requests/*.json, Unit=harness-requests.service, WantedBy=default.target, Type=oneshot, ExecStart=…/bin/harness requests; systemd-analyze rc 0, no output; check copies to $T/units, asserts rc 0 and no error line, prints 'skipped: no systemd-analyze' otherwise | yes |
+| A3-04 | 2 | XDG_CONFIG_HOME=$T/cfg harness requests (own script) and the check | rc 0, $T/cfg does not exist afterwards; check 'harness requests installs nothing…' asserts ! -e $T/cfg/systemd | yes |
+| A3-04 | 3 | read journal/decisions/2026-10-22-request-inbox.md, README ## Steering, docs/architecture.md | title, provenance, finding/choice/rejected; dir+mode, verbs, validation, result/log, backup window, path unit not runner, defaults marked *default*; rejected GitHub API INBOX, queue runner, third verb; README paragraph with both systemctl commands and done/<id>.json; architecture §3 rows 65-66, §4 row 164, §7 rows 428-429 | yes |
+| A3-04 | 4 | bash tests/run.sh requests-inbox; bash tests/run.sh request-files | literal: 'no check file matches: requests-inbox' (renamed by the plan for the name lint); request-files 18/18 checks passed | yes |
+| A3-04 | 5 | bash tests/run.sh --tier fast | 1064/1064 checks passed | yes |
+| A3-05 | 1 | read docs/plans/2026-11-07-A3-review.md | one Opus round on the diff command as written; answers the four questions (argv, paths, at most once, grace) with file/function refs; 1 Critical, 3 Important, 8 Minor each with where and what was done; a second round not run (allowed: 'a second only if' bounds rounds), reason given | yes |
+| A3-05 | 2 | reverted C1's queue.mjs write line in bin/harness to printf, bash tests/run.sh request-files, restored (cmp identical); read I1/I2/I3 tests; bash -n, node --check | FAIL 'a continue that replaces a queued entry keeps a multi-line brief one argument' (17/18), green after restore; I1 unit test option-word brief, I2 check systemd-run --user --scope stub, I3 check unreadable/FIFO/dir rejected, all passing; bash -n and node --check ok | yes |
+| A3-05 | 3 | read decision file, architecture §3/§4/§7 and command list, README Steering | decision complete with *default* marks and §A4's rejected list; architecture bin/harness row lists requests, request inbox rows; README has both install commands and the card's four texts | yes |
+| A3-05 | 4 | bash tests/run.sh (background, 1,800,000 ms timeout) | 1898/1898 checks passed, wall 709.8 s, exit 0 (my C1 mutation overlapped it for ~10 s; still all green, and the harness's init full run on this tree was green 1898) | yes |
+
+- **Discovery** (affects run): Step texts naming tests/checks/requests-inbox.sh and `bash tests/run.sh requests-inbox` match no file: the check file is tests/checks/request-files.sh (the name lint). A3-03 step 3's 'duplicate gets ok==false result' is by design not written: the first result stands (plan §1.3, A3-01's open question).
+- **Proposed change:** A verify session that mutates code to prove a check catches a bug should not do it while its background full suite runs: run the mutation after the full run ends.
+- *200859-verify-A3 · claude-opus-5-5*
+
+### 2026-11-07 19:57 · A3-05 · passes
+
+A3 review: 1 Critical, 3 Important, 8 Minor. Fixed C1 (queue add --continue rewrote a queued entry raw, so a brief's lines became continue options), I1 (brief that is one option word refused), I2 (runner via systemd-run --scope under the unit), I3 (unreadable/non-regular *.json rejected), M1, M2, M5. Review file, decision, architecture, README.
+
+- **Files:** bin/harness, lib/queue.mjs, lib/requests.mjs, lib/requests.sh, tests/checks/request-files.sh, tests/unit/queue.test.mjs, tests/unit/requests.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-07-A3-review.md, journal/decisions/2026-10-22-request-inbox.md, docs/architecture.md, +1 more
+- **Verified:** Each finding checked before it was fixed; 8 new tests (4 unit, 4 checks) watched red, then green. request-files + unit-tier 557/557; the slow files that use queue add --continue 174/174; full suite (check.sh) green in 724 s, 1898 tests; fast tier green after the last edit. On this box, a process started in a systemd-run --scope outlived a oneshot service, and a plain background one died with it.
+- **Tests:** 1890 → 1898
+- **Dead end:** the I2 check matching the systemd-run line with $H — tests/lib.sh's H is tests/../bin/harness, while requests.sh's is the resolved HARNESS_HOME path: match /.*/bin/harness
+- **Discovery** (affects project): bin/harness's cmd_continue and queue add match --now, --queued, --requested, --automatic and --keep-attempts anywhere in the args, not in pairs, so a value equal to a flag is read as that flag (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects project, A4): A tmux server first started from a systemd oneshot dies with the oneshot's cgroup: start it via systemd-run --user --scope when INVOCATION_ID is set (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects A4): A4's live checklist should include running systemctl --user reset-failed harness-requests.path when the path unit has failed (five restarts in 10 s).
+- **Proposed change:** A later run: parse cmd_continue's and queue add's flags as option-and-value pairs (bin/harness), so the option-word brief refusal in lib/requests.mjs can go (docs/plans/2026-11-07-A3-review.md I1)
+- *13-A3-05 · claude-opus-5-5*
+
+### 2026-11-07 19:29 · A3-04 · passes
+
+Shipped systemd/harness-requests.path (PathExistsGlob=%h/.local/state/harness/requests/*.json) and .service (oneshot, ExecStart the live bin/harness requests); 3 checks in request-files.sh (unit lines, systemd-analyze --user verify on copies pointed at this checkout, no XDG_CONFIG_HOME/systemd); decision 2026-10-22-request-inbox; README Steering paragraph with install; architecture §3/§4/§7.
+
+- **Files:** systemd/harness-requests.path, systemd/harness-requests.service, tests/checks/request-files.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-10-22-request-inbox.md, README.md, docs/architecture.md
+- **Verified:** Two unit checks FAIL before systemd/ existed (the install check passes by design: requests.sh never installed anything); then bash tests/run.sh request-files 15/15; by hand systemd-analyze --user verify exits 0 on the units and 1 with ExecStart=/nonexistent (Command … is not executable), XDG_CONFIG_HOME untouched; check.sh --fast green in 119 s, 1056 tests.
+- **Tests:** 1053 → 1056
+- **Discovery** (affects A4): The README's request-inbox paragraph is a Steering bullet after Notifications ('Answers from the phone card'); A4's live checklist can link it rather than repeat the install
+- **Discovery** (affects A3-05, A4): architecture.md now has Request inbox rows in §3 (lib/requests.sh, lib/requests.mjs), §4 and §7 (Request inbox, Backup window); A3-05 corrects them as built, A4 needn't add more
+- **Proposed change:** A3-04 step 1 and 4 name tests/checks/requests-inbox.sh; the file is tests/checks/request-files.sh (A3-01's name-lint fix), and `bash tests/run.sh requests-inbox` is `bash tests/run.sh request-files`
+- *12-A3-04 · claude-opus-5-5*
+
+### 2026-11-07 19:23 · A3-03 · passes
+
+lib/requests.sh (harness requests): flock on requests/.lock, *.json oldest by mtime then name, each judged by requests.mjs validate, claimed into done/<id>.request.json, run as one argv call (answer; queue add --continue [--brief] then queue start outside 03:15–04:30), result written to a temp name and renamed, one log line; rest to rejected/. bin/harness dispatch and header.
+
+- **Files:** lib/requests.sh, bin/harness, tests/checks/request-files.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** request-files.sh written first: 0/11 red, then 11/11 (5.5 s, fast tier); bash tests/run.sh request-files queue-view 24/24; xtrace 13/13; fast tier 1053/1053 (check.sh --fast green in 119 s); bash -n lib/requests.sh bin/harness; grep -c 'eval\|bash -c' lib/requests.sh prints 0.
+- **Tests:** 1876 → 1887
+- **Dead end:** node -e 'import(process.argv[1])' "$MJS" for BACKUP_REFUSAL — requests.mjs's isMain sees argv[1] as itself and runs its CLI (usage error): the path goes in by env (M=$MJS) instead
+- **Dead end:** a bare wait for the two lock-contending calls — status_stubs' live driver (sleep 600) is a job of the check's shell: wait on the two pids
+- **Discovery** (affects project): Every executable lib/*.sh needs the xtrace guard line ([[ -z ${HARNESS_XTRACE:-} ]] || source …/xtrace.sh) once, or xtrace.sh's guard check fails (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects project): wait_for runs a command, not a string: a negation or variables go through wait_for <s> eval '<expr>' (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects A3-04, A3-05): requests.sh writes no result when done/<name>.json exists (a duplicate, or a bad file named for a done id): only the log line; a symlink is moved unread and gets 'the request is not a regular file'
+- **Discovery** (affects A3-04): requests.sh's checks are tests/checks/request-files.sh (11 names, fast, 5.5 s); A3-04's unit checks go in the same file
+- **Proposed change:** A3-03 step 3 asks the duplicate for a result with ok == false; the plan (§1.3) keeps the first result byte-identical and moves the duplicate to rejected/ with a refused log line, which is what was built and checked
+- **Proposed change:** A3-03 step 5 and A3-04 step 4 should read `bash tests/run.sh request-files …` (the plan's name; requests-inbox.sh fails the name lint)
+- *11-A3-03 · claude-opus-5-5*
+
+### 2026-11-07 19:13 · A3-02 · passes
+
+lib/requests.mjs: validateRequest (the plan's 11 rules in order, exact reasons; id/verb/run set only once validated), inBackupWindow + BACKUP_REFUSAL, resultJson (ten keys, output cut at 2000 bytes on a char boundary), resultName, logLine (takes no text), and validate/result CLIs. 19 unit tests, fixtures made by n8n-home's buildRequest at 859b25a.
+
+- **Files:** lib/requests.mjs, tests/unit/requests.test.mjs, tests/fixtures/requests/answer.json, tests/fixtures/requests/continue.json, tests/fixtures/requests/continue-brief.json, tests/fixtures/requests/README.md, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** Red first (ERR_MODULE_NOT_FOUND), then node --test tests/unit/requests.test.mjs 19/19; all units 534/534; bash tests/run.sh unit-tier 535/535; check.sh --fast green, 1042 tests (1023 before). node --check lib/requests.mjs.
+- **Tests:** 1857 → 1876
+- **Discovery** (affects A3-03): requests.mjs result --id - prints no result JSON and only appends the log line (a request with no usable name); for a duplicate, bash ignores result's stdout so done/<id>.json stays the first's
+- **Discovery** (affects A3-03): validate's done set reads <done>/*.json names, stripping .request.json or .json, so a claim counts; window is judged at --now in the process's TZ; text/brief land in --out only for verdict ok
+- **Discovery** (affects A3-03, A3-05): Request fixtures come from n8n-home's buildRequest (tests/fixtures/requests/README.md holds the generator): change a value with jq, never hand-type a shape
+- **Proposed change:** A3-02 step 1 lists 18 named cases; the plan's §1.5 result CLI got a 19th unit test (the result CLI prints the JSON and appends the log line, none for --id -).
+- *10-A3-02 · claude-opus-5-5*
+
+### 2026-11-07 19:07 · A3-01 · passes
+
+Wrote docs/plans/2026-11-07-A3-request-inbox.md: requests.mjs's validation table with exact reason strings, result JSON, log line and CLI; harness requests' pass (flock, order, claim-then-run, argv calls, backup window, real-clock grace); the runner start seen through gc-tmux's tmux shim; both units (verified with systemd-analyze here); 29 checks named with tiers.
+
+- **Files:** docs/plans/2026-11-07-A3-request-inbox.md
+- **Verified:** fast tier green (check.sh --fast: cached, 1857 tests; the plan is outside the key). Drafted units passed systemd-analyze --user verify (exit 0; a bad ExecStart exits 1). The name lint loop flagged requests-inbox vs inbox; request-files clean. n8n-home 859b25a read for D25, buildRequest and renderResult.
+- **Tests:** 1857 → 1857
+- **Dead end:** tests/checks/requests-inbox.sh as the steps name it — suite-runner.sh's name lint fails it: inbox.sh's name is part of it
+- **Dead end:** DirectoryNotEmpty= on requests/ — done/, rejected/, requests.log, .lock keep it true: systemd restarts the service at once, 5 starts in 10 s fail the path unit (systemd.path(5))
+- **Discovery** (affects project): A check file name may not hold or sit inside another (suite-runner.sh namelint): requests-inbox.sh fails on inbox.sh (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects A3-02, A3-03, A3-05): n8n writes requests/<id>.json in one write, no rename (its D25); answer 1-<h> before continue 2-<h>; its card needs a string result id
+- **Discovery** (affects A3-03, A3-04, A3-05): The check file is tests/checks/request-files.sh (the plan's intro); runner start is seen via gc-tmux.sh's tmux shim with HARNESS_NO_RUNNER unset (plan 2.5)
+- **Discovery** (affects A3-03, A3-05): A duplicate id keeps the first done/<id>.json as it is and goes to rejected/ (plan 1.3), not A3-03 step 3 ok==false result
+- **Discovery** (affects A3-03, A3-04): systemd: a path unit restarts its service at once while the glob holds; 5 starts in 10 s fail it. One call waits out a young file (plan 2.4)
+- **Question for Michael:** A duplicate request id (default): moved to requests/rejected/, the first result left as it is, a refused log line; no second result. Keep, or write the duplicate's refusal somewhere n8n reads? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/docs/plans/2026-11-07-A3-request-inbox.md:101
+- **Question for Michael:** A rejected request's result has exit: null (default: no command ran; n8n's card shows refused first). Keep null, or an integer like 2? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/docs/plans/2026-11-07-A3-request-inbox.md:101
+- **Proposed change:** A3-03 steps 1-5 and A3-04 steps 1 and 4: tests/checks/requests-inbox.sh -> tests/checks/request-files.sh (the name lint, suite-runner.sh:207); step 5's command is bash tests/run.sh request-files queue-view
+- **Proposed change:** A3-03 step 3: the duplicate id ends in rejected/ with done/req-0001-aaaa.json unchanged (cmp), not a second ok==false result
+- **Proposed change:** A3-04 step 1: PathExistsGlob= only (DirectoryNotEmpty= loops on done/); A3-01 step 4's Environment=PATH= with node's directory is PATH without nvm, lib/requests.sh sourcing nvm.sh as lib/debrief.sh does
+- *09-A3-01 · claude-opus-5-5*
+
+### 2026-11-07 18:55 · verify A2 · passes
+
+All 5 A2 features hold. Full suite 1857/1857, fast 1023/1023, context-bundle/event-run/queue-debrief/flakes-run green. Independent diff: origin/main's debrief --dry-run context equals the branch's but the appended ## Glossary. Glossary CLI on fixtures resolves D24 (2 files, newest first), N1-01, M8, D-H1; Q99 unresolved. dj checkout clean.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| A2-01 | 1 | read docs/plans/2026-11-07-A2-context-bundle.md §1-§3 | §1 A2-02 (glossary.mjs, fixtures, unit tier fast), §2 A2-03 (context.sh, context.mjs, bin/harness, context-bundle.sh fast by the 30 s rule), §3 A2-04 (context.json, retention, notify hook; event-run slow); each names files and checks first | yes |
+| A2-01 | 2 | read docs/plans/2026-11-07-A2-context-bundle.md §1.3 fixture table | lists feature_list.json from dj .harness/runs/dj-2026-10-17 (desc cut 300), docs/decisions.md D1/D24/D36 rows, park inbox.md, text.md with D24 N1-01 M8 D-H1 Q99, provenance in tests/fixtures/glossary/README.md, D-H1 against ### D-H1 · heading, and each ID's resolution | yes |
+| A2-01 | 3 | read docs/plans/2026-11-07-A2-context-bundle.md §1.1-1.2 | spec regexes verbatim (features, milestones not followed by -\d, D\d+/D-H\d+ before milestones), sources in order, 300 chars stripped, newest file first, source <path>:<line>, never guessed; exports findIds resolveIds glossaryMarkdown strip fsReader | yes |
+| A2-01 | 4 | read docs/plans/2026-11-07-A2-context-bundle.md §2.1 | line table moving alive, rec_dir, fence, capped, run_context, rate_info, spend, names, the { … } > $CTX block and CMAX cut into context_runs; caller provides STATE_ROOT Q H LEDGER SINCE CTX WS F MET; glossary kept apart; check (b) diffs dry-run vs --since with glossary cut | yes |
+| A2-01 | 5 | read docs/plans/2026-11-07-A2-context-bundle.md §2.2, §3.1-3.4 | CLI with header lines, default out <STATE_ROOT>/events/<id>/, no harness report; context.json block with every spec key; built by lib/context.mjs; 30-day retention on write with touch -d check; notify_event bundle before the POST, context its path, null + note on failure | yes |
+| A2-01 | 6 | bash tests/run.sh --tier fast | 1023/1023 checks passed (wall 120.7 s); harness init full suite 1857/1857, 0 FAIL | yes |
+| A2-02 | 1 | node --test --test-isolation=none tests/unit/*.test.mjs; read tests/unit/glossary.test.mjs; LC_ALL=C sort -c on both name lists | 515/515 pass; 18 glossary.mjs tests assert findIds order 'N1-01 D24 D-H1 M8 Q99' with kinds, no N1/H1, D24 row text 300 chars at docs/decisions.md:18, N1-01 desc + ' (milestone N1)', M8 two headings newest first, D-H1 heading, D24 two files order swaps with mtimes, D1 decision+milestone, Q99 unresolved, markdown lines; all 18 in both lists, sorted | yes |
+| A2-02 | 2 | diff fixtures vs git -C ~/projects/dj-crate-streaming show 38ef992:docs/decisions.md / 385d31c:README.md, architecture.md; git status --porcelain there | decisions.md and README.md fixtures byte-equal to the cited lines; architecture.md equal but one blank separator line; README.md has a provenance line per fixture; dj status empty (clean, as the session's before-file) | yes |
+| A2-02 | 3 | head lib/glossary.mjs; grep ^export; node --check; node lib/glossary.mjs tests/fixtures/glossary/wt …/feature_list.json < text.md; grep jq -n in lib bin | usage header; exports findIds resolveIds glossaryMarkdown strip knownIds fsReader main; check ok; CLI prints {glossary:[N1-01,D24×2 newest first,D-H1,M8×2], unresolved:[Q99]}; no bash builds glossary JSON | yes |
+| A2-02 | 4 | node --test --test-isolation=none tests/unit/*.test.mjs; bash tests/run.sh unit-tier | 515/515 pass, 0 fail; bash tests/run.sh unit-tier: 515/515 then 516/516 checks passed | yes |
+| A2-02 | 5 | bash tests/run.sh --tier fast | 1023/1023 checks passed (wall 120.7 s); harness init full suite 1857/1857, 0 FAIL | yes |
+| A2-03 | 1 | read tests/checks/context-bundle.sh; independent script: status_stubs, last-debrief at(11000), origin/main's (6849e17, git archive) harness debrief --dry-run vs this branch's, diff with line 1 and ## Glossary cut | checks pin the parked section equal to the debrief's, D24/N1-01/M8/D-H1 lines + Unresolved Q99, --since body diff empty, find -newer summary.json empty, nosuch exit 1 'no run', no arg usage exit 2; my diff old vs new: identical but the blank line before ## Glossary | yes |
+| A2-03 | 2 | head lib/context.sh; grep functions; grep -c '^run_context()' lib/debrief.sh; bash -n lib/context.sh lib/debrief.sh bin/harness | usage header; alive rec_dir context_since fence capped ended_of run_context rate_info spend names context_runs context_glossary in context.sh; debrief count 0, it sources context.sh and calls context_runs/context_glossary; bash -n ok | yes |
+| A2-03 | 3 | grep bin/harness header and dispatch | header lines 49-54 `harness context <run-id> \| --since <YYYY-MM-DD HH:MM:SS> [--out <dir>]`, read-only, writes, default <state>/events/<uuid>/, prints dir; line 900 `context) shift; exec lib/context.sh`; check (e) asserts the uuid dir on stdout | yes |
+| A2-03 | 4 | bash tests/run.sh context-bundle event-run queue-debrief flakes-run | 107/107 checks passed: context-bundle 13/13 (fast, 12.2 s), flakes-run 9/9, event-run 12/12, queue-debrief 72/72; all names in check-names.txt (LC_ALL=C sorted), context-bundle's in check-names-fast.txt too | yes |
+| A2-03 | 5 | bash tests/run.sh --tier fast | 1023/1023 checks passed (wall 120.7 s); harness init full suite 1857/1857, 0 FAIL | yes |
+| A2-04 | 1 | read context-bundle.sh 'context.json has the spec's shape…', '--since names its time', 'summary…or null', 'open_questions…'; grep -c 'jq -n' lib/context.sh | the step's jq -e verbatim on $T/b1/context.json, scope.since == at(11000) and 3 runs as Covers, givenup summary equals its summary.json and others null, open_questions[0] the B INBOX text; grep prints 0; all PASS in my subset run | yes |
+| A2-04 | 2 | read context-bundle.sh retention check and event-run.sh 'the hook notes the old bundles it removed' | events/old (touch -d '31 days ago') gone, recent kept, b3.out line 2 'events: removed 1 bundle older than 30 days'; event-run: events/stale gone and hlog evp has the line; both PASS | yes |
+| A2-04 | 3 | read tests/checks/event-run.sh lines 18-51, 80-88; ran in subset | STUB_CURL_SPY records test -f context(.json) and test -f context.md beside it ('park evp 0 0 <path>'; the step's second test names the same file, context.md is the stronger check), scope.runs [evp], parked question in open_questions, event.json beside; debrief scope.runs == Covers runs; HARNESS_CONTEXT=false → context null + note; 12/12 PASS | yes |
+| A2-04 | 4 | read lib/notify.sh notify_event; grep report; bash -n lib/notify.sh lib/context.sh lib/debrief.sh; node --check lib/notify.mjs lib/context.mjs lib/glossary.mjs | bundle (timeout 60 context.sh <RUN_ID> --out events/<id> --id) before the curl POST, only in the routed branch (EVENT_URL set); no harness report; the debrief now passes bundle="$WS" (context.sh --from its own gather, A2-05's I1) instead of --since, scope still the debrief's runs and since; syntax ok | yes |
+| A2-04 | 5 | read journal/decisions/2026-10-22-context-bundle-glossary.md; grep docs/architecture.md §3/§4, README ## Debrief | decision: title, provenance, finding, choice (place, shape, glossary by code, no store, 30-day retention and synchronous bundle *default*), rejected (model glossary, store, n8n-built); architecture §3 rows lib/context.sh, context.mjs, glossary.mjs, §4 events/<id>/ row with retention, bin/harness command list has context; README Debrief paragraph line 382 | yes |
+| A2-04 | 6 | bash tests/run.sh context-bundle event-run queue-debrief flakes-run | 107/107 checks passed: context-bundle 13/13 (fast, 12.2 s), flakes-run 9/9, event-run 12/12, queue-debrief 72/72; all names in check-names.txt (LC_ALL=C sorted), context-bundle's in check-names-fast.txt too | yes |
+| A2-04 | 7 | bash tests/run.sh --tier fast | 1023/1023 checks passed (wall 120.7 s); harness init full suite 1857/1857, 0 FAIL | yes |
+| A2-05 | 1 | ls scratch A2.diff; read docs/plans/2026-11-07-A2-review.md | one round, 0 Critical/2 Important/6 Minor, each with file:line and what was done; the four hard questions answered with lines (bytes, unresolved/no near match, bundle can't fail notify, nothing outside out dir); my own origin/main-vs-branch dry-run diff agrees on bytes | yes |
+| A2-05 | 2 | read review I1/I2 fixes and their checks in event-run.sh/context-bundle.sh; bash -n, node --check on A2's files | I1: 'the debrief event's bundle is the context its note was written from' (cmp, id); I2: 'the debrief's context says a finishing run is still running, as before the move' and 'a bundle says how a finishing run ended'; all PASS; red phase not re-observed (commit history); syntax ok | yes |
+| A2-05 | 3 | read the decision file | finding; choice: dir and files, context.json keys in order (v first), regexes and sources in order, newest first, unresolved, 30-day retention, bundle before POST, failure note; defaults marked *default*; rejected: model glossary, glossary store, n8n-built bundle | yes |
+| A2-05 | 4 | grep docs/architecture.md (§3, §4, §16 line 831, bin/harness row) and README.md (Debrief 382, Events row 207) against bin/harness header | §3 rows for context.sh/glossary.mjs, §4 events/<id>/, §16 names context_runs, command list includes context; README paragraph and Events state row; wording matches bin/harness's usage lines | yes |
+| A2-05 | 5 | the harness's full check.sh run at init (cache cleared), output check-7703f1ecd314e470.out | 1857/1857 checks passed, 0 FAIL, wall 706.3 s; my fast tier 1023/1023 and subset all green | yes |
+
+- **Discovery** (affects project): Verify can check the gatherer's move against main directly: git archive origin/main into scratch, run its bin/harness debrief --dry-run and the branch's on one status_stubs state, diff with line 1 and ## Glossary cut (context-bundle's own (b) compares two callers of the same function).
+- *184954-verify-A2 · claude-opus-5-5*
+
+### 2026-11-07 18:38 · A2-05 · passes
+
+A2 review (one Opus round): 0 Critical, 2 Important, 6 Minor. Fixed RED→GREEN: I1 the debrief event's bundle is now the debrief's own (context.json from its gather, copied by context.sh --from via notify bundle=); I2 the debrief's ended words are alive-first again (ended_of; CTX_ENDED_FIRST for harness context). Minor fixed: dotted ids, spend, queue/done. Review file, decision, docs.
+
+- **Files:** lib/context.sh, lib/debrief.sh, lib/notify.sh, lib/glossary.mjs, bin/harness, tests/checks/context-bundle.sh, tests/checks/event-run.sh, tests/unit/glossary.test.mjs, tests/stub-context.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-07-A2-review.md, +4 more
+- **Verified:** Full suite: check.sh green in 720 s, 1857 tests (N = M). Fast tier: green in 118 s, 1023 tests, run before the full suite with no edits after. Unit tests: node --test, 515 pass. RED then GREEN, each check watched failing first: context-bundle 11/13 (the queue/done and still-running checks red, then 13/13), event-run 11/12 (the debrief bundle cmp red, then 12/12), the dotted-id unit test red, then 515/515. bash -n and node --check clean on every file touched.
+- **Tests:** 1853 → 1857
+- **Dead end:** an event-run check counting `# Context ·` bundles against routed events — fragile across the file's runs (stale and stub bundles); a cmp of the debrief's context.md with the bundle's says it directly
+- **Discovery** (affects A3, A4): The debrief's bundle is its own gather's (context.json in its workspace, copied by context.sh --from); notify's since= is gone, bundle=<dir> replaces it
+- **Discovery** (affects A3, A4): lib/context.sh ended_of: alive first (the debrief's bytes); CTX_ENDED_FIRST=1 (harness context only) reads ended first for the end event's bundle
+- **Discovery** (affects project): harness queue list/show no longer mkdir queue/done (cmd_queue makes it only for a write) (agent-harness-2026-11-07-3 2026-11-07)
+- **Resolved:** Discovery (A2-04, affects A2-05): The debrief's bundle reruns context_since at notify time, so a run started during the debrief's session is in scope.runs but not in the note's Covers (accepted, review finding 6).
+- **Resolved:** Discovery (A2-03, affects A2-05): harness context writes $STATE_ROOT/queue/done (an empty dir) when there is no queue yet: cmd_queue mkdirs before list; context-bundle (c) finds files only (! -type d)
+- **Proposed change:** M1: lib/lane.sh:535 commits any dirty record after notify_park as 'HARNESS: park notification failed', including a routed park's 'events: removed' note; name it 'HARNESS: park notification notes' and change park-desk's assertion with it
+- **Proposed change:** M6: a CONTEXT_TIMEOUT config value and the bundle's exit code in the 'context bundle failed' note, if a real bundle nears the 60 s cap
+- *08-A2-05 · claude-opus-5-5*
+
+### 2026-11-07 18:05 · A2-04 · passes
+
+context.json (spec key order) now comes from the same lib/context.mjs call as context.md; a bundle written in events/ prunes bundles with no file newer than 30 days and says so; notify_event writes the bundle to events/<id>/ before the POST, so context names an existing context.json; the debrief passes since=$SINCE. A failed bundle: a note, context null. Decision file, docs.
+
+- **Files:** lib/context.mjs, lib/context.sh, lib/notify.sh, lib/notify.mjs, lib/debrief.sh, tests/checks/context-bundle.sh, tests/checks/event-run.sh, tests/checks/event-hook.sh, tests/stub-context.sh, tests/fixtures/context-bundle.json, tests/unit/context.test.mjs, tests/unit/notify.test.mjs, +5 more
+- **Verified:** Each new check watched red on the old lib (reverted with a patch file), then green: context-bundle 11/11, event-run 11/11, event-hook 11/11, queue-debrief 72/72, flakes-run 9/9, unit tier 515/515; check.sh --fast green, 1020 tests; bash -n and node --check clean; grep -c 'jq -n' lib/context.sh = 0.
+- **Tests:** 1839 → 1853
+- **Dead end:** parked[].why from the needs item's .why, as the plan said — a real `harness needs parked --json` has no top-level why; it comes from <state>/parked.json, else the card headline
+- **Discovery** (affects A2-05): The event-run check's spy compares context.md beside context.json, not the plan's second `test -f context.json` (the same file twice).
+- **Discovery** (affects A2-05, run): run_context and context_glossary now read <state>/ended before alive: the driver writes ended (driver.sh:352) before its end notify, while still alive.
+- **Discovery** (affects A2-05): The debrief's bundle reruns context_since at notify time, so a run started during the debrief's session is in scope.runs but not in the note's Covers (accepted, review finding 6).
+- **Discovery** (affects A2-05): A glossary exception now costs context.json too (one node call, as the spec says). For the debrief that means a null context, so ntfy (review finding 5, accepted).
+- **Discovery** (affects A2-05, A4): notify_event's ctx is the directory context.sh prints (cd && pwd), so a trailing-slash HARNESS_STATE never gives n8n a // path (its contextPaths guard).
+- **Discovery** (affects project): A bundle runs the gatherer (harness status/needs/trends/queue): each routed event in a stub run costs ~1 s more; event-run.sh takes 39 s
+- **Question for Michael:** Default taken: a routed event's context bundle is synchronous, capped at 60 s, before the 5 s POST, and events/ bundles older than 30 days are removed when a new one is written. Keep both? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/journal/decisions/2026-10-22-context-bundle-glossary.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/lib/notify.sh:55
+- **Proposed change:** A2-04 step 3: the spy's second test should be `test -f <context dir>/context.md` (n8n reads it beside context.json); `test -f <context dir>/context.json` repeats the first.
+- *07-A2-04 · claude-opus-5-5*
+
+### 2026-11-07 17:33 · A2-03 · passes
+
+Moved the debrief's gatherer verbatim into lib/context.sh (context_since, context_runs, context_glossary); debrief.sh sources it, no copy. New `harness context <run> | --since <ts> [--out] [--id]` writes context.md (gatherer + ## Glossary via new lib/context.mjs) to events/<uuid>/ by default. The debrief's context gains the glossary. Tests 1831 → 1839.
+
+- **Files:** lib/context.sh, lib/context.mjs, lib/debrief.sh, bin/harness, tests/checks/context-bundle.sh, tests/unit/context.test.mjs, tests/checks/status-card.sh, tests/checks/needs-questions.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** Bytes: in one status_stubs throwaway, the saved pre-move debrief.sh and the new one, --dry-run, two windows x CMAX 150000/8000/3000: `diff <(sed '1d; /^## Glossary$/,$d' old) <(same new)` is one blank line (the glossary's separator) in all 6. context-bundle 6/6 red then green; context-bundle+queue-debrief+flakes-run 88/88; needs-questions 21/21; status-card 15/15; unit-tier 511/511; check.sh --fast green, 1011 tests. Opus review: 0 Critical/Important, 6 Minor, 5 fixed.
+- **Tests:** 1831 → 1839
+- **Dead end:** `${CTX_SINCE_WHY:-the queue runner's start}` inside the moved double-quoted echo — the apostrophe in a ${:-} default parses as a quote inside a function body (bash -n: syntax error); a local `why` variable carries the default
+- **Dead end:** runSection ending at any `##`/`###` line — the fenced INBOX.md has `### B:` and `## Answers` headings of its own; it now skips ~~~ fences and also stops at every run's known heading (a part cut mid-fence leaves an odd ~~~)
+- **Discovery** (affects A2-04): context.sh: context_glossary writes $WS/runs.tsv (state, run, project, ended, running, features, record, worktree, docs root, needs json) and $WS/needs-<i>.json for A2-04's context.json; context.mjs parseRow reads it
+- **Discovery** (affects A2-04, A2-05): glossaryMarkdown's cut line says 'context.json lists every one', but the debrief's own context dir never gets a context.json: reword it or write one there
+- **Discovery** (affects A2-05): harness context writes $STATE_ROOT/queue/done (an empty dir) when there is no queue yet: cmd_queue mkdirs before list; context-bundle (c) finds files only (! -type d)
+- **Discovery** (affects A2-04, A2-05): status_stubs's run ids A/B/C are matched as the run's own feature ids (knownIds), so a bare English 'A' resolves to feature A in stub glossaries; real ids (N1-01) don't collide
+- **Discovery** (affects A2-05): capped's cut note names $WS/s.json; in a `harness context` bundle that scratch is removed on exit, so the note's path is gone (debrief bytes kept as they were)
+- **Discovery** (affects project): bash: an apostrophe in a ${v:-default} inside a double-quoted string fails to parse in a function body; put the default in a variable (agent-harness-2026-11-07-3 2026-11-07)
+- **Proposed change:** A2-05's review should name the queue/done mkdir (cmd_queue) and the glossary cut line's context.json wording as its two leftover Minor findings from A2-03's review
+- *06-A2-03 · claude-opus-5-5*
+
+### 2026-11-07 17:06 · A2-02 · passes
+
+lib/glossary.mjs: findIds (the list's own ids, then three masking passes), resolveIds (feature list; doc rows and headings newest file first; unresolved never guessed), glossaryMarkdown (byte cap, whole lines), strip, knownIds, fsReader and a CLI; 17 unit tests on fixtures copied read-only from dj-crate-streaming; tests 1814 → 1831.
+
+- **Files:** lib/glossary.mjs, tests/unit/glossary.test.mjs, tests/fixtures/glossary/, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** red first (module missing; then 2 review tests red), node --test glossary.test.mjs 17/17; bash tests/run.sh unit-tier 509/509; fast tier green 1003; node --check; CLI on the real dj checkout: 24 entries in 0.1 s, D-H1, Q99, I3 unresolved; dj git status --porcelain unchanged. Opus review: 2 Important (non-array features threw; D pass split a known S2-D1) and 9 Minor fixed (fences, spaced ranges, M8.1, empty ids, vanished files, absolute store, readStdin); strip of [a](x/(y)) and __init__ left.
+- **Tests:** 1814 → 1831
+- **Discovery** (affects A2-03, A2-04): glossary.mjs resolveIds takes featureList {path,text} and a reader {root, files()→[{path,mtimeMs,titleOnly}], read()}; fsReader(root,{mtimes}) is the fs one; knownIds(list) feeds findIds
+- **Discovery** (affects A2-05): Glossary refinements of the plan: D<n>-<digit> is a feature; a heading names an ID only before end/punctuation/a separator (not `## D24 on`, `## D1 – D23`, `## M8.1`); known ids go first
+- **Question for Michael:** The session's `git push -u origin harness-lane/agent-harness-2026-11-07-3/A2` was denied by the auto-mode classifier (Out-of-Place Publication); commit 62c1210 is local only. Should lane sessions be allowed that push, or does the harness push the lane branch itself? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/lib/glossary.mjs
+- **Proposed change:** A2-05's decision file should name the three glossary refinements above (D1-01 a feature, the heading's follower rule, the section number stripped) as *default*
+- *05-A2-02 · claude-opus-5-5*
+
+### 2026-11-07 16:54 · A2-01 · passes
+
+Wrote docs/plans/2026-11-07-A2-context-bundle.md: glossary rules verbatim and how glossary.mjs applies them, dj fixtures with provenance, the line-by-line move of debrief.sh's gatherer into context.sh, harness context's CLI, context.json's shape, 30-day retention, the hook's bundle before the POST, all checks named with tiers.
+
+- **Files:** docs/plans/2026-11-07-A2-context-bundle.md
+- **Verified:** Plan only; fast tier green (check.sh --fast: cached green for this code tree, 1814 tests; docs/plans is outside the key). Line refs checked against lib/debrief.sh, lib/notify.sh, dj at 429dd96 and n8n-home's lib/intake.js.
+- **Tests:** 1814 → 1814
+- **Discovery** (affects A2-04): n8n-home's intake (lib/intake.js contextPaths) needs event.context = absolute <STATE_ROOT>/events/<dir>/context.json, dir = the event id (^[A-Za-z0-9-]{8,64}$); context.md beside it
+- **Discovery** (affects A2-04, run): n8n-home's intake refuses a debrief event whose context isn't a string, so A1's debrief event (context null) always falls back to ntfy until A2-04
+- **Discovery** (affects A2-04): event-hook.sh (c),(d),(k) compare the whole note file: A2-04 sets HARNESS_CONTEXT to a stub there, or the 'context bundle failed' note turns them red
+- **Discovery** (affects A2-03): queue-debrief.sh 'the whole context is capped too' asserts <= CMAX bytes: the debrief's glossary gets only the bytes the gatherer left (--max-bytes)
+- **Discovery** (affects A2-02): The spec's regexes miss dj ids N1F-01, S2-05a, S2-R1: the plan adds exact matches of the feature list's own ids (known) as a default
+- **Discovery** (affects A2-04): status_stubs pins HARNESS_NOW in the past: events/ retention must use the real clock, or touch -d '31 days ago' reads as recent
+- **Question for Michael:** Default taken: the glossary also matches exact ids from the run's feature list that the spec's regexes miss (dj's N1F-01, S2-05a, S2-R1, N1F). Keep that, or stick to the spec's regexes only? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md:60
+- **Question for Michael:** Default taken: the debrief's own context also ends with the ## Glossary section, so its session reads the IDs explained (within the context cap). Keep it, or keep the glossary in harness context bundles only? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-1/docs/plans/2026-11-07-A2-context-bundle.md
+- *04-A2-01 · claude-opus-5-5*
+
+## Older entries (in full in progress-archive.md)
+
+- 2026-11-07 16:40 · verify A1 · passes · A1-01..03 hold. Full suite green at init (690 s, 1814); fast tier 986/986; event-run/event-hook/park… ([in full](progress-archive.md))
+- 2026-11-07 16:19 · A1-03 · passes · Every notify call site names its kind (park+feature, needs_michael, blocked/ended by ehigh, started,… ([in full](progress-archive.md))
+- 2026-11-07 16:08 · A1-02 · passes · notify takes kind=/feature=; with EVENT_URL set park/needs_michael/blocked/debrief build v1 JSON in … ([in full](progress-archive.md))
+- 2026-11-07 15:59 · A1-01 · passes · Wrote docs/plans/2026-11-07-A1-event-hook.md: the v1 event keys and who fills each, the POST verbati… ([in full](progress-archive.md))
+- 2026-11-07 15:53 · init · passes · 14 features: A1 3 (plan, event builder + routed post, call sites with folded review), A2 5 (plan, li… ([in full](progress-archive.md))
