@@ -1,3 +1,0 @@
-[{"id":"verify-failed-recheck","title":"After a verify failure, re-verify only the failed steps on the retry's fix instead of closing the lane as nothing left to try","evidence":"A4-01 retry fixed the finding (outcome passes) but log says passes=false and lane A4 closed given up at the same minute; A4 never merged"},
-{"id":"suite-time-budget","title":"Cap or warn on slow full-suite runs","evidence":"A3-05 session suite 724 s; A4 verify full suite 709 s vs ~210 s documented"},
-{"id":"verify-evidence-rows","title":"Record per-step evidence rows from verify sessions in entries.jsonl","evidence":"A4 verify's 7-step table lives only in progress.md prose"}]
