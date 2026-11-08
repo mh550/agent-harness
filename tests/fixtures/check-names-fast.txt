@@ -394,6 +394,7 @@ harness needs: a card per item (<glyph> <run> · <headline> · since … · <ref
 harness parked --json: today's keys for parked features only, plus ref and card
 harness parked is harness needs for text: the parked card's question from INBOX.md, run, do
 harness queue list shows the parked entry with not in origin/main in its reason
+harness requests installs nothing: no systemd directory under XDG_CONFIG_HOME
 harness requests: a bad verb, an unknown run, a parent-directory run, 4001 characters and v 2 are rejected with a result each and reach no inbox.md
 harness requests: a continue queues the run requested with its brief and starts the runner
 harness requests: a duplicate id goes to rejected/ and the first result stands
@@ -965,6 +966,8 @@ the lock freed: the helper answers again (no start)
 the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …
 the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
 the queue starts no run past the weekly budget
+the request units pass systemd-analyze --user verify, or the check says it skipped
+the request units: a path unit on requests/*.json starts a oneshot service running bin/harness requests
 the restart line says why: no reply in <n> s, a bad header, a wrong id, the helper gone
 the runner hands a queued multi-line --brief to harness start as one argument: both lines in the run's brief, none a word of its own
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run

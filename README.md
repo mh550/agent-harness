@@ -282,6 +282,23 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   <id>`. Anything else (n8n down, a 500, the timeout) is noted `event hook failed (…): <kind>; sent to ntfy` and the
   ntfy post (or `NOTIFY_CMD`) goes out exactly as without it. `NTFY_TOKEN` is never sent to n8n. Every other
   notification goes to ntfy as before; unset, nothing changes (decisions/2026-10-22-event-hook-ntfy-fallback).
+- **Answers from the phone card (the request inbox):** n8n's card writes `~/.local/state/harness/requests/<id>.json`
+  (v1: `answer` or `continue`); the systemd path unit runs `harness requests`, which takes every pending file oldest
+  first under `flock` on `requests/.lock`. An `answer` becomes `harness answer <run> <text>`, a `continue` `harness
+  queue add --continue <run> [--brief …]` then `harness queue start`, except between 03:15 and 04:30 (the backup
+  window: queued, runner not started). Both run as argv calls, never through a shell. Anything else (a third verb, an
+  unknown run, a bad id, an oversize text, `v` not 1, an id already done, a file still unparsable after 10 s) moves to
+  `requests/rejected/`. Every request gets a result, `requests/done/<id>.json` (`ok`, `exit`, `output`,
+  `runner_started`, `refused`), which the card shows back: "has your answer", "is starting again", "is queued to start
+  again" or "refused: <why>"; the request itself moves to `requests/done/<id>.request.json`, and `requests/requests.log`
+  gets one line (time, id, verb, run, ok or refused, exit; never the text). Install it once (the harness never does):
+  ```
+  harness requests     # makes ~/.local/state/harness/requests (mode 700); prints "requests: none pending (…)"
+  systemctl --user link ~/projects/agent-harness/systemd/harness-requests.path ~/projects/agent-harness/systemd/harness-requests.service
+  systemctl --user enable --now harness-requests.path
+  ```
+  After a unit file changes in git, `systemctl --user daemon-reload`. Undo: `systemctl --user disable --now
+  harness-requests.path harness-requests.service`; the request files stay (decisions/2026-10-22-request-inbox).
 - **Permissions:** the policy (agents merge, push and clean up; only the irreversible is denied; production is gated
   per project) lives in `~/.claude/CLAUDE.md` § "Git, merges and permissions" and the user settings. Install or
   refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.

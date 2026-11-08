@@ -105,4 +105,21 @@ check "harness requests: a symlink request is rejected unread" '(( r11_rc == 0 )
   && cmp "$T/target.json" "$T/target.copy" && ! grep -r "via link" "$HARNESS_STATE" --include inbox.md > /dev/null \
   && res link-0001-aaaa ".ok == false and .refused == \"the request is not a regular file\""'
 
+
+# the units (A3-04): shipped under systemd/, verified where systemd-analyze exists, never installed by the harness
+U=$HERE/../systemd
+check "the request units: a path unit on requests/*.json starts a oneshot service running bin/harness requests" '
+  grep -qxF "PathExistsGlob=%h/.local/state/harness/requests/*.json" "$U/harness-requests.path" && grep -qxF "Unit=harness-requests.service" "$U/harness-requests.path" \
+  && grep -qxF "WantedBy=default.target" "$U/harness-requests.path" && grep -qxF "Type=oneshot" "$U/harness-requests.service" \
+  && grep -x "ExecStart=.*bin/harness requests" "$U/harness-requests.service" > /dev/null'
+mkdir -p "$T/units" && for u in path service; do
+  sed "s|^ExecStart=.*bin/harness requests\$|ExecStart=$(realpath "$HERE/../bin/harness") requests|" "$U/harness-requests.$u" > "$T/units/harness-requests.$u" 2> /dev/null; done
+sa_skip=; command -v systemd-analyze > /dev/null || sa_skip=1
+[[ $sa_skip ]] || { timeout 60 systemd-analyze --user verify "$T/units/harness-requests.path" "$T/units/harness-requests.service" > "$T/sa.out" 2>&1; sa_rc=$?; }
+check "the request units pass systemd-analyze --user verify, or the check says it skipped" '[[ $sa_skip ]] || { [[ -s $T/units/harness-requests.service ]] \
+  && grep -qx "ExecStart=/.*/bin/harness requests" "$T/units/harness-requests.service" && (( sa_rc == 0 )) && ! grep -i error "$T/sa.out" > /dev/null; }'
+[[ $sa_skip ]] && echo "skipped: no systemd-analyze"
+XDG_CONFIG_HOME=$T/cfg "$H" requests > "$T/r12.out" 2>&1; r12_rc=$?
+check "harness requests installs nothing: no systemd directory under XDG_CONFIG_HOME" '(( r12_rc == 0 )) && [[ ! -e $T/cfg/systemd ]]'
+
 suite_end

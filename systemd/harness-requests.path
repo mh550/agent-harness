@@ -1,0 +1,12 @@
+# The request inbox's trigger: n8n writes <STATE_ROOT>/requests/<id>.json, this starts harness-requests.service.
+# PathExistsGlob, not DirectoryNotEmpty: done/, rejected/ and requests.log keep the directory non-empty for ever, an
+# instant restart loop (journal/decisions/2026-10-22-request-inbox.md). Linked by Michael, never by the harness (README Steering).
+[Unit]
+Description=harness requests: run harness requests when n8n writes a request file
+
+[Path]
+PathExistsGlob=%h/.local/state/harness/requests/*.json
+Unit=harness-requests.service
+
+[Install]
+WantedBy=default.target
