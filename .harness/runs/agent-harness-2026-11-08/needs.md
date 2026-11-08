@@ -1,5 +1,24 @@
 # Needs Michael: agent-harness-2026-11-08
 
+## ⚠ N1 not verified: evidence too thin
+
+`agent-harness-2026-11-08/4` · since 2026-11-08T10:39:43.337Z
+
+**blocked** N1 (4/4 passing); 4 features wait
+
+**cost** N1 doesn't merge; 4 features wait
+
+**why** After N1's features pass, a verify session re-runs every step and writes an evidence row per step (verify in lib/lane.sh). Too few rows after the escalated model means not verified. The features pass; only the evidence is short.
+
+**where** [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-08/.harness/runs/agent-harness-2026-11-08/progress.md](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-08/.harness/runs/agent-harness-2026-11-08/progress.md) · `/home/mh550/.local/state/harness/agent-harness/agent-harness-2026-11-08/run.log`
+
+- (a) read the verify entry; if the steps hold, continue: it re-verifies **(recommended: usually a step the verifier couldn't run)**
+- (b) fix the step wording by a brief, then continue
+
+```sh
+harness continue agent-harness-2026-11-08
+```
+
 ## ⚠ N1-03 asked: The write order puts anchored adds before plain adds (the s…
 
 `agent-harness-2026-11-08/1` · since 2026-11-08T08:26:38.686Z

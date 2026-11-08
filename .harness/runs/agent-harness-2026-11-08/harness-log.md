@@ -21,3 +21,4 @@
 - 2026-11-08 05:11 · N1-04 · claude-opus-5-5 · passes=true · 46 min · 4/8 passing · tests 1911
 - 2026-11-08 05:11 · verify N1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-08 05:23 · context.md for N1: 13892 bytes
+- 2026-11-08 05:39 · verify N1: evidence still short of the steps (N1-03 6/7; N1-02 6/7; N1-01 7/8) after opus; not verified (needs Michael)
