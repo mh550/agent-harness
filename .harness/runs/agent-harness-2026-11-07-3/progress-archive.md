@@ -9,6 +9,23 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 19:23 · A3-03 · passes
+
+lib/requests.sh (harness requests): flock on requests/.lock, *.json oldest by mtime then name, each judged by requests.mjs validate, claimed into done/<id>.request.json, run as one argv call (answer; queue add --continue [--brief] then queue start outside 03:15–04:30), result written to a temp name and renamed, one log line; rest to rejected/. bin/harness dispatch and header.
+
+- **Files:** lib/requests.sh, bin/harness, tests/checks/request-files.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** request-files.sh written first: 0/11 red, then 11/11 (5.5 s, fast tier); bash tests/run.sh request-files queue-view 24/24; xtrace 13/13; fast tier 1053/1053 (check.sh --fast green in 119 s); bash -n lib/requests.sh bin/harness; grep -c 'eval\|bash -c' lib/requests.sh prints 0.
+- **Tests:** 1876 → 1887
+- **Dead end:** node -e 'import(process.argv[1])' "$MJS" for BACKUP_REFUSAL — requests.mjs's isMain sees argv[1] as itself and runs its CLI (usage error): the path goes in by env (M=$MJS) instead
+- **Dead end:** a bare wait for the two lock-contending calls — status_stubs' live driver (sleep 600) is a job of the check's shell: wait on the two pids
+- **Discovery** (affects project): Every executable lib/*.sh needs the xtrace guard line ([[ -z ${HARNESS_XTRACE:-} ]] || source …/xtrace.sh) once, or xtrace.sh's guard check fails (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects project): wait_for runs a command, not a string: a negation or variables go through wait_for <s> eval '<expr>' (agent-harness-2026-11-07-3 2026-11-07)
+- **Discovery** (affects A3-04, A3-05): requests.sh writes no result when done/<name>.json exists (a duplicate, or a bad file named for a done id): only the log line; a symlink is moved unread and gets 'the request is not a regular file'
+- **Discovery** (affects A3-04): requests.sh's checks are tests/checks/request-files.sh (11 names, fast, 5.5 s); A3-04's unit checks go in the same file
+- **Proposed change:** A3-03 step 3 asks the duplicate for a result with ok == false; the plan (§1.3) keeps the first result byte-identical and moves the duplicate to rejected/ with a refused log line, which is what was built and checked
+- **Proposed change:** A3-03 step 5 and A3-04 step 4 should read `bash tests/run.sh request-files …` (the plan's name; requests-inbox.sh fails the name lint)
+- *11-A3-03 · claude-opus-5-5*
+
 ### 2026-11-07 19:13 · A3-02 · passes
 
 lib/requests.mjs: validateRequest (the plan's 11 rules in order, exact reasons; id/verb/run set only once validated), inBackupWindow + BACKUP_REFUSAL, resultJson (ten keys, output cut at 2000 bytes on a char boundary), resultName, logLine (takes no text), and validate/result CLIs. 19 unit tests, fixtures made by n8n-home's buildRequest at 859b25a.
