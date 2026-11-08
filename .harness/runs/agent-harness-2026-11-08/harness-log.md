@@ -1,0 +1,2 @@
+- 2026-11-08 02:48 · memlint: CLAUDE.md:98 gotchas: 16 lines, over 15
+- 2026-11-08 03:00 · test count: parsed (generic)
