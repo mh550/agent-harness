@@ -37,25 +37,37 @@ free() { local d=$1 n=$2 i=1; [[ -e $d/$n || -L $d/$n ]] || { echo "$d/$n"; retu
   while [[ -e $d/${n%.json}.$i.json || -L $d/${n%.json}.$i.json ]]; do i=$(( i + 1 )); done; echo "$d/${n%.json}.$i.json"; }
 move() { mv -- "$1" "$2" || { echo "requests: could not move $1 to $2" >&2; bad=1; return 1; }; }
 
-# <name|-> <verb|-> <run|-> <ok 0|1> <exit|-> <runner started 0|1> [<refused>]: the result (written to a temp name in
-# done/ and renamed, so n8n's poll never reads half of one; never over an existing result) and the log line, echoed
+# <name|-> <verb|-> <run|-> <ok 0|1> <exit|-> <runner started 0|1> [--refused <why> | --backup-window 1]: the result
+# (written to a temp name in done/ and renamed, so n8n's poll never reads half of one; never over an existing result)
+# and the log line, echoed
 result() {
-  local n=$1 dest=/dev/null r=()
-  [[ -n ${7:-} ]] && r=(--refused "$7")
+  local n=$1 dest=/dev/null
   [[ $n != - && ! -e $R/done/$n.json ]] && dest=$R/done/.$n.json.tmp
   node "$MJS" result --id "$n" --verb "$2" --run "$3" --ok "$4" --exit "$5" --output "$tmp/out" --runner-started "$6" \
-    ${r[@]+"${r[@]}"} --now "$now" --log "$R/requests.log" > "$dest" || { echo "requests: no result for $n" >&2; bad=1; return 1; }
+    "${@:7}" --now "$now" --log "$R/requests.log" > "$dest" || { echo "requests: no result for $n" >&2; bad=1; return 1; }
   [[ $dest == /dev/null ]] || mv -f -- "$dest" "$R/done/$n.json" || { echo "requests: could not write done/$n.json" >&2; bad=1; }
   tail -n 1 "$R/requests.log"
 }
 
+# queue start. Under the path unit (INVOCATION_ID: systemd sets it for a service) a tmux server it forks would sit in
+# the oneshot's cgroup and die with it, the runner and its runs too: so it starts in a scope of its own
+start_runner() {
+  if [[ -n ${INVOCATION_ID:-} ]] && command -v systemd-run > /dev/null; then systemd-run --user --scope --quiet --collect -- "$H" queue start
+  else "$H" queue start; fi
+}
+
 # <file name>: one request, judged and run
 one() {
-  local f=$1 p=$R/$1 k v verdict="" name=- id=- verb=- run=- window=0 reason="" text brief out rc started=0 refused="" args
+  local f=$1 p=$R/$1 k v verdict="" name=- id=- verb=- run=- window=0 reason="" text brief out rc started=0 more=() args so
   rm -f "$tmp/text" "$tmp/brief"; : > "$tmp/out"
   if [[ -L $p || ! -f $p ]]; then   # never read: mv moves the link, never its target (*default*: n8n writes plain files)
     [[ ${f%.json} =~ $ID_RULE ]] && name=${f%.json}
-    move "$p" "$(free "$R/rejected" "$f")" && { nrej=$(( nrej + 1 )); result "$name" - - 0 - 0 "the request is not a regular file"; }
+    move "$p" "$(free "$R/rejected" "$f")" && { nrej=$(( nrej + 1 )); result "$name" - - 0 - 0 --refused "the request is not a regular file"; }
+    return
+  fi
+  if [[ ! -r $p ]]; then   # left, it would match the path unit's glob after every pass, and five restarts fail the unit
+    [[ ${f%.json} =~ $ID_RULE ]] && name=${f%.json}
+    move "$p" "$(free "$R/rejected" "$f")" && { nrej=$(( nrej + 1 )); result "$name" - - 0 - 0 --refused "the request is not readable"; }
     return
   fi
   while read -r k v; do case $k in verdict) verdict=$v ;; name) name=$v ;; id) id=$v ;; verb) verb=$v ;; run) run=$v ;;
@@ -63,7 +75,7 @@ one() {
   [[ $name == - || $name =~ $ID_RULE ]] || name=-   # a name only ever becomes a path under done/ when it passes the id rule
   case $verdict in
     wait) nwait=$(( nwait + 1 )); waited=1 ;;
-    rejected|duplicate) move "$p" "$(free "$R/rejected" "$f")" && { nrej=$(( nrej + 1 )); result "$name" "$verb" "$run" 0 - 0 "$reason"; } ;;
+    rejected|duplicate) move "$p" "$(free "$R/rejected" "$f")" && { nrej=$(( nrej + 1 )); result "$name" "$verb" "$run" 0 - 0 --refused "$reason"; } ;;
     ok)
       [[ $name != - ]] || { echo "requests: $f: no name" >&2; bad=1; return; }
       move "$p" "$R/done/$name.request.json" || return   # the claim: a pass that dies after it never runs the request again
@@ -75,23 +87,31 @@ one() {
         [[ -e $tmp/brief ]] && { brief=$(cat -- "$tmp/brief"; printf x); args+=(--brief "${brief%x}"); }
         out=$("$H" "${args[@]}" 2>&1); rc=$?
         if (( rc == 0 )); then
-          if [[ $window == 1 ]]; then refused=$(M=$MJS node -e 'import(process.env.M).then(m => console.log(m.BACKUP_REFUSAL))')   # the entry stays queued; the backup's window starts no runner
-          else local so; so=$("$H" queue start 2>&1); rc=$?; out+=$'\n'$so
+          if [[ $window == 1 ]]; then more=(--backup-window 1)   # the entry stays queued; the backup's window starts no runner
+          else so=$(start_runner 2>&1); rc=$?; out+=$'\n'$so
             [[ $so == *"queue runner started (tmux h-queue)"* ]] && started=1; fi
         fi
       fi
       printf '%s' "$out" > "$tmp/out"; ndone=$(( ndone + 1 ))
-      result "$name" "$verb" "$run" "$(( rc == 0 ))" "$rc" "$started" "$refused" ;;
+      result "$name" "$verb" "$run" "$(( rc == 0 ))" "$rc" "$started" ${more[@]+"${more[@]}"} ;;
     *) echo "requests: $f: no verdict from lib/requests.mjs (left for the next call)" >&2; nwait=$(( nwait + 1 )); bad=1 ;;
   esac
 }
+
+# A claim with no result: a call killed between the two (the claim stands, so the request never runs again). Its result
+# says so, or n8n's card would wait for one for ever
+now=${HARNESS_NOW:-$(date +%s)}
+for c in "$R"/done/*.request.json; do n=${c##*/}; n=${n%.request.json}
+  [[ -f $c && $n =~ $ID_RULE && ! -e $R/done/$n.json ]] || continue
+  : > "$tmp/out"; seen=1; result "$n" - - 0 - 0 --refused "interrupted after its claim: it may have run (see requests.log)"
+done
 
 # A pass over every pending *.json, oldest mtime first, then the name. On the fake clock (HARNESS_NOW, the suite) a
 # call is one pass; on the real clock a pass that left a young file runs again a second later, at most 11 in all, so
 # one call outlives the 10 s grace and the path unit isn't restarted in a loop (plan §2.4).
 for (( pass = 1; pass <= 11; pass++ )); do
   now=${HARNESS_NOW:-$(date +%s)} waited=0 nwait=0
-  while IFS= read -r -d '' e; do seen=1; one "${e#* }" < /dev/null; done < <(find "$R" -maxdepth 1 -name '*.json' \( -type f -o -type l \) -printf '%T@ %f\0' | LC_ALL=C sort -z -k1,1n -k2,2)
+  while IFS= read -r -d '' e; do seen=1; one "${e#* }" < /dev/null; done < <(find "$R" -maxdepth 1 -name '*.json' -printf '%T@ %f\0' | LC_ALL=C sort -z -k1,1n -k2,2)
   [[ -z ${HARNESS_NOW:-} ]] && (( waited )) || break
   sleep 1   # sleep-ok: a young file's grace on the real clock
 done

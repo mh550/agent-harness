@@ -1,7 +1,7 @@
 // lib/requests.mjs: the request inbox's rules (v1): validation, the backup window, the result JSON and the log line.   node --test tests/unit/requests.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -94,6 +94,13 @@ test("requests.mjs: an empty text and a text of 4001 characters are rejected, 40
   const { text: _, ...noText } = ANSWER;
   refused(validateRequest(text(noText), ctx()), why);
   assert.equal(check(ANSWER, { text: "a".repeat(4000) }).verdict, "ok");
+});
+
+test("requests.mjs: a brief that is one option word is refused, so no queue or continue loop reads it as a flag", () => {
+  for (const b of ["--now", "--foreground", "--automatic", "--requested", "--keep-attempts", "--spec"]) {
+    refused(check(BRIEF, { brief: b }), "brief may not be an option word (--…): queue add and continue would read it as one");
+  }
+  for (const b of ["-- ship B3", "--now please", "x\n--now", "-n"]) assert.equal(check(BRIEF, { brief: b }).verdict, "ok", b);
 });
 
 test("requests.mjs: a brief of 2001 characters is rejected, 2000 is ok", () => {
@@ -208,5 +215,31 @@ test("requests.mjs: the result CLI prints the result JSON and appends its log li
     assert.equal(lines.length, 3);
     assert.match(lines[0], / id=req-0002-bbbb verb=continue run=stopped ok exit=0 runner=started$/);
     assert.match(lines[1], / id=- verb=- run=- refused exit=- why=id does not match/);
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test("requests.mjs: the validate CLI rejects a symlink unread, whatever it points at", () => {
+  const T = mkdtempSync(join(tmpdir(), "requests-"));
+  try {
+    const target = join(T, "target.json"), link = join(T, "link-0001-aaaa.json"), done = join(T, "done"), out = join(T, "out");
+    mkdirSync(done); mkdirSync(out);
+    writeFileSync(target, text(ANSWER, { id: "link-0001-aaaa" }));
+    symlinkSync(target, link);
+    const r = cli("requests.mjs", ["validate", link, "--runs", "parked", "--done", done, "--now", "1800000000", "--out", out]);
+    assert.equal(r.rc, 0);
+    assert.equal(r.out, "verdict rejected\nname link-0001-aaaa\nid -\nverb -\nrun -\nwindow 0\nreason the request is not a regular file\n");
+    assert.equal(existsSync(join(out, "text")), false);
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test("requests.mjs: the result CLI's --backup-window 1 gives the backup refusal", () => {
+  const T = mkdtempSync(join(tmpdir(), "requests-"));
+  try {
+    const log = join(T, "requests.log"), now = Date.UTC(2026, 9, 28, 3, 30) / 1000;
+    const r = cli("requests.mjs", ["result", "--id", "req-0004-dddd", "--verb", "continue", "--run", "stopped", "--ok", "1",
+      "--exit", "0", "--runner-started", "0", "--backup-window", "1", "--now", String(now), "--log", log]);
+    assert.equal(r.rc, 0);
+    assert.equal(JSON.parse(r.out).refused, BACKUP_REFUSAL);
+    assert.match(readFileSync(log, "utf8"), new RegExp(` why=${BACKUP_REFUSAL}\n$`));
   } finally { rmSync(T, { recursive: true, force: true }); }
 });

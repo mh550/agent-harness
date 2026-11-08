@@ -85,6 +85,14 @@ test("queue.mjs: main's add writes the entry, makes done and held, prints its pa
 test("queue.mjs: main's add with no verb or first argument is a usage error and writes nothing", () => inTmp(async d => {
   assert.equal((await Q.main(["add", join(d, "q"), "start"], {})).rc, 2);
 }));
+test("queue.mjs: main's write replaces an entry with its arguments encoded, a multi-line one on one line", () => inTmp(async d => {
+  const f = join(d, "0003-continue-r1.args");
+  writeFileSync(f, "continue\nr1\n--queued\n");
+  const w = await Q.main(["write", f, "continue", "r1", "--queued", "--requested", "--brief", "first\n--now"], {});
+  assert.deepEqual([w.rc, w.out], [0, ""]);
+  assert.equal(readFileSync(f, "latin1"), "continue\nr1\n--queued\n--requested\n--brief\nfirst\x1f--now\n");
+  assert.equal((await Q.main(["write"], {})).rc, 2);
+}));
 test("queue.mjs: main gives the CLI's bytes for decode, projects and facts: NUL-separated, a missing file empty", () => inTmp(async d => {
   writeFileSync(join(d, "s.args"), "start\n/srv/p/proj\nr9\n--brief\na\x1fb\n");
   writeFileSync(join(d, "c.args"), "continue\nr1\n");

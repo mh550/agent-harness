@@ -11,7 +11,7 @@ aged() { touch -d "@$(( HARNESS_NOW - $2 ))" "$R/$1"; }   # <file> <s old by the
 res() { jq -e "$2" "$R/done/$1.json" > /dev/null 2>&1; }   # <name> <jq test>: the result says so
 inboxes() { find "$HARNESS_STATE" -name inbox.md -exec md5sum {} + | LC_ALL=C sort; }
 mkdir -p "$T/tmuxlog" && printf '#!/usr/bin/env bash\necho "$*" >> %q\n' "$T/tmux-calls" > "$T/tmuxlog/tmux" && chmod +x "$T/tmuxlog/tmux"   # gc-tmux.sh's logging shim
-runner() { PATH=$T/tmuxlog:$PATH HARNESS_NO_RUNNER= "$H" requests "$@"; }   # queue start's real path, its tmux the shim
+runner() { PATH=$T/tmuxlog:$PATH HARNESS_NO_RUNNER= env -u INVOCATION_ID "$H" requests "$@"; }   # queue start's real path, its tmux the shim (outside a unit)
 
 # an answer whose text a shell would expand: it must land as it is
 "$H" requests > "$T/r0.out" 2>&1; r0_rc=$?
@@ -105,6 +105,39 @@ check "harness requests: a symlink request is rejected unread" '(( r11_rc == 0 )
   && cmp "$T/target.json" "$T/target.copy" && ! grep -r "via link" "$HARNESS_STATE" --include inbox.md > /dev/null \
   && res link-0001-aaaa ".ok == false and .refused == \"the request is not a regular file\""'
 
+
+# the review's (A3-05): a queued continue replaced by a request whose brief has lines that read as options
+B5=$'first line\n--base\nevil-ref\n--now'
+req req-0005-eeee.json continue-brief '.id = "req-0005-eeee" | .brief = $b' --arg b "$B5"
+"$H" requests > "$T/r13.out" 2>&1; r13_rc=$?
+entry_is() { local q; q=$(compgen -G "$Q/*-continue-stopped.args") || return 1
+  cmp <(node "$HERE/../lib/queue.mjs" decode "$q") <(printf '%s\0' continue stopped --queued --requested --brief "$B5"); }
+check "harness requests: a continue that replaces a queued entry keeps a multi-line brief one argument" '(( r13_rc == 0 )) && res req-0005-eeee ".ok == true" && entry_is'
+
+# under the path unit (INVOCATION_ID set) the runner starts in a scope of its own: the oneshot's end kills its cgroup
+printf '#!/usr/bin/env bash\necho "$*" >> %q\nwhile [[ $1 != -- ]]; do shift; done; shift; exec "$@"\n' "$T/sdrun-calls" > "$T/tmuxlog/systemd-run" && chmod +x "$T/tmuxlog/systemd-run"
+req req-0006-ffff.json continue '.id = "req-0006-ffff"'
+INVOCATION_ID=0123abcd PATH=$T/tmuxlog:$PATH HARNESS_NO_RUNNER= "$H" requests > "$T/r14.out" 2>&1; r14_rc=$?
+req req-0007-gggg.json continue '.id = "req-0007-gggg"'
+runner > "$T/r14b.out" 2>&1; r14b_rc=$?   # the stub still on PATH, no INVOCATION_ID
+check "harness requests: under a systemd unit the runner starts through systemd-run --user --scope, and outside one directly" '(( r14_rc == 0 )) \
+  && [[ $(wc -l < "$T/sdrun-calls") == 1 ]] && grep -x -- "--user --scope --quiet --collect -- /.*/bin/harness queue start" "$T/sdrun-calls" > /dev/null \
+  && res req-0006-ffff ".ok == true and .runner_started == true" && (( r14b_rc == 0 )) && res req-0007-gggg ".ok == true and .runner_started == true"'
+
+# what systemd's glob still matches after a pass restarts the unit at once (and five restarts fail it): rejected too
+printf '{}' > "$R/odd-0001-unread.json"; chmod 000 "$R/odd-0001-unread.json"; mkfifo "$R/odd-0002-fifo.json"; mkdir "$R/odd-0003-dir.json"
+"$H" requests > "$T/r15.out" 2>&1; r15_rc=$?
+check "harness requests: an unreadable file, a FIFO and a directory named *.json are rejected, so none is left for the path unit" '(( r15_rc == 0 )) \
+  && [[ -z $(find "$R" -maxdepth 1 -name "*.json") ]] && [[ -e $R/rejected/odd-0001-unread.json && -p $R/rejected/odd-0002-fifo.json && -d $R/rejected/odd-0003-dir.json ]] \
+  && res odd-0001-unread ".refused == \"the request is not readable\"" && res odd-0002-fifo ".refused == \"the request is not a regular file\"" \
+  && res odd-0003-dir ".refused == \"the request is not a regular file\"" && grep -qxF "requests: 0 done, 3 rejected, 0 waiting" "$T/r15.out"'
+
+# a pass killed between the claim and the result: the claim gets a result next time, so n8n's card isn't left waiting
+cp "$FX/answer.json" "$R/done/crash-0001-aaaa.request.json"
+"$H" requests > "$T/r16.out" 2>&1; r16_rc=$?
+check "harness requests: a claimed request with no result gets one saying its outcome is unknown" '(( r16_rc == 0 )) \
+  && res crash-0001-aaaa ".ok == false and .exit == null and .refused == \"interrupted after its claim: it may have run (see requests.log)\"" \
+  && grep -F " id=crash-0001-aaaa verb=- run=- refused exit=- why=interrupted after its claim" "$R/requests.log" > /dev/null'
 
 # the units (A3-04): shipped under systemd/, verified where systemd-analyze exists, never installed by the harness
 U=$HERE/../systemd

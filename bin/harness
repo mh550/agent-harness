@@ -586,7 +586,7 @@ cmd_queue() {
         # --until-epoch is an earlier start's deadline); an automatic add leaves what is queued alone
         local q; q=$(compgen -G "$Q/*-continue-$run.args" | head -1) && {
           if (( ${#mark[@]} )); then local was; grep -qx -- --requested "$q" && was="replaced by this request" || was="now requested, with this request's options"
-            printf '%s\n' continue "$run" --queued --requested ${o[@]+"${o[@]}"} > "$q" && echo "already queued: continue $run ($was)"
+            node "$HARNESS_HOME/lib/queue.mjs" write "$q" continue "$run" --queued --requested ${o[@]+"${o[@]}"} && echo "already queued: continue $run ($was)"   # encoded: a brief's lines stay one argument
           else echo "already queued: continue $run"; fi; return; }
         q=$(queue_add continue "$run" --queued ${mark[@]+"${mark[@]}"} ${o[@]+"${o[@]}"}); echo "queued: $(basename "$q")"
       else
