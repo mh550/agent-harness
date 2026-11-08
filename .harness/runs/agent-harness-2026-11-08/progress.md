@@ -9,6 +9,26 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-08 04:25 · N1-01 · passes
+
+Tier 2 lands on harness-rules/<run> in a `memory rules: <run>` PR the driver never merges: apply cuts texts and ruleTexts from their bases under a union cap (graft), memory_pr runs one pass per tier, auto merges facts only, bodies number rules/proposals <run>/<n> and link each other, memory.json/report/ledger/harness memory count facts and rules apart.
+
+- **Files:** lib/curator.mjs, lib/record.sh, lib/driver.sh, lib/summary.mjs, lib/memlint.mjs, lib/memory.sh, prompts/curator.md, tests/unit/curator.test.mjs, tests/unit/summary.test.mjs, tests/checks/memory-branch.sh, tests/checks/curator-run.sh, tests/fixtures/check-names.txt, +8 more
+- **Verified:** unit tier 545/545 (curator: 5 new, 2 replaced; summary: 2 renamed, 3 extended), each new test watched red first; bash tests/run.sh memory-branch curator-run 36/36 (memory-branch 25: mq and the ma rules check new, 5 replaced); check.sh --fast green, 1072 tests; bash -n, node --check on every touched file; an Opus review found 5 issues, 1 Important and 2 Minor fixed
+- **Tests:** 1069 → 1072
+- **Dead end:** writing apply's ruleTexts (cut from the facts base) into the rules worktree at the rules tip, as the spec's 'one base' reads — on a continue the facts tip's Gotchas would land on the rules branch and the earlier rules would revert; apply takes the rules base as a fifth CLI argument instead
+- **Dead end:** the union shadow as the facts result alone — the review traced a continue to a 121-line merge: the shadow is now graft(rules base, facts result), the rules tip with tier 1's Gotchas put in
+- **Dead end:** noting a rules-base failure in memory_base — the curator session's restrict reverts harness-log.md written before it; the note waits in RULES_NOTE and curator() gives it after the restrict
+- **Discovery** (affects N2-03, N1-04): The <run>/<n> numbering restarts at 1 every segment, and a reused rules PR's body appends the earlier segment's memory.md: two `### 1 ·` headings in one PR after a continue. N2-03's verb must say which segment (or offset n by the run's earlier max) (N1-01 review, not fixed).
+- **Discovery** (affects N2-03, N1-04): memory.json counts this segment only: a continue with no new tier-2 op rewrites the rules PR's memory.jsonl row (by url) to rules 0, sections [], as the facts row already does for applied (N1-01 review, not fixed).
+- **Discovery** (affects N1-04): A rules half that does not land (RULES_STOP, push or pr create failing, MERGE_POLICY=off) still counts its ops as `N rules` in the note, memory.json and the report, as the facts half counts applied; its text reaches Michael through memory.md only.
+- **Discovery** (affects N2-01, N2-02, N1-04): curator.mjs apply takes an optional fifth argument, the rules base directory ($SCRATCH/memory-rules-base/ from memory_base); memory_tip (facts|rules) sets TIP_NOTE instead of noting, so the caller places the note.
+- **Discovery** (affects project): A note given before the curator session (memory_base) is reverted by its restrict with harness-log.md; give it after ro_rescue, as curator() does with RULES_NOTE (agent-harness-2026-11-08 2026-11-08)
+- **Resolved:** memory-branch.sh's last check counts registered worktrees (12 since N1-02's md run): a new run in that file bumps it (agent-harness-2026-11-08 2026-11-08)
+- **Proposed change:** N1-01 step 3 says the mp notes read `… 1 proposals` and the Memory row `… 1 proposals`: with `proposed` tier 3 only (step 1) mp has no tier-3 op, so the checks assert 0 proposals
+- **Proposed change:** Promote to Gotchas, replacing the resolved line: memory-branch.sh's last check counts registered worktrees (13 since N1-01's mq run): a new run in that file bumps it (agent-harness-2026-11-08 2026-11-08)
+- *03-N1-01 · claude-opus-5-5*
+
 ### 2026-11-08 03:48 · N1-02 · passes
 
 Twins guarded: restrict memory reverts CLAUDE.md, .harness/project.md, .claude/CLAUDE.md and .claude/rules (now -z, unquoted paths); curator FILES, memory_base, memory_foreign, capCheck and the prompt take .claude/CLAUDE.md; memlint lints it on its own cap plus `twin`; STUB_DOT_CLAUDE; decision row, docs, prompts.

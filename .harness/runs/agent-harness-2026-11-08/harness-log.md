@@ -11,3 +11,6 @@
 - 2026-11-08 03:48 · N1-02: suite ran 5x (388 s) in the session
 - 2026-11-08 03:48 · N1-02: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-08 03:48 · N1-02 · claude-opus-5-5 · passes=true · 22 min · 2/8 passing
+- 2026-11-08 03:48 · context.md for N1-01: 6214 bytes
+- 2026-11-08 04:25 · N1-01: suite ran 2x (238 s) in the session
+- 2026-11-08 04:25 · N1-01 · claude-opus-5-5 · passes=true · 36 min · 3/8 passing
