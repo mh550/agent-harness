@@ -9,6 +9,15 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 20:28 · A4-01 · passes
+
+Docs checked against code: README, config template, lib/config.sh, decisions and architecture already held from A1-A3. Added the spec/fixture citations (contract v1) to architecture §4 and wrote docs/plans/2026-10-22-n8n-events-live.md (stages, commands, how to tell, undo). Subagent review fixed the inbox.md path.
+
+- **Files:** docs/architecture.md, docs/plans/2026-10-22-n8n-events-live.md
+- **Verified:** grep counts (EVENT_URL 3, harness-requests.path 3, harness context 2, harness requests 1), EVENT_TIMEOUT=5 in both config files, 3 decision files, none numbered; subagent review of docs diff, 1 finding fixed; check.sh --fast green 1064 tests
+- **Tests:** 1064 → 1064
+- *14-A4-01 · claude-sonnet-5-5*
+
 ### 2026-11-07 20:24 · verify A3 · passes
 
 A3-01..05 hold. Full suite 1898/1898 (710 s), fast 1064/1064, unit 538/538. Re-ran every step by hand in a throwaway state: verbatim answer, continue+runner via tmux shim, 03:30 refusal, 6 rejections, grace, lock, unit PATH without nvm, systemd-analyze. Reverting C1's fix turns its check red. Plan-recorded deviations accepted: request-files.sh name, duplicate keeps first result, unit PATH, --out.
@@ -286,22 +295,8 @@ Every notify call site names its kind (park+feature, needs_michael, blocked/ende
 - **Question for Michael:** EVENT_URL may hold a webhook secret but sits on curl's command line (ps, HARNESS_XTRACE traces) as NTFY_URL does; should lib/xtrace.sh's warning name it too, or the POST read the URL from a file (curl -K)? Default: left as is. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/docs/plans/2026-11-07-A1-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-07-3/slot-0/lib/notify.sh:62
 - *03-A1-03 · claude-opus-5-5*
 
-### 2026-11-07 16:08 · A1-02 · passes
-
-notify takes kind=/feature=; with EVENT_URL set park/needs_michael/blocked/debrief build v1 JSON in lib/notify.mjs event, keep it at events/<id>/event.json and POST it once (-w http_code, --max-time EVENT_TIMEOUT, no retry/token); 2xx logs and returns, else a note and today's ntfy/NOTIFY_CMD post unchanged. Stub-curl STUB_EVENT knob with real curl fixtures.
-
-- **Files:** lib/notify.mjs, lib/notify.sh, lib/config.sh, templates/user/config.sh, tests/stub-curl.sh, tests/fixtures/curl-event-200.out, tests/fixtures/curl-event-500.out, tests/fixtures/curl-event-timeout.out, tests/checks/event-hook.sh, tests/unit/notify.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
-- **Verified:** Red first: 5/6 unit tests and 7/11 event-hook checks failed before the code (the rest are guards that hold today). Then bash tests/run.sh event-hook unit-tier notify-body-cap origin-outage needs-record: 547/547; check.sh --fast green: 986 tests in 115 s.
-- **Tests:** 1791 → 1808
-- **Dead end:** a curl-event-timeout.err fixture with curl's (28) line (A1-01's discovery) — with -s and no -S real curl 8.5.0 writes nothing on stderr on a timeout: re-captured on loopback, so the stub prints only stdout 000 and exits 28
-- **Discovery** (affects A1-03): notify's kind defaults to other and no call site passes kind= yet: A1-03 adds them; until then every notification goes to ntfy exactly as before, EVENT_URL set or not.
-- **Discovery** (affects A1-03): tests/checks/event-hook.sh's eh/rec/posted/hdr helpers read one case's curl record; event-run.sh can read the event as the line after --data-binary in the call carrying 'Content-Type: application/json'.
-- **Discovery** (affects A1-03): The decision file (2026-10-22-event-hook-ntfy-fallback) and the architecture/README lines are A1-03's per the plan; A1-02 wrote none.
-- **Discovery** (affects project): curl -s (no -S) prints nothing on stderr on error: a timeout is stdout 000 + exit 28 only (agent-harness-2026-11-07-3 2026-11-07)
-- **Proposed change:** A1-02's unit-test name says 'stays ""'; it is 'stays the empty string' (a quote in a node:test name breaks the name fixtures' extraction)
-- *02-A1-02 · claude-opus-5-5*
-
 ## Older entries (in full in progress-archive.md)
 
+- 2026-11-07 16:08 · A1-02 · passes · notify takes kind=/feature=; with EVENT_URL set park/needs_michael/blocked/debrief build v1 JSON in … ([in full](progress-archive.md))
 - 2026-11-07 15:59 · A1-01 · passes · Wrote docs/plans/2026-11-07-A1-event-hook.md: the v1 event keys and who fills each, the POST verbati… ([in full](progress-archive.md))
 - 2026-11-07 15:53 · init · passes · 14 features: A1 3 (plan, event builder + routed post, call sites with folded review), A2 5 (plan, li… ([in full](progress-archive.md))

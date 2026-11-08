@@ -9,6 +9,15 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. Open questions are listed under the entries that asked them and in `harness needs`.
 
+### 2026-11-07 20:28 · A4-01 · passes
+
+Docs checked against code: README, config template, lib/config.sh, decisions and architecture already held from A1-A3. Added the spec/fixture citations (contract v1) to architecture §4 and wrote docs/plans/2026-10-22-n8n-events-live.md (stages, commands, how to tell, undo). Subagent review fixed the inbox.md path.
+
+- **Files:** docs/architecture.md, docs/plans/2026-10-22-n8n-events-live.md
+- **Verified:** grep counts (EVENT_URL 3, harness-requests.path 3, harness context 2, harness requests 1), EVENT_TIMEOUT=5 in both config files, 3 decision files, none numbered; subagent review of docs diff, 1 finding fixed; check.sh --fast green 1064 tests
+- **Tests:** 1064 → 1064
+- *14-A4-01 · claude-sonnet-5-5*
+
 ### 2026-11-07 20:24 · verify A3 · passes
 
 A3-01..05 hold. Full suite 1898/1898 (710 s), fast 1064/1064, unit 538/538. Re-ran every step by hand in a throwaway state: verbatim answer, continue+runner via tmux shim, 03:30 refusal, 6 rejections, grace, lock, unit PATH without nvm, systemd-analyze. Reverting C1's fix turns its check red. Plan-recorded deviations accepted: request-files.sh name, duplicate keeps first result, unit PATH, --out.
