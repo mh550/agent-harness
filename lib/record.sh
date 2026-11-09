@@ -356,138 +356,229 @@ _flakes_note() {
 }
 
 # Revert what a session changed since <base> outside what it may change: "record" (the run record), "nothing" (a
-# lane's .harness/runs/ is lane_guard's) or, inverted, "memory": the project's memory at the repo root (CLAUDE.md,
-# .harness/project.md) and nothing else. Its commits stay in history; a new commit puts the files back. Prints what it
-# reverted.
+# lane's .harness/runs/ is lane_guard's) or, inverted, "memory": the project's memory from the repo root (CLAUDE.md,
+# .harness/project.md, and the twins Claude Code loads the same way, .claude/CLAUDE.md and all of .claude/rules/:
+# decisions/2026-11-08-memory-rules-pr) and nothing else. Its commits stay in history; a new commit puts the files back.
+# Prints what it reverted.
 restrict() {   # base record|nothing|memory who
   local base=$1 spec=(. ':!.harness/runs') st path
   [[ $2 == nothing ]] && spec=(.)
-  [[ $2 == memory ]] && spec=(CLAUDE.md .harness/project.md)   # plain pathspecs from the root: docs/CLAUDE.md is code
+  [[ $2 == memory ]] && spec=(CLAUDE.md .harness/project.md .claude/CLAUDE.md .claude/rules)   # from the root: docs/CLAUDE.md and .claude/settings.json are code
   commit_all "WIP: uncommitted at session end (harness)"
-  while IFS=$'\t' read -r st path; do
+  # -z: a path git would quote (a rules file named café.md) comes verbatim, the path the revert needs
+  while IFS= read -r -d '' st && IFS= read -r -d '' path; do
     [[ -n $path ]] || continue
     if [[ $st == A ]]; then git rm -q --cached -- "$path" && rm -f -- "$path"; else git checkout -q "$base" -- "$path"; fi
     echo "$path"
-  done < <(git diff --name-status --no-renames "$base" HEAD -- "${spec[@]}")
+  done < <(git diff -z --name-status --no-renames "$base" HEAD -- "${spec[@]}")
   commit_all "HARNESS: reverted edits a $3 session may not make"
 }
 
-# The curator's base (decisions/2026-11-07-memory-tiers): harness-memory/<run>'s tip when origin has it with its open
-# `memory: <run>` PR (MEM_URL ← its URL: a continue's curator restates nothing already there) or with no PR at all (a
-# push whose pr create failed: the PR opens on it), main when main has taken that tip, else origin's main. A tip main
-# lacks whose PR is closed (or not the run's) is Michael's, and GitHub or origin not answering is no answer: 1, one
-# note, never a branch over it. The texts go to $SCRATCH/memory-base/ for the session to read, so its anchors are
-# matched against the text the apply sees
+# The curator's bases (decisions/2026-11-07-memory-tiers, decisions/2026-11-08-memory-rules-pr): for the facts
+# (harness-memory/<run>: MEM_BASE, MEM_URL, MEM_NOPR) and then the rules (harness-rules/<run>: RULES_BASE, RULES_URL,
+# RULES_NOPR), each by memory_tip from origin's main. The facts' texts go to $SCRATCH/memory-base/ for the session to read
+# (so its anchors are matched against the text the apply sees), the rules' to $SCRATCH/memory-rules-base/ for the apply,
+# and for a rules tip main lacks, its merge-base with main and main to memory-rules-mb/ and memory-main/ (the drift).
+# A facts base that fails is 1 and one note (no curator); a rules base that fails sets RULES_STOP and RULES_NOTE (noted by
+# curator() after the session), and the facts half goes on
 memory_base() {
-  local d=$SCRATCH/memory-base f tip pv st="" x b=harness-memory/$RUN_ID err=$STATE/memory-base.err
-  MEM_URL="" MEM_NOPR=""
+  local d=$SCRATCH/memory-base f main mb=""
+  MEM_URL="" MEM_NOPR="" RULES_BASE="" RULES_URL="" RULES_NOPR="" RULES_STOP="" RULES_NOTE=""
   origin_t git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
-  MEM_BASE=$(git -C "$RWT" rev-parse -q --verify "origin/$MAIN_BRANCH^{commit}") || { note "curator: none (no origin/$MAIN_BRANCH to curate against)"; return 1; }
-  tip=$(origin_t git -C "$RWT" ls-remote -q origin "refs/heads/$b" 2>> "$STATE/run.log") || { note "memory PR: none (origin did not answer for $b; see run.log)"; return 1; }
+  main=$(git -C "$RWT" rev-parse -q --verify "origin/$MAIN_BRANCH^{commit}") || { note "curator: none (no origin/$MAIN_BRANCH to curate against)"; return 1; }
+  memory_tip facts "$main" || { note "$TIP_NOTE"; return 1; }
+  MEM_BASE=$TIP_BASE MEM_URL=$TIP_URL MEM_NOPR=$TIP_NOPR
+  # the rules half's note waits for curator() to give it after the session's restrict, which reverts harness-log.md
+  if memory_tip rules "$main"; then RULES_BASE=$TIP_BASE RULES_URL=$TIP_URL RULES_NOPR=$TIP_NOPR; else RULES_STOP=1 RULES_NOTE=$TIP_NOTE; fi
+  # a rules tip main lacks: its merge-base with main and main itself, so the apply counts what main gained outside
+  # Gotchas since (the merge takes it too: the union cap's drift)
+  [[ -n $RULES_BASE && $RULES_BASE != "$main" ]] && mb=$(git -C "$RWT" merge-base "$RULES_BASE" "$main" 2> /dev/null)
+  for d in "$SCRATCH/memory-base:$MEM_BASE" "$SCRATCH/memory-rules-base:$RULES_BASE" "$SCRATCH/memory-rules-mb:$mb" "$SCRATCH/memory-main:${mb:+$main}"; do
+    rm -rf "${d%%:*}"; [[ -n ${d#*:} ]] || continue
+    mkdir -p "${d%%:*}/.harness" "${d%%:*}/.claude"
+    for f in CLAUDE.md .harness/project.md .claude/CLAUDE.md; do git -C "$RWT" show "${d#*:}:$f" > "${d%%:*}/$f" 2> /dev/null || rm -f "${d%%:*}/$f"; done
+  done
+}
+# facts|rules → the words of that tier's branch, PR and commit: B (branch), LBL (its notes' label), TITLE, WORD (the
+# commit subject's), NONE (the no-change reason)
+memory_tier() {
+  if [[ $1 == rules ]]; then B=harness-rules/$RUN_ID LBL="memory rules PR" TITLE="memory rules: $RUN_ID" WORD=rules NONE="no tier-2 change"
+  else B=harness-memory/$RUN_ID LBL="memory PR" TITLE="memory: $RUN_ID" WORD=facts NONE="no tier-1 change"; fi
+}
+# <facts|rules> <main> → TIP_BASE, the tier's branch tip when origin has it with its open PR (TIP_URL ← its URL: a
+# continue's curator restates nothing already there) or with no PR at all (TIP_NOPR: a push whose pr create failed; the
+# PR opens on it), <main> when main has taken that tip or there is none. A tip main lacks whose PR is closed (or not the
+# run's) is Michael's, and GitHub or origin not answering is no answer: 1 and TIP_NOTE (the caller notes it), never a
+# branch over it
+memory_tip() {
+  local tip pv st="" x B LBL TITLE WORD NONE err=$STATE/memory-base.err
+  memory_tier "$1"; TIP_BASE=$2 TIP_URL="" TIP_NOPR="" TIP_NOTE=""
+  tip=$(origin_t git -C "$RWT" ls-remote -q origin "refs/heads/$B" 2>> "$STATE/run.log") || { TIP_NOTE="$LBL: none (origin did not answer for $B; see run.log)"; return 1; }
   tip=${tip%%$'\t'*}
-  if [[ -n $tip ]]; then
-    if pv=$(origin_t $GH pr view "$b" --json url,state,title 2> "$err"); then   # the head's open PR, else its newest
-      [[ $(jq -r .title <<< "$pv" 2> /dev/null) == "memory: $RUN_ID" ]] && st=$(jq -r .state <<< "$pv")
-    elif grep -q '^no pull requests found' "$err"; then st=NONE
-    else cat "$err" >> "$STATE/run.log"; note "memory PR: none (GitHub did not answer for $b; see run.log)"; return 1; fi
-    origin_t git -C "$RWT" fetch -q origin "refs/heads/$b" 2>> "$STATE/run.log"
-    git -C "$RWT" cat-file -e "$tip^{commit}" 2> /dev/null || { note "memory PR: none (could not fetch $b; see run.log)"; return 1; }
-    if git -C "$RWT" merge-base --is-ancestor "$tip" "$MEM_BASE"; then :   # taken by main: cut from main, a fast-forward of it
-    elif [[ $st == OPEN || $st == NONE ]]; then
-      x=$(memory_foreign "$MEM_BASE" "$tip")   # a commit a session pushed there is never a base, nor carried to Michael
-      [[ -n $x ]] && { note "memory PR: none ($b has a commit the driver would not write, $x; delete the branch to curate again)"; return 1; }
-      MEM_BASE=$tip; if [[ $st == OPEN ]]; then MEM_URL=$(jq -r .url <<< "$pv"); else MEM_NOPR=1; fi
-    else note "memory PR: none ($b is on origin and main lacks it, its PR ${st:-titled otherwise}; delete the branch to curate again)"; return 1; fi
-  fi
-  rm -rf "$d"; mkdir -p "$d/.harness"
-  for f in CLAUDE.md .harness/project.md; do git -C "$RWT" show "$MEM_BASE:$f" > "$d/$f" 2> /dev/null || rm -f "$d/$f"; done
+  [[ -n $tip ]] || return 0
+  if pv=$(origin_t $GH pr view "$B" --json url,state,title 2> "$err"); then   # the head's open PR, else its newest
+    [[ $(jq -r .title <<< "$pv" 2> /dev/null) == "$TITLE" ]] && st=$(jq -r .state <<< "$pv")
+  elif grep -q '^no pull requests found' "$err"; then st=NONE
+  else cat "$err" >> "$STATE/run.log"; TIP_NOTE="$LBL: none (GitHub did not answer for $B; see run.log)"; return 1; fi
+  origin_t git -C "$RWT" fetch -q origin "refs/heads/$B" 2>> "$STATE/run.log"
+  git -C "$RWT" cat-file -e "$tip^{commit}" 2> /dev/null || { TIP_NOTE="$LBL: none (could not fetch $B; see run.log)"; return 1; }
+  if git -C "$RWT" merge-base --is-ancestor "$tip" "$2"; then :   # taken by main: cut from main, a fast-forward of it
+  elif [[ $st == OPEN || $st == NONE ]]; then
+    x=$(memory_foreign "$2" "$tip" "$WORD")   # a commit a session pushed there is never a base, nor carried to Michael
+    [[ -n $x ]] && { TIP_NOTE="$LBL: none ($B has a commit the driver would not write, $x; delete the branch to curate again)"; return 1; }
+    TIP_BASE=$tip; if [[ $st == OPEN ]]; then TIP_URL=$(jq -r .url <<< "$pv"); else TIP_NOPR=1; fi
+  else TIP_NOTE="$LBL: none ($B is on origin and main lacks it, its PR ${st:-titled otherwise}; delete the branch to curate again)"; return 1; fi
 }
 
-# <base> <tip> → the first commit of base..tip memory_pr would not have written: a merge, another subject than
-# `memory: <run>: <n> facts`, or a path besides CLAUDE.md and .harness/project.md (`<sha12> "<subject>" (<paths>)`); else nothing
+# <base> <tip> <facts|rules> → the first commit of base..tip memory_pr would not have written: a merge, another subject
+# than `memory: <run>: <n> <facts|rules>`, or a path besides curator.mjs's FILES (`<sha12> "<subject>" (<paths>)`); else nothing
 memory_foreign() {
   local c s f
   while read -r c; do
-    s=$(git -C "$RWT" log -1 --format=%s "$c"); f=$(git -C "$RWT" diff-tree --no-commit-id --name-only -r "$c" | grep -vxE 'CLAUDE\.md|\.harness/project\.md' | paste -sd' ')
-    if [[ -n $f || ! ${s#"memory: $RUN_ID: "} =~ ^[0-9]+\ facts$ || $(git -C "$RWT" rev-list --parents -n 1 "$c" | wc -w) != 2 ]]; then
+    s=$(git -C "$RWT" log -1 --format=%s "$c"); f=$(git -C "$RWT" diff-tree --no-commit-id --name-only -r "$c" | grep -vxE 'CLAUDE\.md|\.harness/project\.md|\.claude/CLAUDE\.md' | paste -sd' ')
+    if [[ -n $f || ! ${s#"memory: $RUN_ID: "} =~ ^[0-9]+\ $3$ || $(git -C "$RWT" rev-list --parents -n 1 "$c" | wc -w) != 2 ]]; then
       echo "${c:0:12} \"${s:0:80}\"${f:+ ($f)}"; return 0; fi
   done < <(git -C "$RWT" rev-list --reverse "$1..$2")
 }
 
-# <ops> <applied> <dropped> <proposed> <pr url|""> [<invalid why>] → $STATE/memory.json, for the summary (M3)
+# <ops> <applied> <rules> <dropped> <proposed> <pr url|""> <rules pr url|""> [<invalid why>] → $STATE/memory.json, for
+# the summary (M3, N1-01), with the `##` sections each tier's ops touched (from memory-result.json, when this segment has one)
 memory_json() {
-  jq -nc --argjson o "$1" --argjson a "$2" --argjson d "$3" --argjson p "$4" --arg u "$5" --arg w "${6:-}" \
-    '{ops: $o, applied: $a, dropped: $d, proposed: $p, pr: (if $u == "" then null else $u end)} + (if $w == "" then {} else {invalid: $w} end)' > "$STATE/memory.json"
+  local r=$SCRATCH/memory-result.json sec='{"facts":[],"rules":[]}'
+  [[ -s $r ]] && sec=$(jq -c 'def seen: reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end);
+    {facts: ([.applied[]?.section | sub("\\s+$"; "")] | seen), rules: ([.rules[]?.section | sub("\\s+$"; "")] | seen)}' "$r" 2> /dev/null || echo '{"facts":[],"rules":[]}')
+  jq -nc --argjson o "$1" --argjson a "$2" --argjson rl "$3" --argjson d "$4" --argjson p "$5" --arg u "$6" --arg ru "$7" --arg w "${8:-}" --argjson s "$sec" \
+    '{ops: $o, applied: $a, dropped: $d, proposed: $p, pr: (if $u == "" then null else $u end), rules: $rl, rules_pr: (if $ru == "" then null else $ru end), sections: $s}
+     + (if $w == "" then {} else {invalid: $w} end)' > "$STATE/memory.json"
 }
 
-# The curator's memory-ops.json (rescued to $SCRATCH) → applied on harness-memory/<run> in a detached scratch worktree
-# at MEM_BASE: tier 1 one commit (refused whole past the cap), tier 2 and 3 and every dropped op in the body of a
-# `memory: <run>` PR left for Michael (MEMORY_POLICY=pr) or merged at the pushed head (auto: only a push of a tier-1
-# commit merges; never --delete-branch, as record_pr); the body kept as memory.md in the run record. The record
+# The curator's memory-ops.json (rescued to $SCRATCH) → applied by curator.mjs in a detached scratch worktree at
+# MEM_BASE, then two passes of one path (decisions/2026-11-08-memory-rules-pr): the facts (tier 1, written there) on
+# harness-memory/<run> as `memory: <run>`, then the rules (tier 2, the result's ruleTexts written into the worktree made
+# again at RULES_BASE) on harness-rules/<run> as `memory rules: <run>`, each one commit, pushed (never forced) and its PR
+# opened or its body refreshed; a failure in one is its own note and never stops the other. Tier 3 and every dropped op
+# are in both bodies, each body naming the other PR; the union is memory.md in the run record. MEMORY_POLICY=auto
+# merges the facts PR alone, at the head pushed and after both bodies are written (never --delete-branch, as
+# record_pr); the rules PR is Michael's under every policy: memory_merge never sees its URL (invariant 3). The record
 # branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
 memory_pr() {
-  local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" o a d p rd refused x files=() b=harness-memory/$RUN_ID
+  local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" o a rl d p rd x f files=() rfiles=() rb=()
+  rm -f "$r"; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
+  [[ -z $RULES_STOP && -d $SCRATCH/memory-rules-mb ]] && rb+=("$SCRATCH/memory-rules-mb" "$SCRATCH/memory-main")
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
     why=$(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)
-    note "curator: memory-ops.json invalid: $why"; memory_json 0 0 0 0 "$MEM_URL" "$why"; return 0; }
+    note "curator: memory-ops.json invalid: $why"; memory_json 0 0 0 0 0 "$MEM_URL" "$RULES_URL" "$why"; return 0; }
   n=$(jq length "$SCRATCH/memory-ops.json" 2> /dev/null)
-  [[ $n == 0 ]] && { note "curator: no operations"; memory_json 0 0 0 0 "$MEM_URL"; return 0; }
+  [[ $n == 0 ]] && { note "curator: no operations"; memory_json 0 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0; }
   memory_wt_gone
   git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
-    || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 "$MEM_URL"; memory_wt_gone; return 0; }
-  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" > "$r" 2>> "$STATE/run.log"
-  # an apply that threw prints nothing: refused, no commit and no PR (tests/checks/no-answer.sh's rule)
-  IFS=$'\t' read -r o a d p rd refused < <(jq -r '[.ops, (.applied | length), (.dropped | length), (.proposed | length), .rederived, (.refused // "-")] | @tsv' "$r" 2> /dev/null)
-  if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; memory_json "$n" 0 0 0 "$MEM_URL"; memory_wt_gone; return 0; fi
-  note "memory: $o ops · $a applied · $d dropped · $p proposals"
-  while IFS= read -r x; do note "${x:0:200}"; done < <(jq -r '.dropped[] | select(.reason | startswith("refused: ") | not) | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"' "$r")
+    || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
+  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" > "$r" 2>> "$STATE/run.log"
+  # a stopped rules half commits nothing: its tier-2 ops are dropped (named in both bodies), the proposals renumbered
+  [[ -n $RULES_STOP && -s $r ]] && jq -c '.dropped += [.rules[]? | {op: del(.n), reason: "the rules half stopped; its note says why"}]
+    | .rules = [] | .ruleFiles = [] | .ruleTexts = {} | .proposed |= (to_entries | map(.value + {n: (.key + 1)}))' "$r" > "$r.t" 2> /dev/null && mv "$r.t" "$r"
+  # an apply that threw prints nothing: no commit and no PR (tests/checks/no-answer.sh's rule)
+  IFS=$'\t' read -r o a rl d p rd < <(jq -r '[.ops, (.applied | length), (.rules | length), (.dropped | length), (.proposed | length), .rederived] | @tsv' "$r" 2> /dev/null)
+  if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; fi
+  note "memory: $o ops · $a facts · $rl rules · $d dropped · $p proposals"
+  # a cap breach is a dropped op as any other (N1-03); an anchored add that evicted names the line it cut
+  while IFS= read -r x; do note "${x:0:200}"; done < <(jq -r '(.dropped[] | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"),
+    (.applied[], .rules[] | select(.evicted != null) | "memory: evicted \"\(.evicted[0:80])\" for \(.op) \(.section)")' "$r")
   (( rd > 0 )) && note "memory: tier re-derived for $rd ops"
-  [[ $refused != - ]] && note "memory: tier-1 commit refused ($refused)"
-  memory_body "$r"
+  # the facts: tier 1 as apply wrote it into the worktree; its body names the rules PR this run already has
   mapfile -t files < <(jq -r '.files[]?' "$r")
-  if (( a == 0 || ${#files[@]} == 0 )) || [[ $refused != - ]]; then
-    if [[ $MEM_URL == http* && $MERGE_POLICY != off ]]; then memory_edit "$MEM_URL" " (no tier-1 change)"   # its proposals still reach Michael
-    elif [[ -n $MEM_NOPR && $MERGE_POLICY != off ]]; then memory_open   # an earlier segment's commit, still without its PR
-    else note "memory PR: none (no tier-1 change); the body is in memory.md"; fi
-  elif [[ $MERGE_POLICY == off ]]; then note "memory PR: none (MERGE_POLICY=off); the body is in memory.md"
-  elif ! git -C "$w" add -- "${files[@]}" 2>> "$STATE/run.log" || ! git -C "$w" commit -q -m "memory: $RUN_ID: $a facts" -- "${files[@]}" 2>> "$STATE/run.log"; then
-    note "memory PR: could not commit the tier-1 change (see run.log)"
-  elif ! origin_t git -C "$w" push -q origin "HEAD:refs/heads/$b" 2>> "$STATE/run.log"; then   # never forced: a reused head moves forward
-    note "memory PR: could not push $b (see run.log)"
-  else
-    if [[ $MEM_URL == http* ]]; then url=$MEM_URL; memory_edit "$url" ""; else memory_open merge; fi
-    [[ $MEMORY_POLICY == auto && $url == http* ]] && memory_merge "$url" "$(git -C "$w" rev-parse HEAD)"
+  memory_body "$r" facts "$RULES_URL"
+  memory_pass facts "$a" "${files[@]}"; url=$PASS_URL fhead=$PASS_HEAD
+  # the rules: the worktree made again at their own base, tier 2's texts written into it
+  if [[ -z $RULES_STOP ]]; then
+    memory_wt_gone
+    mapfile -t rfiles < <(jq -r '.ruleFiles[]?' "$r")
+    if ! git -C "$RWT" worktree add -q --detach "$w" "$RULES_BASE" 2>> "$STATE/run.log"; then note "memory rules PR: none (no worktree at ${RULES_BASE:0:12}; see run.log)"
+    else
+      for f in "${rfiles[@]}"; do jq -j --arg f "$f" '.ruleTexts[$f]' "$r" > "$w/$f"; done
+      memory_body "$r" rules "${url:-$MEM_URL}"
+      memory_pass rules "$rl" "${rfiles[@]}"; rurl=$PASS_URL
+    fi
   fi
+  # a rules PR opened after the facts body was written: the facts body names it now
+  if [[ $rurl == http* && $rurl != "$RULES_URL" && ${url:-$MEM_URL} == http* ]]; then
+    memory_body "$r" facts "$rurl"
+    if origin_t $GH pr edit "${url:-$MEM_URL}" --body-file "$SCRATCH/memory-body-facts.md" > /dev/null 2>> "$STATE/run.log"; then note "memory PR: its body names the rules PR · ${url:-$MEM_URL}"
+    else note "memory PR: its body could not name the rules PR (see run.log) · ${url:-$MEM_URL}"; fi
+  fi
+  [[ $MEMORY_POLICY == auto && -n $fhead && $url == http* ]] && memory_merge "$url" "$fhead"   # the facts PR alone
+  memory_record "$r"
   memory_wt_gone
-  memory_json "$o" "$a" "$d" "$p" "${url:-$MEM_URL}"
+  memory_json "$o" "$a" "$rl" "$d" "$p" "${url:-$MEM_URL}" "${rurl:-$RULES_URL}"
 }
-# <result.json> → $SCRATCH/memory-body.md, the PR's body, and the run record's memory.md: on a reused PR this segment's
-# body over the earlier ones (the PR's first commit is explained there), while that fits GitHub's limit; a body that
-# fails is one line saying so
-memory_body() {
-  local m=$SCRATCH/memory-body.md
-  node "$HARNESS_HOME/lib/curator.mjs" body "$1" "$RUN_ID" > "$m" 2>> "$STATE/run.log" \
-    || { note "memory: the PR body failed (see run.log)"; echo "Project memory curated by run \`$RUN_ID\`: the body failed; memory-result.json in the run's scratch has the ops." > "$m"; }
-  if [[ $MEM_URL == http* && -s $REC/memory.md ]] && (( $(stat -c %s "$m") + $(stat -c %s "$REC/memory.md") < 60000 )); then
-    printf '\n---\n\n_An earlier segment of this run:_\n\n' >> "$m"; cat "$REC/memory.md" >> "$m"
+# <facts|rules> <count> <files…> → that tier's change committed in $SCRATCH/memory (`memory: <run>: <n> <tier>`), pushed
+# to its branch (never forced: a reused head moves forward) and its PR opened or its body refreshed; with no change, a
+# PR this run already has gets this segment's body and a pushed branch without one gets its PR. PASS_URL ← the PR's
+# URL, PASS_HEAD ← the commit pushed (auto merges the facts PR only at it)
+memory_pass() {
+  local t=$1 k=$2 prior nopr B LBL TITLE WORD NONE; shift 2
+  memory_tier "$t"; PASS_URL="" PASS_HEAD=""
+  if [[ $t == rules ]]; then prior=$RULES_URL nopr=$RULES_NOPR; else prior=$MEM_URL nopr=$MEM_NOPR; fi
+  if (( k == 0 || $# == 0 )); then
+    if [[ $prior == http* && $MERGE_POLICY != off ]]; then memory_edit "$prior" " ($NONE)" "$t"   # its proposals still reach Michael
+    elif [[ -n $nopr && $MERGE_POLICY != off ]]; then memory_open "$t"   # an earlier segment's commit, still without its PR
+    elif [[ $t == rules ]]; then note "$LBL: none ($NONE)"
+    else note "$LBL: none ($NONE); the body is in memory.md"; fi
+  elif [[ $MERGE_POLICY == off ]]; then note "$LBL: none (MERGE_POLICY=off); the body is in memory.md"
+  elif ! git -C "$SCRATCH/memory" add -- "$@" 2>> "$STATE/run.log" || ! git -C "$SCRATCH/memory" commit -q -m "memory: $RUN_ID: $k $WORD" -- "$@" 2>> "$STATE/run.log"; then
+    note "$LBL: could not commit the tier-$([[ $t == rules ]] && echo 2 || echo 1) change (see run.log)"
+  elif ! origin_t git -C "$SCRATCH/memory" push -q origin "HEAD:refs/heads/$B" 2>> "$STATE/run.log"; then
+    note "$LBL: could not push $B (see run.log)"
+  else
+    PASS_HEAD=$(git -C "$SCRATCH/memory" rev-parse HEAD)
+    if [[ $prior == http* ]]; then PASS_URL=$prior; memory_edit "$prior" "" "$t"; else memory_open "$t" merge; fi
   fi
+}
+# <result.json> <facts|rules> <other PR url|""> → $SCRATCH/memory-body-<tier>.md, that PR's body: on a reused PR this
+# segment's body over the earlier ones (memory.md: the PR's first commit is explained there), while that fits GitHub's
+# limit; a body that fails is one line saying so
+memory_body() {
+  local m=$SCRATCH/memory-body-$2.md prior=$MEM_URL
+  [[ $2 == rules ]] && prior=$RULES_URL
+  node "$HARNESS_HOME/lib/curator.mjs" body "$1" "$RUN_ID" "$2" "$3" > "$m" 2>> "$STATE/run.log" \
+    || { note "memory: the $([[ $2 == rules ]] && echo "rules ")PR body failed (see run.log)"; echo "Project memory curated by run \`$RUN_ID\`: the body failed; memory-result.json in the run record has the ops." > "$m"; }
+  memory_earlier "$m" "$prior"
+}
+# <body file> <the PR's url|""> → the earlier segments' memory.md appended, on a reused PR, while that fits
+memory_earlier() {
+  if [[ $2 == http* && -s $REC/memory.md ]] && (( $(stat -c %s "$1") + $(stat -c %s "$REC/memory.md") < 60000 )); then
+    printf '\n---\n\n_An earlier segment of this run:_\n\n' >> "$1"; cat "$REC/memory.md" >> "$1"
+  fi
+}
+# <result.json> → the run record's memory.md: the union of both bodies (decisions/2026-11-08-memory-rules-pr), over the
+# earlier segments' when either PR is reused
+memory_record() {
+  local m=$SCRATCH/memory-union.md u=$MEM_URL
+  node "$HARNESS_HOME/lib/curator.mjs" body "$1" "$RUN_ID" union > "$m" 2>> "$STATE/run.log" \
+    || echo "Project memory curated by run \`$RUN_ID\`: the body failed; memory-result.json in the run record has the ops." > "$m"
+  [[ $u == http* ]] || u=$RULES_URL
+  memory_earlier "$m" "$u"
   cp "$m" "$REC/memory.md"
 }
-memory_open() {   # [merge]: the memory PR opened on harness-memory/<run> and noted, unless the merge's note follows; its URL in url (the caller's), else ""
-  local u
-  url=""; u=$(origin_t $GH pr create --base "$MAIN_BRANCH" --head "harness-memory/$RUN_ID" --title "memory: $RUN_ID" --body-file "$SCRATCH/memory-body.md" 2>> "$STATE/run.log" | tail -1)
-  if [[ $u != http* ]]; then note "memory PR: could not open it (see run.log)"; return 0; fi
-  url=$u
-  if [[ $MEMORY_POLICY != auto ]]; then note "memory PR opened; left for Michael (MEMORY_POLICY=pr) · $u"
-  elif [[ ${1:-} != merge ]]; then note "memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · $u"; fi
+memory_open() {   # <facts|rules> [merge]: that tier's PR opened and noted, unless the merge's note follows; its URL in PASS_URL, else ""
+  local u B LBL TITLE WORD NONE
+  memory_tier "$1"; PASS_URL=""
+  u=$(origin_t $GH pr create --base "$MAIN_BRANCH" --head "$B" --title "$TITLE" --body-file "$SCRATCH/memory-body-$1.md" 2>> "$STATE/run.log" | tail -1)
+  if [[ $u != http* ]]; then note "$LBL: could not open it (see run.log)"; return 0; fi
+  PASS_URL=$u
+  if [[ $1 == rules ]]; then note "memory rules PR opened; left for Michael · $u"   # under every MEMORY_POLICY (invariant 3)
+  elif [[ $MEMORY_POLICY != auto ]]; then note "memory PR opened; left for Michael (MEMORY_POLICY=pr) · $u"
+  elif [[ ${2:-} != merge ]]; then note "memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · $u"; fi
 }
-memory_merge() {   # <url> <head> (MEMORY_POLICY=auto): merged only at the commit pushed, else left open, as record_pr
+memory_merge() {   # <url> <head> (MEMORY_POLICY=auto, the facts PR alone): merged only at the commit pushed, else left open, as record_pr
   if origin_t $GH pr merge "$1" --merge --match-head-commit "$2" > /dev/null 2>> "$STATE/run.log"; then note "memory PR merged into $MAIN_BRANCH · $1"
   else note "memory PR: the merge was refused; left open · $1"; fi
 }
-memory_edit() {   # <url> <why suffix>: the open memory PR's body refreshed, noted
-  if origin_t $GH pr edit "$1" --body-file "$SCRATCH/memory-body.md" > /dev/null 2>> "$STATE/run.log"; then note "memory PR updated$2 · $1"
-  else note "memory PR: its body was not updated (see run.log) · $1"; fi
+memory_edit() {   # <url> <why suffix> <facts|rules>: that open PR's body refreshed, noted; PASS_URL ← <url>
+  local B LBL TITLE WORD NONE
+  memory_tier "$3"; PASS_URL=$1
+  if origin_t $GH pr edit "$1" --body-file "$SCRATCH/memory-body-$3.md" > /dev/null 2>> "$STATE/run.log"; then note "$LBL updated$2 · $1"
+  else note "$LBL: its body was not updated (see run.log) · $1"; fi
 }
 # the scratch worktree goes after every path: a stale registration would trip gc (prune is the fallback)
 memory_wt_gone() { git -C "$RWT" worktree remove --force "$SCRATCH/memory" 2> /dev/null; rm -rf "$SCRATCH/memory"; git -C "$RWT" worktree prune 2> /dev/null; return 0; }

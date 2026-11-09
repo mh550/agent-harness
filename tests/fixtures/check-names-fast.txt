@@ -232,25 +232,32 @@ coverage: shScan keeps a multi-line array and a quoted string inside a $( ) insi
 coverage: shScan leaves out comments, closing words, a case's bare pattern, a function's header and a comment's quote or backslash
 coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
 coverage: two processes' V8 documents add up: a character ran when it did in either
-curator.mjs: a 16th Gotchas add without an anchor refuses the tier-1 commit, naming the breach
+curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/
+curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands
+curator.mjs: a continue after main gained lines outside Gotchas counts them in the union shadow, from the CLI's rules merge-base and main
+curator.mjs: a delete and an anchorless add in one list on a file at 15 Gotchas both land, the delete first
 curator.mjs: a fact a later entry resolved, or already in its section, is dropped
-curator.mjs: a file already over the cap takes a replace or a delete
+curator.mjs: a file already over the cap takes a replace or a delete and drops an anchorless add naming the cap
 curator.mjs: a heading inside a code fence, a repeated heading or CRLF line ends never misplace a write
-curator.mjs: a result over 120 lines refuses the tier-1 commit
+curator.mjs: a rules write that would change a protected section's raw lines is dropped
 curator.mjs: a tier-1 op whose text memlint finds a derivable count or run scope in is dropped, naming the lint
 curator.mjs: an anchor with no match or two matches drops its op, naming the anchor
+curator.mjs: an anchored add appends while the file is under both caps, and evicts its anchor at 15 Gotchas
+curator.mjs: an anchored add whose anchor a delete in the same list removed lands as a plain add when it fits
 curator.mjs: an op on a protected section is dropped and carried as a proposal
 curator.mjs: an op whose write would change a protected section's lines is dropped
 curator.mjs: apply derives the tier from the heading and counts a claim that disagrees
-curator.mjs: body lists the applied and tier-2 ops with their from, then the proposals, then the dropped with reasons
+curator.mjs: apply writes a tier-2 op into ruleTexts and a tier-1 op into texts, each from the base; proposed is tier 3 only
+curator.mjs: body renders the facts, rules and union bodies, rules then proposals numbered <run>/<n>, each naming the other PR
 curator.mjs: harm, a fact no entry states gives no op
 curator.mjs: harm, a fact stated then corrected gives one op, the correction
 curator.mjs: harm, a line from a tool result is dropped by the gate
 curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSON line
 curator.mjs: matchAnchor matches a line whose whitespace, backticks, emphasis or bullet differ
-curator.mjs: only tier 1 is written; a tier-2 op leaves the texts as they were
+curator.mjs: on a continue the union shadow is the rules tip with the facts tip's Gotchas, so neither tier's op takes the merge past 120 lines
 curator.mjs: the curator prompt renders with no placeholder left
-curator.mjs: the same add with an anchor evicts that line and is accepted
+curator.mjs: the op that crosses 120 lines is dropped naming the cap; the ops before and after it land
+curator.mjs: the union shadow drops a tier-2 add that takes the merged file past 120 lines while each tier alone fits
 curator.mjs: the write gate drops a text the entry its from names does not state, and keeps a delete with an existing anchor
 curator.mjs: tierOf gives every heading of the eight projects its fixture tier
 curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suffix aside
@@ -265,7 +272,7 @@ deploy.mjs: a true harness/ key or a context ignore isn't guarded (E1 review)
 deploy.mjs: vercel and netlify guards merge, keep keys and detect
 deploy: vercel-guard prints by-hand for a vercel.json with a true harness/ key (E1 review)
 driver memlint: a failing memlint is one memlint: failed note and the run goes on to done 3/3
-driver memlint: two findings are two memlint notes before the initializer's, and the run ends done 3/3
+driver memlint: three findings, the twin among them, are three memlint notes before the initializer's, and the run ends done 3/3
 driver partial: a session that edits only a mapped file gets a partial init (its check alone after the full run); tests-end is the full count
 driver partial: verify's run_init fresh removes the verified tree's part-; its suite runs in full (no arguments), after B's partial
 entries.mjs fill: a question without Files: gets the session's files appended (entry's first, absolute, deduplicated, 8 at most, no run dir); the rest byte for byte; a bold or backticked Files: counts
@@ -380,7 +387,7 @@ gotchasDiff: added, edited, deleted and no section
 gotchasLines: a wrapped bullet is one line and any # or ## heading ends the section
 harness gc --dry-run kills no tmux session
 harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
-harness memlint: a project (or a directory in it) prints the same two findings, exit 0; no argument or no repo is one error line
+harness memlint: a project (or a directory in it) prints the same three findings, exit 0; no argument or no repo is one error line
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
 harness needs --json: each command's full text (no ~, no cut)
@@ -585,6 +592,7 @@ lint: unreproducible leaves names, flags, budgets, sizes and file counts alone
 main_conflict card: why names sync_main in lib/record.sh and the memory run's M1–M5 (PRs #32–#36), not the run's own P1; the files and the compare URL
 memlint.mjs: main gives the CLI's bytes for a worktree, gotchas, store and store-line, and reads MEMLINT_LINES from io.env
 memlint.mjs: main with a wrong argument count is the usage error: exit 2, nothing on stdout, the usage line on stderr
+memlint: .claude/CLAUDE.md is linted on its own cap, and beside a CLAUDE.md yields twin at its line 1
 memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a wrapped bullet is one line)
 memlint: a ### under a decision is part of it, a ## heading is named by itself, a .md directory in a dir store is skipped
 memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
@@ -595,7 +603,7 @@ memlint: a worktree with neither DECISIONS= nor docs/decisions.md yields decisio
 memlint: an unreadable CLAUDE.md is exit 1 and one stderr line naming the file and the error
 memlint: currentRules reads a directory store and the three file shapes newest first
 memlint: currentRules skips ranges written with any dash or to, and a heading never replaces a row
-memlint: node --check passes, the usage header lists the five checks, a missing worktree exits 2
+memlint: node --check passes, the usage header lists the six checks, a missing worktree exits 2
 memlint: the dj CLAUDE.md (ed75a2d^) yields one derivable-count finding naming its line, exit 0
 memlint: the old rane store (aa88421^) yields a decisions finding for its Superseded line, none for the header or D9
 memlint: the old rane store without its current-rule-set header yields a header finding
@@ -603,6 +611,7 @@ memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonig
 memlint: the store lookup is decisionsStore, the one function reading .harness/config.sh and docs/decisions.md, each on one line
 memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
+memory: a coding session's .claude/CLAUDE.md and .claude/rules/ files are reverted the same way, one note each
 memory: a coding session's .harness/project.md edit is reverted the same way
 memory: a coding session's CLAUDE.md edit is reverted with one note in the coding prompt's words, and the run ends done
 memory: a session that leaves CLAUDE.md and .harness/project.md alone gets no revert note
@@ -813,7 +822,7 @@ requests.mjs: the validate CLI rejects a symlink unread, whatever it points at
 requests.mjs: unparsable text waits at 5 s and is rejected at 11 s
 requests.mjs: v 2 is rejected
 requests.mjs: verb merge is rejected
-restrict memory: CLAUDE.md and .harness/project.md go back, added, edited or deleted; docs/CLAUDE.md, lib/ and .harness/config.sh stay
+restrict memory: CLAUDE.md, .harness/project.md, .claude/CLAUDE.md and .claude/rules/ go back, added, edited or deleted; .claude/settings.json, docs/CLAUDE.md, lib/ and .harness/config.sh stay
 resume reloads config merged from main
 retro edits reverted
 review gate: reviewFindings reads <n> Critical and <n> Important, null without either
@@ -924,10 +933,10 @@ suite tools: wait_for gives up after its limit with its still-failing line, exit
 suite tools: wait_for refuses a limit that isn't whole seconds with one line, exit 2
 suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary.mjs memory: a summary built before this run has no Memory row
-summary.mjs memory: build reads memory.json's five keys, none with no file
+summary.mjs memory: build reads memory.json's keys, the rules PR's among them, none with no file
 summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
-summary.mjs memory: memoryView lists newest first with the summary line, (none) for none
+summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing

@@ -419,27 +419,29 @@ const ghPr = (state, ...hs) => {
   return { ...fx, state, mergedAt: state === "MERGED" ? "2026-11-07T14:00:00Z" : null, commits: hs.map(h => ({ ...fx.commits[0], messageHeadline: h })) };
 };
 
-test("summary.mjs memory: build reads memory.json's five keys, none with no file", () => {
+test("summary.mjs memory: build reads memory.json's keys, the rules PR's among them, none with no file", () => {
   const d = mkdtempSync(join(tmpdir(), "mem-"));
   try {
     assert.equal("memory" in build("/nonexistent/p/w", "r", d), false);
-    writeFileSync(join(d, "memory.json"), '{"ops":3,"applied":2,"dropped":0,"proposed":1,"pr":"https://example.test/pr/4"}\n');
-    assert.equal(JSON.stringify(build("/nonexistent/p/w", "r", d).memory), '{"ops":3,"applied":2,"dropped":0,"proposed":1,"pr":"https://example.test/pr/4"}');
+    writeFileSync(join(d, "memory.json"), '{"ops":3,"applied":2,"dropped":0,"proposed":1,"pr":"https://example.test/pr/4","rules":1,"rules_pr":"https://example.test/pr/5","sections":{"facts":["## Gotchas"],"rules":["## Code rules"]}}\n');
+    assert.equal(JSON.stringify(build("/nonexistent/p/w", "r", d).memory), '{"ops":3,"applied":2,"dropped":0,"proposed":1,"pr":"https://example.test/pr/4","rules":1,"rules_pr":"https://example.test/pr/5","sections":{"facts":["## Gotchas"],"rules":["## Code rules"]}}');
+    // a memory.json before N1-01 (no rules key) reads as no rules PR
     // invalid is left out; a file that is no object is none
     writeFileSync(join(d, "memory.json"), '{"ops":0,"applied":0,"dropped":0,"proposed":0,"pr":null,"invalid":"not an array"}\n');
-    assert.equal(JSON.stringify(build("/nonexistent/p/w", "r", d).memory), '{"ops":0,"applied":0,"dropped":0,"proposed":0,"pr":null}');
+    assert.equal(JSON.stringify(build("/nonexistent/p/w", "r", d).memory), '{"ops":0,"applied":0,"dropped":0,"proposed":0,"pr":null,"rules":0,"rules_pr":null,"sections":{"facts":[],"rules":[]}}');
     writeFileSync(join(d, "memory.json"), "{half");
     assert.equal("memory" in build("/nonexistent/p/w", "r", d), false);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
 test("summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing", () => {
-  const mem = { ops: 3, applied: 2, dropped: 0, proposed: 1, pr: "https://example.test/pr/4" };
+  const mem = { ops: 4, applied: 2, dropped: 0, proposed: 1, pr: "https://example.test/pr/4", rules: 1, rules_pr: "https://example.test/pr/5" };
   const s = { ...memFx(), checks: { source: "none" }, memory: mem };
   const { i, row } = rowOf(s, "| Memory | ");
-  assert.equal(row, "| Memory | 2 applied · 0 dropped · 1 proposals · PR https://example.test/pr/4 |");
+  assert.equal(row, "| Memory | 2 applied · 1 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR https://example.test/pr/5 |");
+  assert.equal(rowOf({ ...memFx(), memory: { ...mem, rules: 0, rules_pr: null } }, "| Memory | ").row, "| Memory | 2 applied · 0 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR none |");
   assert.equal(report(s).split("\n")[i - 1], "| Checks | not counted |", "after Checks");
-  assert.equal(rowOf({ ...memFx(), memory: { ops: 0, applied: 0, dropped: 0, proposed: 0, pr: null } }, "| Memory | ").row, "| Memory | 0 applied · 0 dropped · 0 proposals · PR none |");
+  assert.equal(rowOf({ ...memFx(), memory: { ops: 0, applied: 0, dropped: 0, proposed: 0, pr: null } }, "| Memory | ").row, "| Memory | 0 applied · 0 rules · 0 dropped · 0 proposals · PR none · rules PR none |");
 });
 
 test("summary.mjs memory: a summary built before this run has no Memory row", () => {
@@ -473,8 +475,17 @@ test("summary.mjs memory: ledger-line carries memory; memory-line is one memory.
     const rows = readFileSync(m, "utf8").trim().split("\n").map(l => JSON.parse(l));
     const run = fixture().run;
     assert.equal(JSON.stringify(rows.map(r => [r.run, r.url])), JSON.stringify([["other", "https://example.test/pr/1"], [run, "https://example.test/pr/2"], [run, mem.pr]]));
-    assert.equal(JSON.stringify(Object.keys(rows[2])), '["run","project","url","ops","applied","dropped","proposed","at"]');
+    assert.equal(JSON.stringify(Object.keys(rows[2])), '["run","project","tier","url","ops","applied","dropped","proposed","sections","at"]');
     assert.match(rows[2].at, /^\d{4}-\d\d-\d\dT/);
+    // both PRs: two rows, each with its tier and the sections its ops touched, each replaced by its url
+    const both = { ...mem, rules: 1, rules_pr: "https://example.test/pr/5", sections: { facts: ["## Gotchas"], rules: ["## Code rules"] } };
+    writeFileSync(join(d, "b.json"), JSON.stringify({ ...fixture(), memory: both }));
+    const two = await sameAsCli("summary.mjs", ["memory-line", join(d, "b.json"), m]);
+    assert.equal(two.out, `ledger: memory PR ${mem.pr} in memory.jsonl (2 applied · 0 dropped · 1 proposals)\nledger: memory rules PR https://example.test/pr/5 in memory.jsonl (1 rules · ## Code rules)\n`);
+    await sameAsCli("summary.mjs", ["memory-line", join(d, "b.json"), m]);
+    const rows2 = readFileSync(m, "utf8").trim().split("\n").map(l => JSON.parse(l)).filter(r => r.run === run);
+    assert.equal(JSON.stringify(rows2.map(r => [r.url, r.tier ?? null, r.sections ?? null])), JSON.stringify([["https://example.test/pr/2", null, null], [mem.pr, "facts", ["## Gotchas"]], ["https://example.test/pr/5", "rules", ["## Code rules"]]]));
+    assert.equal(JSON.stringify(Object.keys(rows2[2])), '["run","project","tier","url","ops","rules","dropped","proposed","sections","at"]');
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
@@ -488,27 +499,36 @@ test("summary.mjs memory: memoryState reads unchanged, edited, closed and open f
   assert.equal(memoryState(ghPr("OPEN", "memory: r: 2 facts"), "r"), "open");
   assert.equal(memoryState(ghPr("MERGED", "memory: r: 2 facts", "Merge branch 'main' into harness-memory/r"), "r"), "merged unchanged", "GitHub's Update branch edits nothing");
   assert.equal(memoryState(ghPr("MERGED"), "r"), "merged edited", "no driver commit is no unchanged merge");
+  // a rules PR: its own commits by the rules subject, GitHub's merge into harness-rules/<run> neither
+  assert.equal(memoryState(ghPr("MERGED", "memory: r: 2 rules", "Merge branch 'main' into harness-rules/r"), "r", "rules"), "merged unchanged");
+  assert.equal(memoryState(ghPr("MERGED", "memory: r: 2 facts"), "r", "rules"), "merged edited", "a facts commit is no rules PR's own");
+  assert.equal(memoryState(ghPr("MERGED", "memory: r: 2 rules"), "r"), "merged edited", "nor a rules commit a facts PR's");
+  assert.equal(memoryState(ghPr("MERGED", "memory: r: 2 facts", "Merge branch 'main' into harness-rules/r"), "r"), "merged edited");
   assert.equal(memoryState({ state: "MERGED", commits: "x" }, "r"), "merged edited");
   assert.equal(memoryState(null, "r"), "unknown");
   assert.equal(memoryState({}, "r"), "unknown");
 });
 
-test("summary.mjs memory: memoryView lists newest first with the summary line, (none) for none", async () => {
+test("summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row", async () => {
   const row = (run, n, at) => ({ run, project: "p", url: `https://example.test/pr/${n}`, ops: 3, applied: 2, dropped: 1, proposed: n, at });
   const rows = [row("a", 1, "2026-11-01T10:00:00Z"), row("c", 3, "2026-11-03T10:00:00Z"), row("b", 2, "2026-11-02T10:00:00Z"), row("d", 4, "2026-11-04T10:00:00Z")];
   const gh = { "https://example.test/pr/1": ghPr("MERGED", "memory: a: 2 facts"), "https://example.test/pr/2": ghPr("MERGED", "memory: b: 2 facts", "edit"),
     "https://example.test/pr/3": ghPr("CLOSED"), "https://example.test/pr/4": ghPr("OPEN", "memory: d: 2 facts") };
-  assert.equal(memoryView(rows, gh, 10).join("\n"), ["d · p · 2/1/4 · https://example.test/pr/4 · open", "c · p · 2/1/3 · https://example.test/pr/3 · closed",
-    "b · p · 2/1/2 · https://example.test/pr/2 · merged edited", "a · p · 2/1/1 · https://example.test/pr/1 · merged unchanged",
-    "merged unchanged 1 · edited 1 · closed 1 · open 1"].join("\n"));
-  assert.equal(memoryView(rows, gh, 2).join("\n"), ["d · p · 2/1/4 · https://example.test/pr/4 · open", "c · p · 2/1/3 · https://example.test/pr/3 · closed",
-    "merged unchanged 0 · edited 0 · closed 1 · open 1"].join("\n"), "at most n, the line over those shown");
+  assert.equal(memoryView(rows, gh, 10).join("\n"), ["d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "c · p · facts · 2/1/3 · https://example.test/pr/3 · closed",
+    "b · p · facts · 2/1/2 · https://example.test/pr/2 · merged edited", "a · p · facts · 2/1/1 · https://example.test/pr/1 · merged unchanged",
+    "facts: merged unchanged 1 · edited 1 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0"].join("\n"));
+  assert.equal(memoryView(rows, gh, 2).join("\n"), ["d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "c · p · facts · 2/1/3 · https://example.test/pr/3 · closed",
+    "facts: merged unchanged 0 · edited 0 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0"].join("\n"), "at most n, the line over those shown");
   // gh could not say: unknown, counted on its own
-  assert.equal(memoryView([rows[0]], {}, 10).join("\n"), "a · p · 2/1/1 · https://example.test/pr/1 · unknown\nmerged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1");
+  assert.equal(memoryView([rows[0]], {}, 10).join("\n"), "a · p · facts · 2/1/1 · https://example.test/pr/1 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0");
   assert.equal(memoryView([], {}, 10).join("\n"), "(none)");
+  // a rules row: its count and the sections it touched; its state read by the rules subject; counted on the rules line
+  const rr = { run: "d", project: "p", tier: "rules", url: "https://example.test/pr/6", ops: 3, rules: 1, dropped: 0, proposed: 0, sections: ["## Code rules"], at: "2026-11-04T10:00:01Z" };
+  assert.equal(memoryView([rows[3], rr], { ...gh, "https://example.test/pr/6": ghPr("MERGED", "memory: d: 1 rules") }, 10).join("\n"), ["d · p · rules · 1 · ## Code rules · https://example.test/pr/6 · merged unchanged",
+    "d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "facts: merged unchanged 0 · edited 0 · closed 0 · open 1", "rules: merged unchanged 1 · edited 0 · closed 0 · open 0"].join("\n"));
   // a project's rows only; none of it is (none); an equal at lists the later row first; memory-urls asks gh about exactly those shown
   const q = { ...row("e", 5, "2026-11-04T10:00:00Z"), project: "q" };
-  assert.equal(memoryView([...rows, q], gh, 10, "q")[0], "e · q · 2/1/5 · https://example.test/pr/5 · unknown");
+  assert.equal(memoryView([...rows, q], gh, 10, "q")[0], "e · q · facts · 2/1/5 · https://example.test/pr/5 · unknown");
   assert.equal(memoryView(rows, gh, 10, "none").join("\n"), "(none)");
   assert.equal(memoryShown([...rows, q], 2).map(r => r.run).join(","), "e,d");
   const d = mkdtempSync(join(tmpdir(), "memv-"));
@@ -516,6 +536,6 @@ test("summary.mjs memory: memoryView lists newest first with the summary line, (
     writeFileSync(join(d, "m.jsonl"), [...rows, q].map(r => JSON.stringify(r)).join("\n") + "\n{half\n");
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "2"]), { rc: 0, out: "https://example.test/pr/5\nhttps://example.test/pr/4\n" });
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "10", "q"]), { rc: 0, out: "https://example.test/pr/5\n" });
-    assert.equal((await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1"])).out, "e · q · 2/1/5 · https://example.test/pr/5 · unknown\nmerged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\n");
+    assert.equal((await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1"])).out, "e · q · facts · 2/1/5 · https://example.test/pr/5 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\n");
   } finally { rmSync(d, { recursive: true, force: true }); }
 });

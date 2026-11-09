@@ -42,8 +42,8 @@ check "curator: an empty memory-ops.json notes no operations; no memory branch, 
   '[[ $(hlog ce | grep -c " · curator: no operations$") == 1 ]] && [[ -z $(git -C "$T/origin.git" ls-remote --heads . "harness-memory/ce") ]] && ! titles | grep "^memory: " > /dev/null'
 HARNESS_TTY=0 "$H" report ce > "$T/ce-report.out" 2>&1; HARNESS_TTY=0 "$H" memory > "$T/ce-memory.out" 2>&1; mv "$T/gh.log" "$T/gh-ce-memory.log" 2> /dev/null
 check "curator: an empty memory-ops.json counts zeros and PR none (summary.json, the Memory row), and harness memory lists no PR for it" \
-  'jq -e ".memory == {ops: 0, applied: 0, dropped: 0, proposed: 0, pr: null}" "$(rec ce)/summary.json" > /dev/null \
-  && grep -xF "| Memory | 0 applied · 0 dropped · 0 proposals · PR none |" "$T/ce-report.out" > /dev/null \
+  'jq -e ".memory == {ops: 0, applied: 0, dropped: 0, proposed: 0, pr: null, rules: 0, rules_pr: null, sections: {facts: [], rules: []}}" "$(rec ce)/summary.json" > /dev/null \
+  && grep -xF "| Memory | 0 applied · 0 rules · 0 dropped · 0 proposals · PR none · rules PR none |" "$T/ce-report.out" > /dev/null \
   && [[ $(cat "$T/ce-memory.out") == "(none)" ]] && ! grep -F "\"run\":\"ce\"" "$T/ledger/memory.jsonl" > /dev/null 2>&1'
 
 # cb: not JSON

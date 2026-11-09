@@ -1,0 +1,3 @@
+[
+  {"op":"add","file":"CLAUDE.md","section":"## Code rules","text":"the stub's C work sits in work-C.txt at the root ({{RUN}} {{DATE}})","tier":2,"why":"C found a rule.","from":"entries.jsonl:{{LINE:C}}"}
+]

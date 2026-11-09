@@ -18,7 +18,7 @@ GL=$HARNESS_STATE/proj/gotcha/logs
 check "coding and verify prompts: a fact to discoveries affecting project, a workflow line to proposed_changes, a stale one to resolved; no Gotchas write" '
   c=$(tr -s " \n" "  " < "$HARNESS_STATE/proj/gotcha/prompt-coding.md") && v=$(tr -s " \n" "  " < "$HARNESS_STATE/proj/gotcha/prompt-verify.md") &&
   p=$(sed -n "/^## 3\. Finish/,/^Final message/p" "$HARNESS_STATE/proj/gotcha/prompt-coding.md" | tr -s " \n" "  ") &&
-  [[ $p == *"leave the project'"'"'s \`CLAUDE.md\` and \`.harness/project.md\` alone"* && $p == *"\`discoveries\` with \`affects: [\"project\"]\`: at most 160 characters, ending \`(<run> <date>)\`"* ]] &&
+  [[ $p == *"leave the project'"'"'s \`CLAUDE.md\`, \`.harness/project.md\`, \`.claude/CLAUDE.md\` and \`.claude/rules/\` alone"* && $p == *"\`discoveries\` with \`affects: [\"project\"]\`: at most 160 characters, ending \`(<run> <date>)\`"* ]] &&
   [[ $p == *"workflow line (how to work here) goes in \`proposed_changes\`"* && $p == *"\`Promote to Gotchas\` part first"*"no longer holds in your entry'"'"'s \`resolved\`"* ]] &&
   [[ $c != *"under \`## Gotchas\`"* && $c != *"15 lines at most"* && $c == *"\"resolved\": [\"Should X default to off?\"]"* && $c == *"\"affects\": [\"project\"]"* ]] &&
   [[ $c == *"\"project\"\` for a fact that outlives the run"* && $v == *"durable fact"*"with \`affects: [\"project\"]\`"* ]]'

@@ -39,6 +39,7 @@
 # last in a mapped file alone, S2-05). STUB_TOUCH_CODE=<id>: that feature's first coding session also writes a file
 # under lib/, tests/ and journal/decisions/ (M1-03). STUB_PROJECT_MD=<id>: that feature's first coding session edits
 # .harness/project.md (M1-03). STUB_INIT_GOTCHA=1: the initializer adds a ## Gotchas line to CLAUDE.md, uncommitted (M1-03).
+# STUB_DOT_CLAUDE=<id>: that feature's first coding session writes .claude/CLAUDE.md and adds .claude/rules/r.md (N1-02).
 # STUB_ASK=<id>: that feature's first coding session's entry asks "Should <id> default to off?"; STUB_RESOLVE=<id>: its later sessions' entries list it in `resolved`. STUB_ASK_TWO=<id>:
 # that feature's first coding session's entry asks two questions, each with a `Files:` line (R4-03); STUB_ASK_AGAIN=<id>:
 # that feature's first coding session's entry asks STUB_ASK's question again, same words. STUB_PROJECT_FACT=<id>[,<id>…]:
@@ -350,6 +351,7 @@ JSON
     if [[ ${STUB_TOUCH_CODE:-} == "$id" && $n == 1 ]]; then mkdir -p lib tests journal/decisions
       echo ": $id" > "lib/stub-$id.sh"; echo "$id" > "tests/stub-$id.txt"; echo "# stub $id" > "journal/decisions/stub-$id.md"; fi
     if [[ ${STUB_PROJECT_MD:-} == "$id" && $n == 1 ]]; then mkdir -p .harness && echo "$id fact" >> .harness/project.md; fi
+    if [[ ${STUB_DOT_CLAUDE:-} == "$id" && $n == 1 ]]; then mkdir -p .claude/rules && echo "- $id rule" >> .claude/CLAUDE.md && echo "# $id rule" > .claude/rules/r.md; fi
     # main may already have work-<id>.txt as written here (run demo merged it): a file only this run adds, for the minimal entry's files
     [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]] && echo "$HARNESS_RUN_ID" > "$id-$HARNESS_RUN_ID.txt"
     # STUB_ASK_TOUCH=<path>: the session that asks (STUB_ASK) changes it too, outside its entry's files (U2-08's fill)

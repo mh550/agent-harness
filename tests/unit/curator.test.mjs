@@ -1,10 +1,10 @@
 // lib/curator.mjs: the memory curator's rules (validate, the tier, anchors, the gate, the cap, apply, the body).   node --test tests/unit/curator.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PROTECTED, apply, body, capCheck, main, matchAnchor, tierOf, validate } from "../../lib/curator.mjs";
+import { PROTECTED, apply, body, capCheck, graft, main, matchAnchor, tierOf, validate } from "../../lib/curator.mjs";
 import { readEntries } from "../../lib/entries.mjs";
 import { gotchasDiff, gotchasLines, sectionEntries } from "../../lib/memlint.mjs";
 import { assemble } from "../../lib/render.mjs";
@@ -44,7 +44,7 @@ test("curator.mjs: validate refuses a malformed file whole with its first reason
   assert.equal(why([op({ op: "delete" })]), "op 1: delete without an anchor");
   assert.equal(why([op({ from: "line 4" })]), 'op 1: from "line 4" is not entries.jsonl:<n>');
   assert.equal(why([op({ from: "entries.jsonl:0" })]), 'op 1: from "entries.jsonl:0" is not entries.jsonl:<n>');
-  assert.equal(why([op({ file: "lib/x.sh" })]), 'op 1: file "lib/x.sh" is neither CLAUDE.md nor .harness/project.md');
+  assert.equal(why([op({ file: "lib/x.sh" })]), 'op 1: file "lib/x.sh" is none of CLAUDE.md, .harness/project.md, .claude/CLAUDE.md');
   assert.equal(why([op({ text: "a gotcha without its suffix" })]), "op 1: a Gotchas text without its (<run> <date>) suffix");
   assert.equal(why([op({ text: "x".repeat(150) + " (r1 2026-11-07)" })]), "op 1: text of 166 characters, at most 160");
   assert.equal(why([op({ text: "two\nlines (r1 2026-11-07)" })]), "op 1: add without a one-line text");
@@ -86,7 +86,7 @@ test("curator.mjs: apply derives the tier from the heading and counts a claim th
   const r = apply([op({ tier: 3 }), op({ section: "## Code rules", text: PROPOSAL, tier: 1 }), op({ text: undefined, op: "delete", anchor: "first gotcha line (r0 2026-11-01)" })], T(MD), ENTRIES, RUN);
   assert.equal(reasons(r), "");
   assert.equal(r.applied.map(o => o.tier).join(), "1,1");
-  assert.equal(r.proposed.map(o => o.tier).join(), "2");
+  assert.equal(r.rules.map(o => o.tier).join(), "2");
   assert.equal(r.rederived, 2);
   assert.equal(r.ops, 3);
 });
@@ -110,33 +110,72 @@ test("curator.mjs: an anchor with no match or two matches drops its op, naming t
   assert.equal(none.texts["CLAUDE.md"] === MD && two.texts["CLAUDE.md"] === twice, true);
 });
 
-test("curator.mjs: a 16th Gotchas add without an anchor refuses the tier-1 commit, naming the breach", () => {
-  const md = gotchas(15), r = apply([op()], T(md), ENTRIES, RUN);
-  assert.equal(r.refused, "## Gotchas: 16 entries, over 15");
-  assert.equal(r.applied.length, 0);
-  assert.equal(reasons(r), "refused: ## Gotchas: 16 entries, over 15");
-  assert.equal(r.texts["CLAUDE.md"] === md, true);
+const G = n => `gotcha number ${n} is about its own thing (r0 2026-11-01)`;
+const ES2 = [...ENTRIES, E({ feature: "B", discoveries: [{ text: "B's fact (r1 2026-11-07)", affects: ["project"] }] })];
+
+test("curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands", () => {
+  const md = gotchas(15), r = apply([op(), op({ op: "replace", anchor: G(2), text: "B's fact (r1 2026-11-07)", from: "entries.jsonl:3" })], T(md), ES2, RUN);
+  assert.equal(reasons(r), "over the cap: ## Gotchas: 16 entries, over 15");
+  assert.equal(r.dropped[0].op.op, "add");
+  assert.equal(r.applied.map(o => o.op).join(), "replace");
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"]).length, 15);
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"])[1], "- B's fact (r1 2026-11-07)");
+  assert.equal("refused" in r, false);
   assert.equal(capCheck("CLAUDE.md", md, md + "- one more (r1 2026-11-07)\n"), "## Gotchas: 16 entries, over 15");
   assert.equal(capCheck(".harness/project.md", md, md + "- one more (r1 2026-11-07)\n"), null);   // only CLAUDE.md is capped
 });
 
-test("curator.mjs: the same add with an anchor evicts that line and is accepted", () => {
-  const md = gotchas(15), r = apply([op({ anchor: "gotcha number 3 is about its own thing (r0 2026-11-01)" })], T(md), ENTRIES, RUN);
-  assert.equal(r.refused, null);
-  assert.equal(r.applied.length, 1);
-  const after = r.texts["CLAUDE.md"];
-  assert.equal(gotchasLines(after).length, 15);
-  assert.equal(gotchasLines(after)[2], `- ${FACT}`);
-  assert.equal(JSON.stringify(gotchasDiff(md, after)), '{"added":0,"edited":1,"deleted":0}');
+test("curator.mjs: the op that crosses 120 lines is dropped naming the cap; the ops before and after it land", () => {
+  const md = gotchas(3, [...Array.from({ length: 111 }, (_, i) => `line ${i}`), ""]);
+  assert.equal(lineCount(md), 119);
+  const r = apply([op({ text: "B's fact (r1 2026-11-07)", from: "entries.jsonl:3" }), op(),
+    op({ op: "replace", anchor: G(1), text: "B's fact, corrected later (r1 2026-11-07)", from: "entries.jsonl:4" })], T(md),
+    [...ES2, E({ feature: "C", discoveries: [{ text: "B's fact, corrected later (r1 2026-11-07)", affects: ["project"] }] })], RUN);
+  assert.equal(reasons(r), "over the cap: CLAUDE.md: 121 lines, over 120");
+  assert.equal(r.dropped[0].op.text, FACT);   // the second add: the first fit, the replace (written first) kept the count
+  assert.equal(r.applied.map(o => o.op).join(), "replace,add");
+  assert.equal(lineCount(r.texts["CLAUDE.md"]), 120);
+  assert.equal(apply([op()], T(gotchas(3, [...Array.from({ length: 112 }, (_, i) => `line ${i}`), ""])), ENTRIES, RUN, { maxLines: 130 }).applied.length, 1);   // MEMLINT_LINES's cap
 });
 
-test("curator.mjs: a result over 120 lines refuses the tier-1 commit", () => {
-  const md = gotchas(3, [...Array.from({ length: 112 }, (_, i) => `line ${i}`), ""]);
-  assert.equal(lineCount(md), 120);
-  const r = apply([op()], T(md), ENTRIES, RUN);
-  assert.equal(r.refused, "CLAUDE.md: 121 lines, over 120");
-  assert.equal(r.applied.length, 0);
-  assert.equal(apply([op()], T(md), ENTRIES, RUN, { maxLines: 130 }).refused, null);   // MEMLINT_LINES's cap
+test("curator.mjs: a delete and an anchorless add in one list on a file at 15 Gotchas both land, the delete first", () => {
+  const md = gotchas(15), r = apply([op(), op({ op: "delete", text: undefined, anchor: G(4) })], T(md), ENTRIES, RUN);
+  assert.equal(reasons(r), "");
+  assert.equal(r.applied.map(o => o.op).join(), "delete,add");
+  const g = gotchasLines(r.texts["CLAUDE.md"]);
+  assert.equal(`${g.length} ${g.at(-1) === `- ${FACT}`} ${g.includes(`- ${G(4)}`)}`, "15 true false");
+});
+
+test("curator.mjs: an anchored add appends while the file is under both caps, and evicts its anchor at 15 Gotchas", () => {
+  const md = gotchas(3), r = apply([op({ anchor: G(2) })], T(md), ENTRIES, RUN);
+  assert.equal(r.applied.length, 1);
+  assert.equal(r.applied[0].evicted, undefined);
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"]).at(-1), `- ${FACT}`);
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"]).includes(`- ${G(2)}`), true);   // its anchor line kept
+  assert.equal(JSON.stringify(gotchasDiff(md, r.texts["CLAUDE.md"])), '{"added":1,"edited":0,"deleted":0}');
+  const b = body(r, RUN);
+  assert.equal(b.includes("in place of"), false);
+  const full = gotchas(15), e = apply([op({ anchor: G(3) })], T(full), ENTRIES, RUN), after = e.texts["CLAUDE.md"];
+  assert.equal(e.applied.length, 1);
+  assert.equal(e.applied[0].evicted, `- ${G(3)}`);
+  assert.equal(gotchasLines(after).length, 15);
+  assert.equal(gotchasLines(after)[2], `- ${FACT}`);
+  assert.equal(JSON.stringify(gotchasDiff(full, after)), '{"added":0,"edited":1,"deleted":0}');
+  assert.equal(body(e, RUN).includes(`- \`add\` CLAUDE.md · ## Gotchas: ${FACT} (in place of: - ${G(3)}) — w (entries.jsonl:2)`), true);
+  const lines = gotchas(3, [...Array.from({ length: 112 }, (_, i) => `line ${i}`), ""]), l = apply([op({ anchor: G(1) })], T(lines), ENTRIES, RUN);
+  assert.equal(`${lineCount(lines)} ${l.applied[0].evicted === `- ${G(1)}`} ${lineCount(l.texts["CLAUDE.md"])}`, "120 true 120");   // the line cap alone evicts
+});
+
+test("curator.mjs: an anchored add whose anchor a delete in the same list removed lands as a plain add when it fits", () => {
+  const md = gotchas(15), r = apply([op({ anchor: G(3) }), op({ op: "delete", text: undefined, anchor: G(3) })], T(md), ENTRIES, RUN);
+  assert.equal(reasons(r), "");
+  assert.equal(r.applied.map(o => `${o.op}${o.evicted ? " evicted" : ""}`).join(), "delete,add");
+  const g = gotchasLines(r.texts["CLAUDE.md"]);
+  assert.equal(`${g.length} ${g.at(-1) === `- ${FACT}`} ${g.includes(`- ${G(3)}`)}`, "15 true false");
+  const none = apply([op({ anchor: "no such gotcha (r0 2026-11-01)" })], T(md), ENTRIES, RUN);   // at the cap it still needs its anchor
+  assert.equal(reasons(none), 'anchor "no such gotcha (r0 2026-11-01)" matches no line');
+  const typo = apply([op({ anchor: "no such gotcha (r0 2026-11-01)" })], T(gotchas(3)), ENTRIES, RUN);   // under the cap: no delete took it
+  assert.equal(`${typo.applied.length} ${reasons(typo)}`, '0 anchor "no such gotcha (r0 2026-11-01)" matches no line');
 });
 
 // memlint-self's "this checkout lints clean" for what the driver writes: the two line lints hold at the write too
@@ -147,16 +186,15 @@ test("curator.mjs: a tier-1 op whose text memlint finds a derivable count or run
   assert.equal(reasons(r), 'derivable-count: "~1,870 tests" (the suite can tell: store no count) | run-scope: "this run" (run scope goes in the run\'s brief)');
   assert.equal(r.applied.length, 1);
   assert.equal(r.texts["CLAUDE.md"].includes("1,870") || r.texts["CLAUDE.md"].includes("this run"), false);
-  assert.equal(apply([op({ section: "## Code rules", text: count })], T(MD), es, RUN).proposed.length, 1);   // tier 2: Michael's to judge
+  assert.equal(apply([op({ section: "## Code rules", text: count })], T(MD), es, RUN).rules.length, 1);   // tier 2: a rule for Michael to merge
 });
 
-test("curator.mjs: a file already over the cap takes a replace or a delete", () => {
+test("curator.mjs: a file already over the cap takes a replace or a delete and drops an anchorless add naming the cap", () => {
   const md = gotchas(16, [...Array.from({ length: 120 }, (_, i) => `line ${i}`), ""]);
-  const r = apply([op({ op: "replace", anchor: "gotcha number 1 is about its own thing (r0 2026-11-01)" }),
-    op({ op: "delete", text: undefined, anchor: "gotcha number 9 is about its own thing (r0 2026-11-01)" })], T(md), ENTRIES, RUN);
-  assert.equal(r.refused, null);
-  assert.equal(reasons(r), "");
-  assert.equal(r.applied.length, 2);
+  const r = apply([op({ text: "B's fact (r1 2026-11-07)", from: "entries.jsonl:3" }), op({ op: "replace", anchor: "gotcha number 1 is about its own thing (r0 2026-11-01)" }),
+    op({ op: "delete", text: undefined, anchor: "gotcha number 9 is about its own thing (r0 2026-11-01)" })], T(md), ES2, RUN);
+  assert.equal(reasons(r), `over the cap: CLAUDE.md: ${lineCount(md)} lines, over 120`);   // after the delete: one line out, one in
+  assert.equal(r.applied.map(o => o.op).join(), "delete,replace");
   assert.equal(gotchasLines(r.texts["CLAUDE.md"]).length, 15);
   assert.equal(lineCount(r.texts["CLAUDE.md"]), lineCount(md) - 1);
 });
@@ -177,7 +215,7 @@ test("curator.mjs: the write gate drops a text the entry its from names does not
   const long = [...ENTRIES, E({ discoveries: [{ text: "The resident helper answers every .mjs question over one coproc, and a missing answer is empty, so give the bash a safe branch", affects: ["project"] }] })];
   assert.equal(apply([op({ text: "The resident helper answers every .mjs question over one coproc (r1 2026-11-07)", from: "entries.jsonl:3" })], T(MD), long, RUN).applied.length, 1);
   assert.equal(r.applied.map(o => o.op).join(), "delete");
-  assert.equal(r.proposed.length, 1);
+  assert.equal(r.rules.length, 1);
   assert.equal(gotchasLines(r.texts["CLAUDE.md"]).join("|"), "- first gotcha line (r0 2026-11-01)");
 });
 
@@ -260,39 +298,124 @@ test("curator.mjs: an op whose write would change a protected section's lines is
   assert.equal(apply([op()], T(MD), ENTRIES, RUN).applied.length, 1);   // a write beside a protected section is no change to it
 });
 
-test("curator.mjs: only tier 1 is written; a tier-2 op leaves the texts as they were", () => {
-  const r = apply([op({ section: "## Code rules", text: PROPOSAL, tier: 2 }), op({ op: "replace", section: "## Code rules", anchor: "bash only.", text: PROPOSAL, tier: 2 })], T(MD), ENTRIES, RUN);
-  assert.equal(r.applied.length, 0);
-  assert.equal(r.proposed.length, 1);   // one key, one op: the later in the list
-  assert.equal(r.proposed[0].op, "replace");
-  assert.equal(r.texts["CLAUDE.md"] === MD, true);
-  const one = apply([op()], T(MD), ENTRIES, RUN);
-  assert.equal(gotchasLines(one.texts["CLAUDE.md"]).at(-1), `- ${FACT}`);
-  assert.equal(one.texts["CLAUDE.md"].endsWith("\n"), true);
-  assert.equal(lineCount(one.texts["CLAUDE.md"]), lineCount(MD) + 1);
+test("curator.mjs: apply writes a tier-2 op into ruleTexts and a tier-1 op into texts, each from the base; proposed is tier 3 only", () => {
+  const r = apply([op(), op({ section: "## Code rules", text: PROPOSAL, tier: 2 }), op({ op: "replace", section: "## Code rules", anchor: "bash only.", text: PROPOSAL, tier: 2 }),
+    op({ section: "## Live system", text: "B's fact (r1 2026-11-07)", from: "entries.jsonl:3", tier: 3 })], T(MD), [...ENTRIES, E({ feature: "B", discoveries: [{ text: "B's fact (r1 2026-11-07)", affects: ["project"] }] })], RUN);
+  assert.equal(r.applied.length, 1);
+  assert.equal(r.rules.length, 1);   // one key, one op: the later in the list
+  assert.equal(r.rules[0].op, "replace");
+  assert.equal(r.proposed.map(o => o.tier).join(","), "3");
+  assert.equal(r.texts["CLAUDE.md"].includes(PROPOSAL), false, "a tier-2 op is not in texts");
+  assert.equal(gotchasLines(r.texts["CLAUDE.md"]).at(-1), `- ${FACT}`);
+  assert.equal(r.ruleTexts["CLAUDE.md"].includes(FACT), false, "a tier-1 op is not in ruleTexts");
+  assert.equal(r.ruleTexts["CLAUDE.md"], MD.replace("- bash only.", `- ${PROPOSAL}`));
+  assert.equal(lineCount(r.texts["CLAUDE.md"]), lineCount(MD) + 1);
+  assert.equal(r.ops, r.applied.length + r.rules.length + r.dropped.length);
+  // the rules numbered first, then the proposals, one sequence: <run>/<n>
+  assert.equal(JSON.stringify([...r.rules, ...r.proposed].map(o => o.n)), "[1,2]");
+  // a rules base of its own (a continue's harness-rules tip): the tier-2 op is matched and written there
+  const rb = MD.replace("- bash only.", "- bash only.\n- an earlier rule.");
+  const own = apply([op({ op: "replace", section: "## Code rules", anchor: "an earlier rule.", text: PROPOSAL, tier: 2 })], T(MD), ENTRIES, RUN, { ruleBase: T(rb) });
+  assert.equal(own.rules.length, 1, reasons(own));
+  assert.equal(own.ruleTexts["CLAUDE.md"], rb.replace("- an earlier rule.", `- ${PROPOSAL}`));
+  assert.equal(own.texts["CLAUDE.md"] === MD, true);
 });
 
-test("curator.mjs: body lists the applied and tier-2 ops with their from, then the proposals, then the dropped with reasons", () => {
+test("curator.mjs: the union shadow drops a tier-2 add that takes the merged file past 120 lines while each tier alone fits", () => {
+  const pad = Array.from({ length: 112 }, (_, i) => `pad line ${i + 1}`);   // 119 lines with the heading block below
+  const md = ["# P", "", "## Code rules", "", "- bash only.", "", ...pad, "## Gotchas", ""].join("\n").replace(/\n$/, "") + "\n";
+  assert.equal(lineCount(md), 119);
+  const r = apply([op(), op({ section: "## Code rules", text: PROPOSAL, tier: 2 })], T(md), ENTRIES, RUN);
+  assert.equal(r.applied.length, 1);
+  assert.equal(r.rules.length, 0);
+  assert.equal(reasons(r), "over the cap: CLAUDE.md: 121 lines, over 120");
+  assert.equal(r.ruleTexts["CLAUDE.md"] === md, true);
+  assert.equal(apply([op({ section: "## Code rules", text: PROPOSAL, tier: 2 })], T(md), ENTRIES, RUN).rules.length, 1, "alone it fits");
+});
+
+test("curator.mjs: on a continue the union shadow is the rules tip with the facts tip's Gotchas, so neither tier's op takes the merge past 120 lines", () => {
+  const pad = Array.from({ length: 111 }, (_, i) => `pad line ${i + 1}`);
+  const main = ["# P", "", "## Code rules", "", "- bash only.", "", ...pad, "## Gotchas", ""].join("\n").replace(/\n$/, "") + "\n";
+  assert.equal(lineCount(main), 118);
+  const factsTip = main + "- an earlier gotcha (r0 2026-11-01)\n", rulesTip = main.replace("- bash only.", "- bash only.\n- an earlier rule.");
+  assert.equal(graft(rulesTip, factsTip), rulesTip + "- an earlier gotcha (r0 2026-11-01)\n");   // the merge of both PRs: 120 lines
+  const two = apply([op({ section: "## Code rules", text: PROPOSAL, tier: 2 })], T(factsTip), ENTRIES, RUN, { ruleBase: T(rulesTip) });
+  assert.equal(`${two.rules.length} ${reasons(two)}`, "0 over the cap: CLAUDE.md: 121 lines, over 120");
+  const one = apply([op()], T(factsTip), ENTRIES, RUN, { ruleBase: T(rulesTip) });
+  assert.equal(`${one.applied.length} ${reasons(one)}`, "0 over the cap: CLAUDE.md: 121 lines, over 120");
+  assert.equal(apply([op()], T(factsTip), ENTRIES, RUN).applied.length, 1, "without a rules tip of its own it fits");
+  assert.equal(graft(null, factsTip), factsTip);
+});
+
+test("curator.mjs: a continue after main gained lines outside Gotchas counts them in the union shadow, from the CLI's rules merge-base and main", () => {
+  // the rules tip was cut from main0; main has since gained 5 Code rules lines (another PR merged): the merge takes them all
+  const main0 = ["# P", "", "## Code rules", "", "- bash only.", "", "## Gotchas", "", "- an earlier gotcha (r0 2026-11-01)", ""].join("\n");
+  const main1 = main0.replace("- bash only.", ["- bash only.", ...Array.from({ length: 5 }, (_, i) => `- a later rule ${i + 1}.`)].join("\n"));
+  const rulesTip = main0.replace("- bash only.", "- bash only.\n- an earlier rule.");
+  assert.equal(`${lineCount(main0)} ${lineCount(main1)} ${lineCount(rulesTip)}`, "9 14 10");
+  const rule = op({ section: "## Code rules", text: PROPOSAL, tier: 2 });
+  // the stale tip alone: 11 lines on the shadow, under 13; the merge would be 15 (main1 + 2 rules)
+  assert.equal(apply([rule], T(main1), ENTRIES, RUN, { ruleBase: T(rulesTip), maxLines: 13 }).rules.length, 1);
+  const r = apply([rule], T(main1), ENTRIES, RUN, { ruleBase: T(rulesTip), maxLines: 13, drift: { "CLAUDE.md": 5 } });
+  assert.equal(`${r.rules.length} ${reasons(r)}`, "0 over the cap: CLAUDE.md: 16 lines, over 13");
+  // a tier-1 add is capped on the same shadow
+  const f = apply([op()], T(main1), ENTRIES, RUN, { ruleBase: T(rulesTip), maxLines: 15, drift: { "CLAUDE.md": 5 } });
+  assert.equal(`${f.applied.length} ${reasons(f)}`, "0 over the cap: CLAUDE.md: 16 lines, over 15");
+  // an anchored tier-1 add that fits the facts text but not the union evicts its anchor rather than dropping
+  const ev = apply([op({ anchor: "an earlier gotcha (r0 2026-11-01)" })], T(main1), ENTRIES, RUN, { ruleBase: T(rulesTip), maxLines: 15, drift: { "CLAUDE.md": 5 } });
+  assert.equal(`${ev.applied.length} ${ev.applied[0]?.evicted} ${reasons(ev)}`, "1 - an earlier gotcha (r0 2026-11-01) ");
+  const d = mkdtempSync(join(tmpdir(), "curator-drift-"));
+  try {
+    const put = (dir, md) => { mkdirSync(join(d, dir)); writeFileSync(join(d, dir, "CLAUDE.md"), md); return join(d, dir); };
+    const w = put("w", main1), rb = put("rb", rulesTip), mb = put("mb", main0), mn = put("main", main1);
+    writeFileSync(join(d, "ops.json"), JSON.stringify([rule]));
+    writeFileSync(join(d, "entries.jsonl"), ENTRIES.map(e => JSON.stringify(e)).join("\n") + "\n");
+    const cli = (...x) => JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl"), rb, ...x], { env: { MEMLINT_LINES: "13" } }).out);
+    assert.equal(cli().rules.length, 1, "no merge-base given: no drift");
+    assert.equal(cli(mb, mn).dropped.map(x => x.reason).join(), "over the cap: CLAUDE.md: 16 lines, over 13");
+    // main moved only inside Gotchas (the facts PR merged): no drift
+    put("g", main0.replace("- an earlier gotcha (r0 2026-11-01)", "- an earlier gotcha (r0 2026-11-01)\n- a merged gotcha (r0 2026-11-02)"));
+    assert.equal(cli(mb, join(d, "g")).rules.length, 1);
+    assert.equal(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl"), rb, mb], { env: {} }).rc, 2, "a merge-base needs its main");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("curator.mjs: a rules write that would change a protected section's raw lines is dropped", () => {
+  // an unclosed fence in Code rules runs to the end of the file as one entry: replacing it would take Live system with it
+  const md = ["# P", "", "## Code rules", "", "- a rule", "```", "- fenced", "", "## Live system", "", "- deploy via scripts/deploy.sh.", ""].join("\n");
+  const fenced = sectionEntries(md, "## Code rules")[1].text;
+  const r = apply([op({ op: "replace", section: "## Code rules", anchor: fenced, text: PROPOSAL, tier: 2 })], T(md), ENTRIES, RUN);
+  assert.equal(r.rules.length, 0);
+  assert.equal(reasons(r), "would change the protected section ## Live system");
+  assert.equal(r.ruleTexts["CLAUDE.md"] === md, true);
+});
+
+test("curator.mjs: body renders the facts, rules and union bodies, rules then proposals numbered <run>/<n>, each naming the other PR", () => {
   const es = [...ENTRIES, E({ feature: "B", discoveries: [{ text: "B's fact (r1 2026-11-07)", affects: ["project"] }] })];
   const r = apply([op(), op({ section: "## Code rules", text: PROPOSAL, tier: 2 }), op({ section: "## Live system", text: "B's fact (r1 2026-11-07)", from: "entries.jsonl:3", tier: 3 }),
     op({ text: "Never stated (r1 2026-11-07)" })], T(MD), es, RUN);
-  const b = body(r, RUN), at = s => b.indexOf(s);
-  assert.equal(b.split("\n")[0].includes("4 ops · 1 applied · 2 dropped · 2 proposals"), true, b.split("\n")[0]);
-  const order = ["## Applied (tier 1)", FACT, "## For you to paste (tier 2)", PROPOSAL, "## Proposals (protected, tier 3)", "B's fact", "## Dropped", "Never stated", "not stated by entries.jsonl:2"];
-  assert.equal(order.filter(s => at(s) < 0).join(" | "), "");
-  assert.equal(order.every((s, i) => i === 0 || at(order[i - 1]) < at(s)), true);
-  assert.equal((b.match(/entries\.jsonl:2/g) ?? []).length >= 3, true);   // the applied, the tier-2 and the dropped op's from
-  assert.equal(b.includes("(entries.jsonl:3)"), true);
-  assert.equal(b.includes("protected section: a proposal"), false);   // a proposal is listed once, as a proposal
-  const at2 = body({ ...r, applied: [{ ...r.applied[0], why: "ask @mh550 first" }] }, RUN);
-  assert.equal(/(^|[^`])@mh550/.test(at2.replace(/@\u200b/g, "")), false);   // a mention outside a fence would notify
-  assert.equal(at2.includes("@\u200bmh550"), true);
+  const facts = body(r, RUN, "facts", "https://example.test/pr/9"), rules = body(r, RUN, "rules", "https://example.test/pr/8"), all = body(r, RUN, "union");
+  for (const b of [facts, rules, all]) assert.equal(b.split("\n")[0].includes("4 ops · 1 facts · 1 rules · 2 dropped · 1 proposals"), true, b.split("\n")[0]);
+  const inOrder = (b, xs) => xs.filter(s => !b.includes(s)).join(" | ") || (xs.every((s, i) => i === 0 || b.indexOf(xs[i - 1]) < b.indexOf(s)) ? "" : "out of order");
+  assert.equal(inOrder(facts, ["## Applied (tier 1)", FACT, "## Proposals (protected, tier 3)", "### 2 · `add` CLAUDE.md · ## Live system (entries.jsonl:3)", "## Dropped", "not stated by entries.jsonl:2", "Rules of this run: https://example.test/pr/9"]), "");
+  assert.equal(facts.includes("## Rules (tier 2)") || facts.includes(`- ${PROPOSAL}`), false, "the facts body carries no rule");
+  assert.equal(facts.trimEnd().endsWith("Rules of this run: https://example.test/pr/9"), true);
+  assert.equal(inOrder(rules, ["## Rules (tier 2)", "### 1 · `add` CLAUDE.md · ## Code rules (entries.jsonl:2)", PROPOSAL, "## Proposals (protected, tier 3)", "### 2 · ", "## Dropped", "Never stated", "Facts of this run: https://example.test/pr/8"]), "");
+  assert.equal(rules.includes("## Applied (tier 1)"), false, "the rules body carries no fact");
+  assert.equal(inOrder(all, ["## Applied (tier 1)", "## Rules (tier 2)", "### 1 · ", "## Proposals (protected, tier 3)", "### 2 · ", "## Dropped"]), "");
+  assert.equal(body(r, RUN, "facts").trimEnd().endsWith("Rules of this run: none"), true);
+  assert.equal(body(r, RUN, "rules").trimEnd().endsWith("Facts of this run: none"), true);
+  assert.equal(body(r, RUN), all, "the union by default");
+  assert.equal(/For you to paste|protected section: a proposal/.test(all), false);   // a proposal is listed once, as a proposal
+  const at2 = body({ ...r, applied: [{ ...r.applied[0], why: "ask @mh550 first" }] }, RUN, "facts");
+  assert.equal(/(^|[^`])@mh550/.test(at2.replace(/@​/g, "")), false);   // a mention outside a fence would notify
+  assert.equal(at2.includes("@​mh550"), true);
   const sec = body(apply([op({ section: "## @mh550 see" })], T(MD), ENTRIES, RUN), RUN);   // a section no file has, in Dropped
-  assert.equal(/(^|[^`])@mh550/.test(sec.replace(/@\u200b/g, "")), false);
+  assert.equal(/(^|[^`])@mh550/.test(sec.replace(/@​/g, "")), false);
   const empty = body(apply([], T(MD), ENTRIES, RUN), RUN);
-  assert.equal(/## (Applied|For you|Proposals|Dropped)/.test(empty), false);
-  const refused = body(apply([op()], T(gotchas(15)), ENTRIES, RUN), RUN);
-  assert.equal(refused.includes("refused: ## Gotchas: 16 entries, over 15"), true);
+  assert.equal(/## (Applied|Rules|Proposals|Dropped)/.test(empty), false);
+  const capped = body(apply([op()], T(gotchas(15)), ENTRIES, RUN), RUN, "facts");
+  assert.equal(capped.includes("over the cap: ## Gotchas: 16 entries, over 15"), true);
 });
 
 test("curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSON line", () => {
@@ -307,14 +430,27 @@ test("curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSO
     assert.equal(r.rc, 0);
     assert.equal(r.out.split("\n").length, 2);   // one line and its newline
     const j = JSON.parse(r.out);
-    assert.equal(`${j.ops} ${j.applied.length} ${j.proposed.length} ${j.dropped.length} ${j.rederived} ${j.refused}`, "2 1 1 0 1 null");
+    assert.equal(`${j.ops} ${j.applied.length} ${j.rules.length} ${j.proposed.length} ${j.dropped.length} ${j.rederived} ${"refused" in j}`, "2 1 1 0 0 1 false");
     assert.equal(j.files.join(), "CLAUDE.md");
     assert.equal(j.texts, undefined);
+    // the rules: in the JSON line for memory_pr's rules pass, never written into the worktree
+    assert.equal(`${j.ruleFiles.join()} ${Object.keys(j.ruleTexts).join()} ${j.ruleTexts["CLAUDE.md"].includes(PROPOSAL)} ${j.ruleTexts["CLAUDE.md"].includes(FACT)}`, "CLAUDE.md CLAUDE.md true false");
+    assert.equal(readFileSync(join(w, "CLAUDE.md"), "utf8").includes(PROPOSAL), false);
     assert.equal(gotchasLines(readFileSync(join(w, "CLAUDE.md"), "utf8")).at(-1), `- ${FACT}`);
     writeFileSync(join(d, "result.json"), r.out);
     const b = main(["body", join(d, "result.json"), RUN], { env: {} });
     assert.equal(b.rc, 0);
     assert.equal(b.out.includes(PROPOSAL), true);
+    assert.equal(main(["body", join(d, "result.json"), RUN, "facts", "https://example.test/pr/2"], { env: {} }).out.includes(PROPOSAL), false);
+    assert.equal(main(["body", join(d, "result.json"), RUN, "rules", "https://example.test/pr/2"], { env: {} }).out.includes("Facts of this run: https://example.test/pr/2"), true);
+    assert.equal(main(["body", join(d, "result.json"), RUN, "neither"], { env: {} }).rc, 2);
+    // a rules base directory of its own: the tier-2 op is cut from it
+    const rb = mkdtempSync(join(d, "rb-"));
+    writeFileSync(join(rb, "CLAUDE.md"), MD.replace("- bash only.", "- bash only.\n- an earlier rule."));
+    writeFileSync(join(w, "CLAUDE.md"), MD);
+    const two = JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl"), rb], { env: {} }).out);
+    assert.equal(two.ruleTexts["CLAUDE.md"].includes("- an earlier rule."), true);
+    writeFileSync(join(w, "CLAUDE.md"), MD);
     writeFileSync(join(d, "bad.json"), "{not json");
     const bad = main(["validate", join(d, "bad.json")], { env: {} });
     assert.equal(bad.rc, 1);
@@ -324,11 +460,11 @@ test("curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSO
     assert.match(JSON.parse(badApply.out).invalid, /^not JSON: /);
     writeFileSync(join(w, "CLAUDE.md"), gotchas(3, [...Array.from({ length: 112 }, (_, i) => `line ${i}`), ""]));
     const capped = JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl")], { env: { MEMLINT_LINES: "200" } }).out);
-    assert.equal(capped.refused, null);   // MEMLINT_LINES raises the cap
+    assert.equal(capped.applied.length, 1);   // MEMLINT_LINES raises the cap
     const full = gotchas(15);
     writeFileSync(join(w, "CLAUDE.md"), full);
     const no = JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl")], { env: {} }).out);
-    assert.equal(`${no.refused} ${no.files.length}`, "## Gotchas: 16 entries, over 15 0");
+    assert.equal(`${no.dropped[0].reason} ${no.files.length}`, "over the cap: ## Gotchas: 16 entries, over 15 0");
     assert.equal(readFileSync(join(w, "CLAUDE.md"), "utf8") === full, true);
     // a symlinked CLAUDE.md is no file: never read through, never written through
     const outside = join(d, "outside.md");
@@ -339,6 +475,35 @@ test("curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSO
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
+test("curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/", () => {
+  const dc = ".claude/CLAUDE.md", why = x => validate(JSON.stringify(x)).why;
+  assert.equal(validate(JSON.stringify([op({ file: dc })])).ok, true);
+  assert.equal(why([op({ file: ".claude/rules/x.md" })]), 'op 1: file ".claude/rules/x.md" is none of CLAUDE.md, .harness/project.md, .claude/CLAUDE.md');
+  const md = gotchas(15);
+  assert.equal(capCheck(dc, md, md + "- one more (r1 2026-11-07)\n"), "## Gotchas: 16 entries, over 15");
+  assert.equal(capCheck(dc, gotchas(3, Array.from({ length: 116 }, (_, i) => `l${i}`)), gotchas(4, Array.from({ length: 116 }, (_, i) => `l${i}`))), ".claude/CLAUDE.md: 124 lines, over 120");
+  const r = apply([op({ file: dc })], { "CLAUDE.md": null, ".harness/project.md": null, [dc]: MD }, ENTRIES, RUN);
+  assert.equal(`${r.applied.length} ${r.dropped.length}`, "1 0");
+  assert.equal(gotchasLines(r.texts[dc]).at(-1), `- ${FACT}`);
+  assert.equal(r.texts["CLAUDE.md"], null);
+  const d = mkdtempSync(join(tmpdir(), "curator-"));
+  try {
+    writeFileSync(join(d, "ops.json"), JSON.stringify([op({ file: dc })]));
+    writeFileSync(join(d, "entries.jsonl"), ENTRIES.map(e => JSON.stringify(e)).join("\n") + "\n");
+    const w = mkdtempSync(join(d, "w-")), cli = () => JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl")], { env: {} }).out);
+    mkdirSync(join(w, ".claude")); writeFileSync(join(w, dc), MD);
+    const j = cli();
+    assert.equal(`${j.applied.length} ${j.files.join()}`, "1 .claude/CLAUDE.md");
+    assert.equal(gotchasLines(readFileSync(join(w, dc), "utf8")).at(-1), `- ${FACT}`);
+    // a symlinked .claude/ is no directory of the worktree: its CLAUDE.md is never read through, never written through
+    const out = join(d, "outside"); mkdirSync(out); writeFileSync(join(out, "CLAUDE.md"), MD);
+    rmSync(join(w, ".claude"), { recursive: true }); symlinkSync(out, join(w, ".claude"));
+    const link = cli();
+    assert.equal(`${link.dropped[0]?.reason} ${link.files.length}`, "no .claude/CLAUDE.md on the base 0");
+    assert.equal(readFileSync(join(out, "CLAUDE.md"), "utf8") === MD, true);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
 test("curator.mjs: the curator prompt renders with no placeholder left", () => {
   const tpl = readFileSync(new URL("../../prompts/curator.md", import.meta.url), "utf8");
   const part = readFileSync(new URL("../../prompts/parts/where-things-go-readonly.md", import.meta.url), "utf8");
@@ -346,7 +511,7 @@ test("curator.mjs: the curator prompt renders with no placeholder left", () => {
   const env = { HARNESS_RUN_ID: RUN, HARNESS_PROJECT: "p", HARNESS_RUN_DIR: ".harness/runs/r1", HARNESS_MEMORY_BASE: "/tmp/s/memory-base", HARNESS_DECISIONS: "one file per decision" };
   const out = assemble(tpl, [{ title: null, body: part }], env);
   assert.equal((out.match(/\{\{/g) ?? []).length, 0);
-  for (const w of [".harness/runs/r1/memory-ops.json", "`add`", "`replace`", "`delete`", "write gate", "never a file", "/tmp/s/memory-base/CLAUDE.md", "This session is read-only"])
+  for (const w of [".harness/runs/r1/memory-ops.json", "`add`", "`replace`", "`delete`", "write gate", "never a file", "/tmp/s/memory-base/CLAUDE.md", "/tmp/s/memory-base/.claude/CLAUDE.md", "This session is read-only"])
     assert.equal(out.includes(w), true, w);
   assert.equal(/^## Where things go/m.test(tpl), false);   // the part brings its own heading
 });

@@ -49,7 +49,7 @@ check "routing: the rendered initializer prompt sends a durable fact to discover
   [[ $i == *"(how to work here) → \`proposed_changes\`"* && $i == *"a run-only fact → \`discoveries\` affecting \`\"run\"\`"* && $i == *"says \`record as a new decision\`"* ]]'
 check "where things go: the block and its read-only variant send a fact to discoveries affecting project, no Gotchas write" '
   c=$(sed -n "/^## Where things go/,/^#/p" "$(P wt1 coding)" | tr -s " \n" "  ") && v=$(sed -n "/^## Where things go/,/^#/p" "$(P wt1 verify)" | tr -s " \n" "  ") &&
-  [[ $c == *"rediscover → your entry'"'"'s \`discoveries\` with \`affects: [\"project\"]\`"* && $c == *"never writes \`CLAUDE.md\` or \`.harness/project.md\`"* ]] &&
+  [[ $c == *"rediscover → your entry'"'"'s \`discoveries\` with \`affects: [\"project\"]\`"* && $c == *"never writes \`CLAUDE.md\`, \`.harness/project.md\`, \`.claude/CLAUDE.md\` or \`.claude/rules/\`"* ]] &&
   [[ $c == *"How to work here"*"→ Michael'"'"'s: your entry'"'"'s \`proposed_changes\`"* && $v == *"\`discoveries\` with \`affects: [\"project\"]\`"* ]] &&
   [[ $c != *"## Gotchas"* && $v != *"## Gotchas"* && $v != *"writes it into"* ]]'
 check "routing: the template, the drafting prompt and this repo's Where things go send a fact to the entry, never to CLAUDE.md by a session" '

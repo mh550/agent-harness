@@ -279,10 +279,16 @@ curator() {
   rm -f "$STATE/memory.json"   # the driver's alone: memory_pr writes it, or no file says no curation
   for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict, as the retro's: session() leaves them to us
   [[ -n $reverted ]] && note "curator: reverted edits (it is read-only): $reverted"
+  [[ -n $RULES_NOTE ]] && note "$RULES_NOTE"   # memory_base's: the rules half stopped, the facts half goes on
   record MET append "$clog" "$REC/metrics.jsonl" "$RUN_ID" curator "" "$(F model "$CURATOR_MODEL")" true "$S_WALL" "$S_EXIT" false curator "$S_PEAK"
   [[ -f $SCRATCH/memory-ops.json ]] || { note "curator: wrote no memory-ops.json"; return 0; }
   cp "$SCRATCH/memory-ops.json" "$REC/"   # in the run record, as retro-proposals.json
   memory_pr
+  # beside memory-ops.json: the numbered rules and proposals (harness memory accept|decline names them) and the counts
+  # (none this segment: an earlier one's goes, so it never sits beside other ops)
+  # the record keeps the ops and the numbered items, not ruleTexts (whole files, the rules commit has them)
+  if [[ -f $SCRATCH/memory-result.json ]]; then jq -c 'del(.ruleTexts)' "$SCRATCH/memory-result.json" > "$REC/memory-result.json" 2> /dev/null || cp "$SCRATCH/memory-result.json" "$REC/"
+  else rm -f "$REC/memory-result.json"; fi
 }
 
 ledger() {   # the whole run record into the harness's own record, for `harness trends`, retros and calibration
@@ -291,14 +297,15 @@ ledger() {   # the whole run record into the harness's own record, for `harness 
   (
     flock 9
     SUM ledger-line "$REC/summary.json" "$LEDGER/runs.jsonl"
-    local out paths=("$d" "$LEDGER/runs.jsonl")   # the retro's proposals into the backlog; a bad file is noted and skipped whole
+    local out x paths=("$d" "$LEDGER/runs.jsonl")   # the retro's proposals into the backlog; a bad file is noted and skipped whole
     if [[ -f $SCRATCH/retro-proposals.json ]]; then
       out=$(node "$HARNESS_HOME/lib/backlog.mjs" merge "$LEDGER/retro-backlog.jsonl" "$SCRATCH/retro-proposals.json" "$RUN_ID" "$(date +%F)" 2>> "$STATE/run.log")
       note "${out:-backlog: merge failed (run.log)}"
     fi
     [[ -f $LEDGER/retro-backlog.jsonl ]] && paths+=("$LEDGER/retro-backlog.jsonl")
     # the curator's memory PR, one row per run (a continue's replaces it): harness memory reads its state from gh
-    out=$(SUM memory-line "$REC/summary.json" "$LEDGER/memory.jsonl" 2>> "$STATE/run.log") && [[ -n $out ]] && note "$out"
+    # one row per PR (the facts', the rules'), one note each
+    out=$(SUM memory-line "$REC/summary.json" "$LEDGER/memory.jsonl" 2>> "$STATE/run.log") && while IFS= read -r x; do [[ -n $x ]] && note "$x"; done <<< "$out"
     [[ -f $LEDGER/memory.jsonl ]] && paths+=("$LEDGER/memory.jsonl")
     if [[ $LEDGER_COMMIT == 1 ]] && git -C "$LEDGER" rev-parse --show-toplevel > /dev/null 2>&1; then
       git -C "$LEDGER" add -- "${paths[@]}" \

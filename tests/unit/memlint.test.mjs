@@ -162,12 +162,12 @@ const hasLine = (out, re) => assert.ok(out.split("\n").some(l => re.test(l)), `n
 const TIDY = () => ({ "docs/decisions.md": fx("rane-decisions-tidy.md"), "CLAUDE.md": fx("rane-claude-tidy.md") });
 const DIRSTORE = { ".harness/config.sh": "DECISIONS=journal/decisions\n" };
 
-test("memlint: node --check passes, the usage header lists the five checks, a missing worktree exits 2", async () => {
+test("memlint: node --check passes, the usage header lists the six checks, a missing worktree exits 2", async () => {
   assert.equal(spawnSync(process.execPath, ["--check", MM]).status, 0);
   const src = readFileSync(MM, "utf8").split("\n"), a = src.findIndex(l => l.startsWith("//   <worktree>")), b = src.findIndex(l => l.startsWith("import"));
   assert.ok(a >= 0 && b > a, "the usage header runs from its <worktree> line to the first import");
   const h = src.slice(a, b + 1).join("\n");
-  for (const c of ["size", "gotchas", "derivable-count", "run-scope", "decisions"]) assert.ok(h.includes(c), `the header names ${c}`);
+  for (const c of ["size", "gotchas", "derivable-count", "run-scope", "decisions", "twin"]) assert.ok(h.includes(c), `the header names ${c}`);
   await lintWt({}, async d => assert.equal((await sameAsCli("memlint.mjs", [join(d, "nope")])).rc, 2));
 });
 
@@ -235,6 +235,25 @@ test("memlint: 16 Gotchas lines yield a gotchas finding at the 16th, 15 none (a 
     assert.equal(await ml(d), "CLAUDE.md:94 gotchas: 16 lines, over 15\n");
     writeFileSync(join(d, "CLAUDE.md"), added(8));   // sed -i "/^- added fact 9$/d"
     assert.equal(await ml(d), "");
+  });
+});
+
+test("memlint: .claude/CLAUDE.md is linted on its own cap, and beside a CLAUDE.md yields twin at its line 1", async () => {
+  const tidy = fx("rane-claude-tidy.md"), pad = Array.from({ length: 28 }, (_, i) => `pad ${i + 1}\n`).join("");
+  const added = n => tidy.split("\n").flatMap(l => /^## Gotchas/.test(l) ? [l, ...Array.from({ length: n }, (_, i) => `- added fact ${i + 1}`)] : [l]).join("\n");
+  const TWIN = ".claude/CLAUDE.md:1 twin: CLAUDE.md exists too; Claude Code loads both as project memory\n";
+  await lintWt({ "docs/decisions.md": fx("rane-decisions-tidy.md"), ".claude/CLAUDE.md": tidy + pad }, async d => {
+    assert.equal(await ml(d), ".claude/CLAUDE.md:121 size: 121 lines, over 120 (MEMLINT_LINES)\n");   // alone: no twin
+    writeFileSync(join(d, ".claude/CLAUDE.md"), added(9) + "- the suite: ~1,870 tests\n- no rename tonight\n");
+    const n = added(9).split("\n").length;
+    assert.equal(await ml(d), `.claude/CLAUDE.md:94 gotchas: 16 lines, over 15\n.claude/CLAUDE.md:${n} derivable-count: "~1,870 tests" (the suite can tell: store no count)\n.claude/CLAUDE.md:${n + 1} run-scope: "tonight" (run scope goes in the run's brief)\n`);
+    // each file on its own cap: two tidy files of 93 lines are no size finding, only the pair
+    writeFileSync(join(d, ".claude/CLAUDE.md"), tidy); writeFileSync(join(d, "CLAUDE.md"), tidy);
+    assert.equal(await ml(d), TWIN);
+    writeFileSync(join(d, "CLAUDE.md"), tidy + pad);
+    assert.equal(await ml(d), "CLAUDE.md:121 size: 121 lines, over 120 (MEMLINT_LINES)\n" + TWIN);
+    rmSync(join(d, ".claude"), { recursive: true });
+    assert.equal(await ml(d), "CLAUDE.md:121 size: 121 lines, over 120 (MEMLINT_LINES)\n");
   });
 });
 
