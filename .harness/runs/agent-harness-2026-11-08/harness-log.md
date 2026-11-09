@@ -64,3 +64,5 @@
 - 2026-11-09 00:45 · N2-04: suite ran 1x (740 s) in the session
 - 2026-11-09 00:45 · N2-04: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-09 00:45 · N2-04 · claude-opus-5-5 · passes=true · 25 min · 8/8 passing · tests 1930
+- 2026-11-09 00:45 · verify N2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-09 00:57 · context.md for N2: 15742 bytes
