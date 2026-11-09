@@ -1,9 +1,11 @@
-# Context pack for `N2-01`
+# Context pack for `N2-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (N2-01, affects N2-02, N2-03, N2-04): stub argv records: $STUB_DIR/argv/<n>-<kind>.args, one arg per line, the -p prompt as <prompt>, then PWD= and HARNESS_RUN_ID= lines; filter a run's files with grep -lx HARNESS_RUN_ID=<run> → entries.jsonl:10
+- Discovery (N2-01, affects N2-02, N2-03): curator-run.sh's proj has no ## Gotchas: a run there lands no tier-1 op unless origin main is seeded first (its cd run seeds Code rules and Gotchas) → entries.jsonl:10
 - Discovery (N1, affects run): docs/architecture.md:105, the prompts/curator.md component row, still describes the pre-N1 prompt: N1-04's fix is one row that names tier 2 as a diff on harness-rules/<run> Michael merges and .claude/CLAUDE.md among the files. → entries.jsonl:7
 - Discovery (N1, affects run): The spec's N1-01 step 3 expects `… 1 proposals` for mp, but three-ops has no tier-3 op; the code and checks read 0 (decisions/2026-11-08-memory-rules-pr, bodies row). A verify reading the steps literally should know this. → entries.jsonl:6
 - Discovery (N1-04, affects N1, run): N1-02 reworded prompts/coding.md and where-things-go*.md to name .claude/CLAUDE.md and .claude/rules/; memory-prompts and gotchas-pack (slow) assert those sentences verbatim and were red until N1-04 → entries.jsonl:5
@@ -18,27 +20,30 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Promote to Gotchas
 
+- S_DENY is read with [[ -v S_DENY ]]: under set -u, ${#S_DENY[@]} on an unset array is an unbound-variable error (agent-harness-2026-11-08 2026-11-08) → entries.jsonl:10
 - memory-branch.sh's worktree-count check (== 14) counts one worktree per stub run in the file: a new run there bumps it (agent-harness-2026-11-08 2026-11-08) → entries.jsonl:5
 - A note given before the curator session (memory_base) is reverted by its restrict with harness-log.md; give it after ro_rescue, as curator() does with RULES_NOTE (agent-harness-2026-11-08 2026-11-08) → entries.jsonl:4
 
 ## What it builds on
 
-- 2026-11-08 03:26 · N1-03 · passes: curator.mjs apply checks the cap per tier-1 op (order delete, replace, anchored add, plain add; a breach drops that op alone `over the cap: …`); an anchored add appends while it fits, evicts only past the cap (`evicted`, body `(in place of: …)`, an eviction note); `refused` retired from apply, body and memory_pr. stub-cap gains a replace; decision 2026-11-08-memory-rules-pr created.; tests 1898 → 1900; files lib/curator.mjs, lib/record.sh, prompts/curator.md, tests/unit/curator.test.mjs, tests/checks/memory-branch.sh, … → entries.jsonl:2
-- 2026-11-08 03:48 · N1-02 · passes: Twins guarded: restrict memory reverts CLAUDE.md, .harness/project.md, .claude/CLAUDE.md and .claude/rules (now -z, unquoted paths); curator FILES, memory_base, memory_foreign, capCheck and the prompt take .claude/CLAUDE.md; memlint lints it on its own cap plus `twin`; STUB_DOT_CLAUDE; decision row, docs, prompts.; tests 1066 → 1069; files lib/record.sh, lib/curator.mjs, lib/memlint.mjs, prompts/curator.md, prompts/coding.md, … → entries.jsonl:3
-- 2026-11-08 04:25 · N1-01 · passes: Tier 2 lands on harness-rules/<run> in a `memory rules: <run>` PR the driver never merges: apply cuts texts and ruleTexts from their bases under a union cap (graft), memory_pr runs one pass per tier, auto merges facts only, bodies number rules/proposals <run>/<n> and link each other, memory.json/report/ledger/harness memory count facts and rules apart.; tests 1069 → 1072; files lib/curator.mjs, lib/record.sh, lib/driver.sh, lib/summary.mjs, lib/memlint.mjs, … → entries.jsonl:4
-- 2026-11-08 22:58 · N1-04 · passes: N1 review on Opus (attempt 1): 0 Critical, 1 Important, 8 Minor. Attempt 2 fixes the verify's step-3 miss: docs/architecture.md's prompts/curator.md row now names the three target files, the per-op cap, tier 2 on harness-rules/<run> in a memory rules: <run> PR Michael merges, and tier 3 in both bodies; the review file records it.; tests 1911 → 1911; files docs/architecture.md, docs/plans/2026-11-08-N1-review.md → entries.jsonl:8
+- 2026-11-08 23:41 · N2-01 · passes: The curator runs under --disallowedTools Bash(git push:*) Bash(gh:*): session() takes an S_DENY array (last on the claude -p line), curator() fixes CURATOR_DENY, logs `curator · <model> · deny …` and notes `curator: session denied …`. The stub records every headless argv in argv/<n>-<kind>.args; STUB_CURATOR_PUSH pushes unless denied. Decision file created; docs updated.; tests 1911 → 1914; files lib/record.sh, lib/driver.sh, prompts/curator.md, tests/stub-claude.sh, tests/checks/curator-run.sh, … → entries.jsonl:10
 
 ## Lately in the run
 
 - 2026-11-08 23:26 · verify N1 · passes: All four N1 features hold. Full suite 1911/1911 (778 s), fast tier green, targeted runs 27/27, 38/38, 37/37, unit files 91/91. Every named test read against its step. N1-04's architecture row for prompts/curator.md is fixed. N1-01 step 3's `1 proposals` is 0, as the brief says. A probe confirmed the union cap holds. → entries.jsonl:9
-- 2026-11-08 22:42 · verify N1 · not yet: N1-01, N1-02, N1-03 hold: full suite 1911/1911 (734 s), fast tier 1073/1073, each step's targeted run green, the unit files 91/91, code and tests read. N1-04 step 3 fails: docs/architecture.md's prompts/curator.md component row was left unchanged in N1 while the prompt gained tier 2 on harness-rules/<run> and .claude/CLAUDE.md. N1-01 step 3's `1 proposals` is 0, as the brief says. → entries.jsonl:7
+- 2026-11-08 22:58 · N1-04 · passes: N1 review on Opus (attempt 1): 0 Critical, 1 Important, 8 Minor. Attempt 2 fixes the verify's step-3 miss: docs/architecture.md's prompts/curator.md row now names the three target files, the per-op cap, tier 2 on harness-rules/<run> in a memory rules: <run> PR Michael merges, and tier 3 in both bodies; the review file records it.; tests 1911 → 1911; files docs/architecture.md, docs/plans/2026-11-08-N1-review.md → entries.jsonl:8
 
 ## Current rules
 
+- The memory session and the answers: a denied curator, an `auto` that keeps its body, answers the next curator reads → journal/decisions/2026-11-08-memory-session-and-answers.md
 - The tiers and the files: tier 2 is a PR, the twins are guarded, the cap is per operation → journal/decisions/2026-11-08-memory-rules-pr.md
 - The memory curator: itemized operations, a tier the driver derives, a protected list that is fixed → journal/decisions/2026-11-07-memory-tiers.md
 - The gate replaces the lint: `memlint-self` retired, `MEMORY_POLICY`, and the curator's acceptance counted → journal/decisions/2026-11-07-memory-policy.md
 - One writer for project memory: a coding session's `CLAUDE.md` edit is reverted, a fact goes in the entry → journal/decisions/2026-11-07-memory-one-writer.md
 - Supervised efforts for every project: one user-level skill, one dispatch list per effort, plain names throughout → journal/decisions/2026-11-05-supervised-efforts.md
+- The suite's shape: check files named for what they test, no name part of another's, two cuts that need no replay, a tier on every line → journal/decisions/2026-11-05-suite-shape.md
+- A merge survives an origin outage: bounded retries, a card past them, a tag that isn't claimed, gc holds verified work → journal/decisions/2026-11-04-origin-retries.md
+- No run ends on a clock unless asked to: `HOURS` defaults to none, and the night leaves the docs → journal/decisions/2026-11-04-no-default-end-time.md
+- A red verify opens a fix round, not a card: at most `MAX_FIX_ROUNDS` per milestone, each one counted → journal/decisions/2026-11-04-fix-rounds.md
 
-_99 older rules: journal/decisions._
+_95 older rules: journal/decisions._
