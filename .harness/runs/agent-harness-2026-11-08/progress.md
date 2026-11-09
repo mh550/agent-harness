@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-08 23:41 · N2-01 · passes
+
+The curator runs under --disallowedTools Bash(git push:*) Bash(gh:*): session() takes an S_DENY array (last on the claude -p line), curator() fixes CURATOR_DENY, logs `curator · <model> · deny …` and notes `curator: session denied …`. The stub records every headless argv in argv/<n>-<kind>.args; STUB_CURATOR_PUSH pushes unless denied. Decision file created; docs updated.
+
+- **Files:** lib/record.sh, lib/driver.sh, prompts/curator.md, tests/stub-claude.sh, tests/checks/curator-run.sh, tests/fixtures/check-names.txt, journal/decisions/2026-11-08-memory-session-and-answers.md, journal/decisions/2026-11-07-memory-tiers.md, docs/architecture.md, README.md
+- **Verified:** Three new curator-run checks watched red (10/13), then curator-run + queue-debrief 86/86, memory-branch + memory-one-writer 35/35, fast tier green (1073). Probe: CURATOR_DENY without the push rule turns all three new checks red.
+- **Tests:** 1911 → 1914
+- **Discovery** (affects N2-02, N2-03, N2-04): stub argv records: $STUB_DIR/argv/<n>-<kind>.args, one arg per line, the -p prompt as <prompt>, then PWD= and HARNESS_RUN_ID= lines; filter a run's files with grep -lx HARNESS_RUN_ID=<run>
+- **Discovery** (affects N2-02, N2-03): curator-run.sh's proj has no ## Gotchas: a run there lands no tier-1 op unless origin main is seeded first (its cd run seeds Code rules and Gotchas)
+- **Discovery** (affects project): S_DENY is read with [[ -v S_DENY ]]: under set -u, ${#S_DENY[@]} on an unset array is an unbound-variable error (agent-harness-2026-11-08 2026-11-08)
+- **Proposed change:** N2-01 step 1's 'exactly Bash(git push:*) and Bash(gh:*)' is read as: the args after --disallowedTools up to the record's PWD= line (--disallowedTools is last on the session line, so nothing follows it)
+- *02-N2-01 · claude-opus-5-5*
+
 ### 2026-11-08 23:26 · verify N1 · passes
 
 All four N1 features hold. Full suite 1911/1911 (778 s), fast tier green, targeted runs 27/27, 38/38, 37/37, unit files 91/91. Every named test read against its step. N1-04's architecture row for prompts/curator.md is fixed. N1-01 step 3's `1 proposals` is 0, as the brief says. A probe confirmed the union cap holds.
