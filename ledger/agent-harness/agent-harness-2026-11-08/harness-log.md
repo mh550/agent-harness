@@ -30,4 +30,53 @@
 - 2026-11-08 05:40 · memory: dropped add ## Gotchas (not stated by entries.jsonl:4)
 - 2026-11-08 05:40 · memory PR: none (no tier-1 change); the body is in memory.md
 - 2026-11-08 05:40 · summary.json and report.md kept in the state dir (harness report reads them after gc)
-- 2026-11-08 05:40 · record PR merged into main · https://github.com/mh550/agent-harness/pull/146
+- 2026-11-08 22:09 · lane N1 opened (slot 0, port 7830, from ae9c243)
+- 2026-11-08 22:09 · merged main into harness-lane/agent-harness-2026-11-08/N1
+- 2026-11-08 22:09 · verify N1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-08 22:20 · context.md for N1: 14567 bytes
+- 2026-11-08 22:42 · verify N1: N1-04 failed the re-check, back in the queue (one more attempt)
+- 2026-11-08 22:42 · review N1-04: 1489 changed lines, at or over 0; opus
+- 2026-11-08 22:42 · context.md for N1-04: 8094 bytes, 3 items left out
+- 2026-11-08 22:58 · N1-04: suite ran 2x (846 s) in the session
+- 2026-11-08 22:58 · N1-04 · claude-opus-5-5 · passes=true · 15 min · 4/8 passing · tests 1911
+- 2026-11-08 22:58 · merged main into harness-lane/agent-harness-2026-11-08/N1
+- 2026-11-08 22:58 · verify N1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-08 23:10 · context.md for N1: 16153 bytes
+- 2026-11-08 23:26 · N1: checks +14 ~18 −1 against a budget of 50
+- 2026-11-08 23:26 · N1 verified and tagged run/agent-harness-2026-11-08/N1
+- 2026-11-08 23:26 · lane N2 opened (slot 1, port 7836, from a860228)
+- 2026-11-08 23:26 · N1 merged into main · https://github.com/mh550/agent-harness/pull/151
+- 2026-11-08 23:26 · lane N1 closed (N1 merged)
+- 2026-11-08 23:26 · context.md for N2-01: 8007 bytes
+- 2026-11-08 23:26 · lane N1: branch harness-lane/agent-harness-2026-11-08/N1 deleted (merged)
+- 2026-11-08 23:41 · N2-01: suite ran 1x (119 s) in the session
+- 2026-11-08 23:41 · N2-01 · claude-opus-5-5 · passes=true · 15 min · 5/8 passing · tests 1911
+- 2026-11-08 23:41 · context.md for N2-02: 8005 bytes
+- 2026-11-08 23:54 · N2-02: suite ran 1x (119 s) in the session
+- 2026-11-08 23:54 · N2-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-08 23:54 · N2-02 · claude-opus-5-5 · passes=true · 12 min · 6/8 passing · tests 1911
+- 2026-11-08 23:54 · context.md for N2-03: 7964 bytes
+- 2026-11-09 00:20 · N2-03: suite ran 1x (119 s) in the session
+- 2026-11-09 00:20 · N2-03: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-09 00:20 · N2-03 · claude-opus-5-5 · passes=true · 25 min · 7/8 passing · tests 1911
+- 2026-11-09 00:20 · review N2-04: 791 changed lines, at or over 0; opus
+- 2026-11-09 00:20 · context.md for N2-04: 7994 bytes
+- 2026-11-09 00:45 · N2-04: suite ran 1x (740 s) in the session
+- 2026-11-09 00:45 · N2-04: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-09 00:45 · N2-04 · claude-opus-5-5 · passes=true · 25 min · 8/8 passing · tests 1930
+- 2026-11-09 00:45 · verify N2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-09 00:57 · context.md for N2: 15742 bytes
+- 2026-11-09 01:19 · N2: checks +19 ~0 −0 against a budget of 30
+- 2026-11-09 01:19 · N2 verified and tagged run/agent-harness-2026-11-08/N2
+- 2026-11-09 01:19 · N2 merged into main · https://github.com/mh550/agent-harness/pull/152
+- 2026-11-09 01:19 · lane N2 closed (N2 merged)
+- 2026-11-09 01:19 · lane N2: branch harness-lane/agent-harness-2026-11-08/N2 deleted (merged)
+- 2026-11-09 01:19 · every feature passes
+- 2026-11-09 01:19 · run ended (done): 8/8 passing · 16 sessions (16 real) · 8 features passed · $54.20 · 5.0 h · by kind: init 1 ($5.98), coding 9 ($37.61), verify 4 ($10.21), retro 1 ($0.14), curator 1 ($0.25) · by model: claude-fable-5-1 1 ($5.98), claude-opus-5-5 14 ($48.08), claude-sonnet-5-5 1 ($0.14)
+- 2026-11-09 01:19 · services stopped (done)
+- 2026-11-09 01:19 · services stopped (done)
+- 2026-11-09 01:20 · memory: 1 ops · 0 applied · 1 dropped · 0 proposals
+- 2026-11-09 01:20 · memory: dropped add ## Gotchas (not stated by entries.jsonl:4)
+- 2026-11-09 01:20 · memory PR: none (no tier-1 change); the body is in memory.md
+- 2026-11-09 01:20 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-11-09 01:20 · record PR merged into main · https://github.com/mh550/agent-harness/pull/153

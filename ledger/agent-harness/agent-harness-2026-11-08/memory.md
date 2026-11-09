@@ -4,4 +4,4 @@ Tier 1 (`## Gotchas`) is this branch's commit. Tier 2 is never committed: paste 
 
 ## Dropped
 
-- `add` CLAUDE.md · ## Gotchas: A note given before the curator session is reverted by its restrict: note after ro_rescue, as curator() does (agent-harness-2026-11-08 2026-11-08) — not stated by entries.jsonl:4 (entries.jsonl:4)
+- `add` CLAUDE.md · ## Gotchas: A note given before the curator session is reverted by its restrict: give it after ro_rescue, as curator() does RULES_NOTE (agent-harness-2026-11-08 2026-11-08) — not stated by entries.jsonl:4 (entries.jsonl:4)
