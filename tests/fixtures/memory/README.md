@@ -11,3 +11,4 @@
 - `stub-proposal.json`: one `## Live system` add of `STUB_PROPOSE`'s string (tier 3: dropped, a proposal), so nothing reaches tier 1 (M2-05, a memory branch on origin with no PR).
 - `stub-drift.json`: `STUB_CURATOR_OPS=drift` on mx's continue: C's `STUB_FACTS` fact as a `## Code rules` add (tier 2), which fits the stale rules tip but not the merge once main gained five lines outside Gotchas (N1-04, the union cap's drift).
 - `stub-dot-claude.json`: `STUB_CURATOR_OPS=dot-claude`: A's and B's `STUB_FACTS` facts as two `## Gotchas` adds to `.claude/CLAUDE.md`, on a project whose memory is that file alone (N1-02, tests/checks/memory-branch.sh).
+- `stub-fact-b.json`, `stub-fact-c.json`: `STUB_CURATOR_OPS=fact-b|fact-c`: B's (C's) `STUB_FACTS` fact as one `## Gotchas` add, the one new tier-1 line of a continue (N2-02: mw's continues, the failed body refresh then the merge).

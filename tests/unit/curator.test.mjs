@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PROTECTED, apply, body, capCheck, graft, main, matchAnchor, tierOf, validate } from "../../lib/curator.mjs";
+import { PROTECTED, answersText, apply, body, capCheck, graft, itemKey, main, matchAnchor, tierOf, validate } from "../../lib/curator.mjs";
 import { readEntries } from "../../lib/entries.mjs";
 import { gotchasDiff, gotchasLines, sectionEntries } from "../../lib/memlint.mjs";
 import { assemble } from "../../lib/render.mjs";
@@ -507,11 +507,81 @@ test("curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and writ
 test("curator.mjs: the curator prompt renders with no placeholder left", () => {
   const tpl = readFileSync(new URL("../../prompts/curator.md", import.meta.url), "utf8");
   const part = readFileSync(new URL("../../prompts/parts/where-things-go-readonly.md", import.meta.url), "utf8");
-  for (const p of ["{{RUN_ID}}", "{{PROJECT}}", "{{RUN_DIR}}", "{{MEMORY_BASE}}"]) assert.equal(tpl.includes(p), true, p);
+  for (const p of ["{{RUN_ID}}", "{{PROJECT}}", "{{RUN_DIR}}", "{{MEMORY_BASE}}", "{{MEMORY_ANSWERS}}"]) assert.equal(tpl.includes(p), true, p);
   const env = { HARNESS_RUN_ID: RUN, HARNESS_PROJECT: "p", HARNESS_RUN_DIR: ".harness/runs/r1", HARNESS_MEMORY_BASE: "/tmp/s/memory-base", HARNESS_DECISIONS: "one file per decision" };
   const out = assemble(tpl, [{ title: null, body: part }], env);
   assert.equal((out.match(/\{\{/g) ?? []).length, 0);
   for (const w of [".harness/runs/r1/memory-ops.json", "`add`", "`replace`", "`delete`", "write gate", "never a file", "/tmp/s/memory-base/CLAUDE.md", "/tmp/s/memory-base/.claude/CLAUDE.md", "This session is read-only"])
     assert.equal(out.includes(w), true, w);
   assert.equal(/^## Where things go/m.test(tpl), false);   // the part brings its own heading
+});
+
+// ---- Michael's answers (N2-03): rendered into the curator prompt and enforced by apply ----
+const ans = o => ({ run: "r0", project: "p", n: 1, tier: 2, verdict: "declined", why: "the suite runs itself", file: "CLAUDE.md", section: "## Code rules", text: PROPOSAL, key: itemKey({ op: "add", text: PROPOSAL }), at: "2026-11-08T10:00:00Z", ...o });
+
+test("curator.mjs answers: declined then accepted, newest first, (none yet) for none, cut at --max-bytes naming how many were left out", () => {
+  assert.equal(answersText([], "p"), "(none yet)");
+  // a hand-written row without a why reads as a verdict with none, never `: undefined`
+  assert.equal(answersText([ans({ why: undefined })], "p").split("\n")[1], `- ${PROPOSAL} (r0/1)`);
+  assert.equal(answersText([ans({ project: "q" })], "p"), "(none yet)");   // another project's verdicts are not this one's
+  const rows = [ans({ n: 1, text: "old declined", at: "2026-11-01T00:00:00Z" }), ans({ n: 2, verdict: "accepted", text: "an accepted line", why: "placed", at: "2026-11-05T00:00:00Z" }),
+    ans({ n: 3, text: "new declined", why: "no", at: "2026-11-07T00:00:00Z" })];
+  assert.equal(answersText(rows, "p"), ["Michael declined (never propose again):", "- new declined (r0/3): no", "- old declined (r0/1): the suite runs itself", "",
+    "Michael accepted (already his to place):", "- an accepted line (r0/2)"].join("\n"));
+  // a replaced verdict is its latest row alone
+  const re = answersText([...rows, ans({ n: 1, verdict: "accepted", text: "old declined", at: "2026-11-08T00:00:00Z" })], "p");
+  assert.equal(`${re.includes("- old declined (r0/1): ")} ${re.split("\n").at(-2)}`, "false - old declined (r0/1)");
+  const many = Array.from({ length: 60 }, (_, i) => ans({ n: i + 1, text: `declined line number ${i + 1} with some words to make it long`, at: `2026-11-08T10:${String(i).padStart(2, "0")}:00Z` }));
+  const cut = answersText(many, "p", 1000);
+  assert.equal(Buffer.byteLength(cut) <= 1000, true);
+  assert.equal(cut.split("\n")[1], "- declined line number 60 with some words to make it long (r0/60): the suite runs itself");   // the newest kept
+  const kept = cut.split("\n").filter(l => l.startsWith("- ")).length;
+  assert.equal(cut.split("\n").at(-1), `(${60 - kept} more left out: the prompt's cap is 1000 bytes; ledger/memory-answers.jsonl has them all)`);
+});
+
+test("curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; a tier-1 op and a different sentence never match, not even one sharing its 40-character key", () => {
+  const rule = op({ section: "## Code rules", text: PROPOSAL, tier: 2 });
+  const declined = apply([rule], T(MD), ENTRIES, RUN, { answers: [ans()] });
+  assert.equal(`${declined.rules.length} ${reasons(declined)}`, "0 declined by Michael (r0/1: the suite runs itself)");
+  const long = apply([rule], T(MD), ENTRIES, RUN, { answers: [ans({ why: "w".repeat(120) })] });
+  assert.equal(reasons(long), `declined by Michael (r0/1: ${"w".repeat(80)}…)`);
+  const accepted = apply([rule], T(MD), ENTRIES, RUN, { answers: [ans({ n: 4, verdict: "accepted" })] });
+  assert.equal(`${accepted.rules.length} ${reasons(accepted)}`, "0 accepted by Michael (r0/4)");
+  // the key alone decides: the same sentence under another heading is the same rule (a protected one: tier 3)
+  const t3 = apply([op({ section: "## Live system", text: PROPOSAL, tier: 3 })], T(MD), ENTRIES, RUN, { answers: [ans()] });
+  assert.equal(`${t3.proposed.length} ${reasons(t3)}`, "0 declined by Michael (r0/1: the suite runs itself)");
+  // tier 1 is never matched: a fact is not a rule Michael declines
+  const fact = apply([op()], T(MD), ENTRIES, RUN, { answers: [ans({ text: FACT, key: itemKey({ op: "add", text: FACT }) })] });
+  assert.equal(`${fact.applied.length} ${fact.dropped.length}`, "1 0");
+  // a different key: the rule lands
+  const other = apply([rule], T(MD), ENTRIES, RUN, { answers: [ans({ text: "another rule entirely, of other words", key: itemKey({ op: "add", text: "another rule entirely, of other words" }) })] });
+  assert.equal(`${other.rules.length} ${other.dropped.length}`, "1 0");
+  // a sentence sharing the first 40 characters (lineKey) is another rule: the whole text decides, not the key's prefix
+  const twin = "Run the fast tier once, last, after the suite is cached";
+  assert.equal(itemKey({ op: "add", text: twin }), itemKey({ op: "add", text: PROPOSAL }));
+  const near = apply([rule], T(MD), ENTRIES, RUN, { answers: [ans({ text: twin, key: itemKey({ op: "add", text: twin }) })] });
+  assert.equal(`${near.rules.length} ${near.dropped.length}`, "1 0");
+  // a declined delete matches a delete of that line only, never an add of it
+  const del = { op: "delete", anchor: "bash only." };
+  assert.equal(itemKey(del) === itemKey({ op: "add", text: "bash only." }), false);
+  assert.equal(apply([rule], T(MD), ENTRIES, RUN, { answers: [ans({ key: itemKey({ op: "delete", anchor: PROPOSAL }) })] }).rules.length, 1);
+});
+
+test("curator.mjs main: apply --answers <file> --project <p> drops the project's answered rule; answers <file> <project> renders the prompt's block", () => {
+  const d = mkdtempSync(join(tmpdir(), "curator-"));
+  try {
+    writeFileSync(join(d, "ops.json"), JSON.stringify([op({ section: "## Code rules", text: PROPOSAL, tier: 2 })]));
+    writeFileSync(join(d, "entries.jsonl"), ENTRIES.map(e => JSON.stringify(e)).join("\n") + "\n");
+    writeFileSync(join(d, "answers.jsonl"), `not json\n${JSON.stringify(ans())}\n`);
+    const w = mkdtempSync(join(d, "w-"));
+    writeFileSync(join(w, "CLAUDE.md"), MD);
+    const run = p => JSON.parse(main(["apply", join(d, "ops.json"), w, RUN, join(d, "entries.jsonl"), "--answers", join(d, "answers.jsonl"), "--project", p], { env: {} }).out);
+    assert.equal(run("p").dropped.map(x => x.reason).join(), "declined by Michael (r0/1: the suite runs itself)");
+    assert.equal(run("q").rules.length, 1);
+    assert.equal(main(["answers", join(d, "answers.jsonl"), "p", "--max-bytes", "4000"], { env: {} }).out, `Michael declined (never propose again):\n- ${PROPOSAL} (r0/1): the suite runs itself\n`);
+    assert.equal(main(["answers", join(d, "missing.jsonl"), "p"], { env: {} }).out, "(none yet)\n");
+    // a declined delete reads as one: the curator is told never to propose deleting that line
+    writeFileSync(join(d, "del.jsonl"), JSON.stringify(ans({ text: "bash only.", key: itemKey({ op: "delete", anchor: "bash only." }) })) + "\n");
+    assert.equal(main(["answers", join(d, "del.jsonl"), "p"], { env: {} }).out.split("\n")[1], "- delete: bash only. (r0/1): the suite runs itself");
+  } finally { rmSync(d, { recursive: true, force: true }); }
 });

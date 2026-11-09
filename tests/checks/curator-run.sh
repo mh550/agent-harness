@@ -30,9 +30,21 @@ check "curator: a curator's edits to CLAUDE.md and lib/ are reverted with one no
   && ! git -C "$T/origin.git" show harness/cu:lib/curator-hack.sh > /dev/null 2>&1 && ! git -C "$T/origin.git" show harness/cu:CLAUDE.md 2> /dev/null | grep -F "curator was here" > /dev/null \
   && [[ ! -e $T/wt/proj/cu/lib/curator-hack.sh ]] && ! hlog cu | grep " · curator: reverted edits" | grep -F memory-ops.json > /dev/null && [[ -s $(rec cu)/memory-ops.json ]] \
   && titles | grep -x "cu: run record" > /dev/null && ! hlog cu | grep -F "record PR: none (" > /dev/null'
+# argv/<n>-<kind>.args: one per headless session (tests/stub-claude.sh), its HARNESS_RUN_ID line naming the run
+args() { grep -lx "HARNESS_RUN_ID=$1" "$T"/argv/*-"$2".args 2> /dev/null; }   # <run> <kind> → its sessions' argv files
+denied() { sed -n '/^--disallowedTools$/,/^PWD=/p' "$1" | sed '1d;$d'; }   # <args file> → what follows --disallowedTools (last on the line)
+check "curator: the curator session alone runs under --disallowedTools, with Bash(git push:*) and Bash(gh:*) and nothing else" \
+  'c=$(args cu curator) && [[ $(wc -l <<< "$c") == 1 && $(grep -cx -- --disallowedTools "$c") == 1 ]] \
+  && [[ $(denied "$c") == "Bash(git push:*)"$'"'"'\n'"'"'"Bash(gh:*)" ]] && [[ -n $(args cu coding) && -n $(args cu verify) && -n $(args cu retro) ]] \
+  && ! grep -lx -- --disallowedTools $(args cu coding) $(args cu verify) $(args cu retro) > /dev/null'
+check "curator: its run.log line names the deny list and harness-log.md has one note saying so" \
+  'grep -E "[0-9] curator · [^ ]+ · deny Bash\(git push:\*\) Bash\(gh:\*\)$" "$(st cu)/run.log" > /dev/null \
+  && [[ $(hlog cu | grep -cF " · curator: session denied Bash(git push:*), Bash(gh:*)") == 1 ]]'
 check "curator: the rendered prompt names memory-ops.json, the three ops, the write gate and that it writes no project file" \
   'P=$(st cu)/prompt-curator.md; grep -F ".harness/runs/cu/memory-ops.json" "$P" > /dev/null && grep -F "/memory-base/CLAUDE.md" "$P" > /dev/null && grep -F "\"add\"|\"replace\"|\"delete\"" "$P" > /dev/null && grep -F "write gate" "$P" > /dev/null \
   && grep -F "never a file" "$P" > /dev/null && [[ $(grep -c "{{" "$P") == 0 ]]'
+check "curator: with no answers file in the ledger the prompt's block of Michael's verdicts says (none yet)" \
+  'P=$(st cu)/prompt-curator.md; [[ ! -e $T/ledger/memory-answers.jsonl ]] && sed -n "/^## What Michael declined and accepted$/,/^## /p" "$P" | grep -x "(none yet)" > /dev/null'
 
 # ce: an empty list
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"
@@ -70,5 +82,22 @@ check "curator: an unknown MEMORY_POLICY is one note and the curator runs as und
   'grep -q "^done" "$(st cx)/ended" && [[ $(hlog cx | grep -c " · memory PR: MEMORY_POLICY=always is none of pr, auto, off; treated as pr$") == 1 ]] \
   && [[ $(grep -cx curator "$T/scratch/proj/cx/sessions.log") == 1 ]] && hlog cx | grep " · memory: 3 ops · " > /dev/null \
   && ! hlog cx | grep -F " · memory PR merged" > /dev/null'
+
+# cd: a curator that would push its own commit to harness-memory/<run> (STUB_CURATOR_PUSH), on a main whose CLAUDE.md
+# has the two sections three-ops writes to: the deny list stops the push, so the branch holds the driver's commit alone
+git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+w=$T/seed-cd; git clone -q "$T/origin.git" "$w" && printf '# proj\nrules\n\n## Code rules\n\n- bash, set -uo pipefail\n\n## Gotchas\n\n- seeded gotcha 1 (seed 2026-11-01)\n' > "$w/CLAUDE.md" \
+  && git -C "$w" -c user.name=m -c user.email=m@test commit -qam "CLAUDE.md with two sections" && git -C "$w" push -q origin HEAD:main
+cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=pr RECORD_PR=end' >> "$T/user-config.sh"
+STUB_CURATOR_PUSH=1 STUB_FACTS=A,B STUB_PROPOSE=A STUB_CURATOR_OPS=three-ops STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" cd --spec SPEC.md --foreground > "$T/cd.out" 2>&1
+mv "$T/gh.log" "$T/gh-cd.log" 2> /dev/null
+git -C "$T/origin.git" show harness-memory/cd:CLAUDE.md > "$T/cd-claude.md" 2> /dev/null
+check "curator: a curator that would push is denied; harness-memory/<run> holds the driver's one commit and its memory PR opens as stub-three-ops predicts" \
+  'grep -q "^done" "$(st cd)/ended" && grep -x "denied cd" "$T/curator-push.log" > /dev/null && ! grep -x "pushed cd" "$T/curator-push.log" > /dev/null \
+  && [[ $(git -C "$T/origin.git" log --format=%s main..harness-memory/cd) == "memory: cd: 2 facts" ]] \
+  && [[ $(sed -n "/^## Gotchas$/,/^## /{/^- /p}" "$T/cd-claude.md" | grep -c -- "^- the stub'"'"'s [AB] work sits in work-[AB]\.txt at the root (cd [0-9-]*)$") == 2 ]] \
+  && ! grep -F "stub curator" "$T/cd-claude.md" > /dev/null && hlog cd | grep -F " · memory: 3 ops · 2 facts · 1 rules · 0 dropped · " > /dev/null \
+  && f=$(grep -lx "memory: cd" "$T"/prs/pr-*.title) && [[ $(cat "${f%.title}") == harness-memory/cd && ! -f ${f%.title}.merged ]] \
+  && grep -lx "memory rules: cd" "$T"/prs/pr-*.title > /dev/null && [[ $(hlog cd | grep -c " · memory PR opened; left for Michael (MEMORY_POLICY=pr) · ") == 1 ]]'
 
 suite_end

@@ -86,9 +86,19 @@ fix_line() {
     "$RUN_DIR/feature_list.json" 2> /dev/null
 }
 
+# → the curator prompt's {{MEMORY_ANSWERS}}: Michael's verdicts on this project's earlier rules and proposals
+# (<ledger>/memory-answers.jsonl, lib/curator.mjs answersText); a failed node says so, never (none yet)
+memory_answers() {
+  local out
+  out=$(ask curator.mjs answers "${LEDGER:-${HARNESS_LEDGER:-$HARNESS_HOME/ledger}}/memory-answers.jsonl" "$PROJECT_NAME" --max-bytes 4000 2> /dev/null)
+  [[ -n $out ]] && printf '%s\n' "$out" || echo "(unread: the answers file could not be rendered; the gate still drops what they closed)"
+}
+
 prompt_render() {   # template name → stdout: the static template, the policy, this run (its lines, the brief, the line naming CLAUDE.md, the routing block), this session
   local extra=() rules=() where=where-things-go length="" flength="" fix=""
   [[ $1 == coding ]] && fix=$(fix_line "${HARNESS_FEATURE:-}")
+  local answers=${HARNESS_MEMORY_ANSWERS:-}   # curator() renders it; lib/prompt.sh's own use outside a driver, here
+  [[ $1 == curator && -z $answers ]] && answers=$(memory_answers)
   # Claude Code loads CLAUDE.md in the worktree itself: one line names it, the file isn't pasted (decisions/2026-10-21-no-double-claude-md)
   [[ -f CLAUDE.md ]] && rules=("$HARNESS_HOME/prompts/parts/rules.md")
   # the `## Where things go` block, unless CLAUDE.md has its own; verify, retro and curator edit nothing, so theirs routes facts to
@@ -111,7 +121,7 @@ prompt_render() {   # template name → stdout: the static template, the policy,
   fi
   # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
   HARNESS_DECISIONS=$(ask memlint.mjs store-line .) HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
-    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix ask render.mjs "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
+    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix HARNESS_MEMORY_ANSWERS=$answers ask render.mjs "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then

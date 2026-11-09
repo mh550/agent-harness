@@ -54,6 +54,8 @@ out of `39-memlint-m4`); journal/decisions/2026-11-03-trim.md (the rule a remove
 Updated in place 2026-11-07: Michael — M3-02's question: flipped. Under `MEMORY_POLICY=auto` a memory PR whose body
 refresh (`gh pr edit`) failed is not merged: left open with one note, reused by the next segment. The body (ops, reasons,
 provenance) is the post-merge audit trail, so a merge without it is the one case the driver stops.
+Updated in place 2026-11-08: built by N2-02 (run agent-harness-2026-11-08): `memory_edit` returns `gh pr edit`'s status
+and `memory_pr` merges only with the body on the PR (decisions/2026-11-08-memory-session-and-answers).
 Updated in place 2026-11-07: Michael — M3-04's question: the default stands; the decisions-store lint stays the
 segment-start note and `harness memlint`, and `journal/` stays in `CHECK_KEY_IGNORE`.
 Updated in place 2026-11-07: Michael — `pr` stays the default; `auto` is turned on per project when `harness memory`'s

@@ -154,3 +154,6 @@ tier-1 Gotchas commit. A classifier (a jev-style decision model) may revisit the
 never as the gate itself.
 Updated in place 2026-11-07: Michael — M2-05's question: build the deny list. The driver passes the curator session
 `Bash(git push:*)` and `Bash(gh:*)` denies so a push cannot happen; `memory_foreign` stays as the second layer.
+Updated in place 2026-11-08: N2-01 (run agent-harness-2026-11-08) built it, closing the known limit above: `curator()` passes
+`CURATOR_DENY=("Bash(git push:*)" "Bash(gh:*)")` to `session()` as `S_DENY`, `--disallowedTools` on the curator's `claude -p` line
+alone, noted per session; `memory_foreign` stays the second layer (decisions/2026-11-08-memory-session-and-answers).

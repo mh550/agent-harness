@@ -403,6 +403,9 @@ coverage: shScan keeps a multi-line array and a quoted string inside a $( ) insi
 coverage: shScan leaves out comments, closing words, a case's bare pattern, a function's header and a comment's quote or backslash
 coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
 coverage: two processes' V8 documents add up: a character ran when it did in either
+curator.mjs answers: declined then accepted, newest first, (none yet) for none, cut at --max-bytes naming how many were left out
+curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; a tier-1 op and a different sentence never match, not even one sharing its 40-character key
+curator.mjs main: apply --answers <file> --project <p> drops the project's answered rule; answers <file> <project> renders the prompt's block
 curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/
 curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands
 curator.mjs: a continue after main gained lines outside Gotchas counts them in the union shadow, from the CLI's rules merge-base and main
@@ -435,6 +438,7 @@ curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suf
 curator.mjs: validate passes a file of three ops and returns them
 curator.mjs: validate refuses a malformed file whole with its first reason
 curator: MEMORY_POLICY=off runs no curator and writes no curator or memory note
+curator: a curator that would push is denied; harness-memory/<run> holds the driver's one commit and its memory PR opens as stub-three-ops predicts
 curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept and the record PR opened
 curator: a run under MEMORY_POLICY=pr ends done with one zz-curator transcript and a curator metrics row
 curator: an empty memory-ops.json counts zeros and PR none (summary.json, the Memory row), and harness memory lists no PR for it
@@ -442,8 +446,11 @@ curator: an empty memory-ops.json notes no operations; no memory branch, no memo
 curator: an invalid memory-ops.json is one note; the run ends done and its record PR opens
 curator: an unknown MEMORY_POLICY is one note and the curator runs as under pr
 curator: its run.log line comes after the retro's, its notes before the record PR's
+curator: its run.log line names the deny list and harness-log.md has one note saying so
 curator: memory-ops.json is kept in the run record
+curator: the curator session alone runs under --disallowedTools, with Bash(git push:*) and Bash(gh:*) and nothing else
 curator: the rendered prompt names memory-ops.json, the three ops, the write gate and that it writes no project file
+curator: with no answers file in the ledger the prompt's block of Michael's verdicts says (none yet)
 debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set
 debrief waits for the usage-limit window, then runs
@@ -697,6 +704,9 @@ harness gc keeps the worktree of a run whose desk is open
 harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live driver, a paused run, a resume's session, a live run sharing the name survive)
 harness gc stops the units of this project's runs with no live driver; --dry-run stops none
 harness memlint: a project (or a directory in it) prints the same three findings, exit 0; no argument or no repo is one error line
+harness memory accept|decline: an <n> the run has not, no --why or an unknown run is one error line, exit 1, and no row
+harness memory decline: one memory-answers.jsonl row and one ledger commit, its line printed; harness memory tallies it and marks the run
+harness memory proposals: a run's numbered rules and proposals, each <run>/<n> with its tier, file, section and text, then its verdict
 harness memory: the run's facts and rules PRs are a line each with its tier, then one tally line per tier; the facts PR merged unchanged after its merge
 harness merge keeps the harness version of the run (E1 review)
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
@@ -1030,11 +1040,13 @@ memory PR: no run leaves a local harness-memory or harness-rules branch or a reg
 memory PR: summary.json's memory holds the counts and both URLs, harness report prints the Memory row, and memory-result.json is in the run record
 memory PR: the PR is opened and left for Michael under MEMORY_POLICY=pr
 memory PR: the commit changes CLAUDE.md alone
+memory PR: the next segment refreshes the reused PR's body and merges it at the commit it pushed
 memory PR: the notes count the ops, re-derived tiers and each dropped op; memory.json holds the counts
 memory PR: the run's record PR opens too
 memory PR: the same add with an anchor lands as one edit
 memory PR: the two project facts land under Gotchas in one commit on harness-memory/<run>, with their suffix
 memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note
+memory PR: under MEMORY_POLICY=auto a reused PR whose body refresh failed gets its commit but no merge, with one note
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -1042,8 +1054,14 @@ memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
 memory rules PR: MEMORY_POLICY=auto merges the facts PR alone and leaves the rules PR for Michael
 memory rules PR: a continue after main gained lines outside Gotchas drops the tier-2 add the merge would take past the cap
+memory rules PR: a rule Michael declined is dropped by a later run with his why and opens no rules PR; its curator prompt carries the line
 memory rules PR: a rules branch with a commit the driver would not write stops the rules half with one note; the facts half lands
 memory rules PR: the workflow line is one commit on harness-rules/<run>, absent from harness-memory/<run>, in a PR left for Michael, each body naming the other PR
+memory.mjs main: answer appends the row (an earlier one for that <run>/<n> replaced) and prints its line; a bad <n> or a torn line in the file is one line, exit 1
+memory.mjs: a continue's renumbered item is another item: its answer never replaces the first one's, nor shows its verdict
+memory.mjs: a row replaces an earlier one for the same <run>/<n>; the answers: tally counts a replaced verdict once
+memory.mjs: answerRow is {run, project, n, tier, verdict, why, file, section, text, key, at} from the result's item
+memory.mjs: proposalsView lists each numbered item with its tier, section and text, and its verdict
 memory: a coding session's .claude/CLAUDE.md and .claude/rules/ files are reverted the same way, one note each
 memory: a coding session's .harness/project.md edit is reverted the same way
 memory: a coding session's CLAUDE.md edit is reverted with one note in the coding prompt's words, and the run ends done
@@ -1662,6 +1680,7 @@ summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl 
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
 summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
+summary.mjs memoryView: an answers: tally line after the tiers' and `· n answered` on a listed run's first line; none or no answers file still lists
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
 summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary

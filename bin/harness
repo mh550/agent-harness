@@ -26,7 +26,11 @@
 #   harness memory [--last <n>] [<project>]      the last n (10) runs' memory PRs (ledger/memory.jsonl), newest first: run,
 #                                                project, applied/dropped/proposed, URL and what became of it (gh now:
 #                                                open, merged unchanged, merged edited, closed; unknown: gh can't say),
-#                                                then the counts
+#                                                then the counts (facts, rules and Michael's answers)
+#   harness memory proposals <run>               the run's numbered rules and proposals (<run>/<n>), each with its verdict
+#   harness memory accept|decline <run>/<n> --why "<text>"
+#                                                Michael's verdict on one, a row of ledger/memory-answers.jsonl (a ledger
+#                                                commit): the next curator is told it and never proposes that line again
 #   harness status [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]
 #                                                one screen: NEEDS YOU, RUNNING, QUEUED, FINISHED (the last 24h,
 #                                                STATUS_SINCE or --since; 3 to 10) and how to see the older runs;

@@ -32,6 +32,11 @@
 # and the worktree's ledger/retro-backlog.jsonl (restrict reverts all three).
 # STUB_CURATOR_OPS=[]|bad|<name>: the curator writes memory-ops.json: [], {not json, or tests/fixtures/memory/stub-<name>.json with {{RUN}}, {{DATE}} and {{LINE:<id>}} (<id>'s first coding entry) filled (M2-03).
 # STUB_CURATOR_EDITS=1: the curator also edits CLAUDE.md and writes lib/curator-hack.sh (restrict reverts both, M2-03).
+# STUB_CURATOR_PUSH=1: the curator commits a Gotchas line and pushes it to harness-memory/<run> (`pushed <run>` in
+# $STUB_DIR/curator-push.log), unless its argv carries --disallowedTools with Bash(git push:*): then it writes `denied
+# <run>` and pushes nothing. No denial event is printed: none has been captured from the real CLI (N2-01).
+# Every headless session records its argv in $STUB_DIR/argv/<n>-<kind>.args (one per line, the prompt as <prompt>,
+# then PWD= and HARNESS_RUN_ID=; <kind> from the prompt's first line: coding, verify, retro, curator, entry-resume, …).
 # STUB_FACTS=<id>[,<id>…]: each one's first coding entry has its own project fact, naming <id> (M2-04).
 # STUB_GOTCHA=<id>: that feature's first coding session adds a `## Gotchas` line to CLAUDE.md (and the section when
 # it has none), committed with its work (M3; the driver reverts it since M1-03). STUB_README_ONLY=<id>: that feature's
@@ -141,6 +146,16 @@ else   # the session starts before anything else, a refused one too: its init li
   [[ ${STUB_NO_INIT_LINE:-} ]] || sed -n 3p "$RES/first.jsonl" | jq -c --arg id "$sid" --arg cwd "$PWD" '.session_id = $id | .cwd = $cwd | .original_cwd = $cwd'
 fi
 [[ -n ${STUB_DIR:-} ]] && echo "${HARNESS_RUN_ID:-} ${HARNESS_CACHE:-unset}" >> "$STUB_DIR/cache.log"   # what each headless session sees (L3-02); not in scratch, which finish deletes
+# its argv as the desk's (the prompt as <prompt>), numbered across lanes under a lock (N2-01)
+akind=${first#\# }; akind=${akind%% —*}; akind=${akind% session*}; akind=${akind,,}; akind=${akind// /-}
+denied_push=""; inlist=""; for _a in "${ARGS[@]}"; do   # --disallowedTools takes the rules after it, up to the next option
+  [[ $_a == --disallowedTools ]] && { inlist=1; continue; }; [[ $_a == -* ]] && inlist=""
+  [[ $inlist && $_a == "Bash(git push:*)" ]] && denied_push=1; done
+if [[ -n ${STUB_DIR:-} ]]; then mkdir -p "$STUB_DIR/argv"
+  an=$( { flock 9; n=$(( $(cat "$STUB_DIR/argv/count" 2> /dev/null || echo 0) + 1 )); echo "$n" > "$STUB_DIR/argv/count"; echo "$n"; } 9> "$STUB_DIR/argv/.lock")
+  { pa=""; for _a in "${ARGS[@]}"; do [[ $pa && $_a != -* ]] && _a="<prompt>"; pa=""; [[ $_a == -p ]] && pa=1; printf '%s\n' "$_a"; done
+    echo "PWD=$PWD"; echo "HARNESS_RUN_ID=${HARNESS_RUN_ID:-}"; } > "$STUB_DIR/argv/$an-$akind.args"
+fi
 L=${HARNESS_RUN_DIR:-.}/feature_list.json
 after_session() { awk '/^# This session$/ { s = 1 } s && '"$1" <<< "$prompt"; }   # an awk rule, applied below `# This session` only (a brief can't fake an id)
 RS=${HARNESS_SCRATCH:-}; RS=${RS%%/lanes/*}   # the run's scratch, not a lane's: the stub's own bookkeeping is run-wide (STUB_LIMIT_HITS counts across lanes)
@@ -435,6 +450,14 @@ JSON
   "# Curator session")
     echo "curator" >> "$RS/sessions.log"
     [[ ${STUB_CURATOR_EDITS:-} ]] && { echo "curator was here" >> CLAUDE.md; mkdir -p lib && echo "# curator was here" > lib/curator-hack.sh; }
+    if [[ ${STUB_CURATOR_PUSH:-} ]]; then   # a push of its own to the memory branch, which the CLI refuses under the deny rule
+      if [[ $denied_push ]]; then echo "denied $HARNESS_RUN_ID" >> "$STUB_DIR/curator-push.log"
+      else ( set +e; d=$(mktemp -d); g() { git -C "$d" -c user.name=curator -c user.email=c@test "$@"; }
+        git clone -q "$(git remote get-url origin)" "$d" && g checkout -q -b "harness-memory/$HARNESS_RUN_ID" origin/main \
+          && echo "- the stub curator pushed this itself ($HARNESS_RUN_ID)" >> "$d/CLAUDE.md" && g commit -qam "curator: its own Gotchas line" \
+          && g push -q origin "HEAD:refs/heads/harness-memory/$HARNESS_RUN_ID" && echo "pushed $HARNESS_RUN_ID" >> "$STUB_DIR/curator-push.log"
+        rm -rf "$d" ); fi
+    fi
     o=$HARNESS_RUN_DIR/memory-ops.json
     case ${STUB_CURATOR_OPS:-[]} in "[]") echo '[]' > "$o" ;; bad) printf '{not json' > "$o" ;;
       *) sed -e "s/{{RUN}}/${HARNESS_RUN_ID:-}/g" -e "s/{{DATE}}/$(date +%F)/g" "$HERE/fixtures/memory/stub-$STUB_CURATOR_OPS.json" > "$o"
