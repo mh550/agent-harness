@@ -66,3 +66,5 @@
 - 2026-11-09 00:45 · N2-04 · claude-opus-5-5 · passes=true · 25 min · 8/8 passing · tests 1930
 - 2026-11-09 00:45 · verify N2: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-09 00:57 · context.md for N2: 15742 bytes
+- 2026-11-09 01:19 · N2: checks +19 ~0 −0 against a budget of 30
+- 2026-11-09 01:19 · N2 verified and tagged run/agent-harness-2026-11-08/N2
