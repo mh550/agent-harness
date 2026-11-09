@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-09 00:45 · N2-04 · passes
+
+0 Critical, 1 Important, 9 Minor. One Opus round on the N2 diff. Fixed RED→GREEN: a verdict matched rules on the 40-char lineKey, so a declined rule dropped another sharing the prefix; it now matches the whole normalized line. Also fixed: a torn answers line is refused, a missing why renders cleanly. Helpers deduped; docs, decision, review file done.
+
+- **Files:** lib/curator.mjs, lib/memory.mjs, lib/summary.mjs, lib/record.sh, tests/unit/curator.test.mjs, tests/unit/memory.test.mjs, tests/unit/summary.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/architecture.md, journal/decisions/2026-11-08-memory-session-and-answers.md, docs/plans/2026-11-08-N2-review.md
+- **Verified:** unit tier 555/555 (the prefix-collision assert red '0 1' before the fix, the torn-line and why asserts red before theirs); bash tests/run.sh via check.sh: 1930/1930 checks passed in 740 s; check.sh --fast green (cached, same tree); bash -n and node --check on every N2 file
+- **Tests:** 1930 → 1930
+- **Discovery** (affects project): curator.mjs: a verdict matches by itemText (whole factText, a delete marked); key (lineKey, 40 chars) stays the row's identity for upsert and proposalsView (agent-harness-2026-11-08 2026-11-09)
+- **Discovery** (affects run): Reviewer's Important 2 reclassified Minor: a declined rule restated under ## Gotchas is tier 1 and lands; tier 1 never matched is the spec's rule, so not changed
+- **Question for Michael:** A rule you declined can come back as a tier-1 Gotcha: tier-1 ops are never matched against your answers (the spec's rule), so a later curator that restates a declined `## Code rules` line under `## Gotchas` gets it applied, and merged under MEMORY_POLICY=auto (the write gate still needs a project discovery saying it). Default: unchanged, recorded as a known limit. Should declined rows also drop tier-1 adds and replaces of the same line? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-1/lib/curator.mjs, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-1/docs/plans/2026-11-08-N2-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-1/journal/decisions/2026-11-08-memory-session-and-answers.md
+- **Proposed change:** A review feature's step 2 ('every Important fixed') can conflict with a spec rule the review is asked to confirm. Say what to do with an Important that reverses a spec rule: reclassify it and ask Michael, as N2-04 did.
+- *05-N2-04 · claude-opus-5-5*
+
 ### 2026-11-09 00:20 · N2-03 · passes
 
 harness memory proposals <run> and accept|decline <run>/<n> --why: one ledger/memory-answers.jsonl row per item under the ledger lock and commit (lib/memory.sh, new lib/memory.mjs); harness memory's answers: tally and · k answered; curator.mjs answersText renders {{MEMORY_ANSWERS}} and apply --answers drops an answered tier-2/3 op by key. Decision row, architecture, README.
