@@ -9,6 +9,19 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-08 23:54 · N2-02 · passes
+
+Under MEMORY_POLICY=auto a reused facts PR whose gh pr edit failed is no longer merged: memory_edit returns gh's status, memory_pass returns 1 for that case, memory_pr merges only on 0 and gives one note `memory PR: its body was not updated (see run.log); not merged (MEMORY_POLICY=auto), left open · <url>`. The next segment refreshes and merges. Docs, templates, decisions updated.
+
+- **Files:** lib/record.sh, tests/checks/memory-branch.sh, tests/fixtures/check-names.txt, tests/fixtures/memory/stub-fact-b.json, tests/fixtures/memory/stub-fact-c.json, tests/fixtures/memory/README.md, templates/user/config.sh, templates/project/config.sh, journal/decisions/2026-11-08-memory-session-and-answers.md, journal/decisions/2026-11-07-memory-policy.md, docs/architecture.md, README.md
+- **Verified:** bash tests/run.sh memory-branch: 27/29 before the change (both new checks FAIL: the first continue merged), 29/29 after; check.sh --fast green, 1073 tests, 119 s; bash -n on every shell file touched
+- **Tests:** 1914 → 1916
+- **Dead end:** letting the later rules-naming facts edit count as the body being on the PR — a failed first edit then merged with no harness-log note of it (the edit is quiet in that case); one rule is simpler: the first refresh decides
+- **Discovery** (affects N2-03, N2-04): mw now runs with STUB_FACTS=A,B,C and two continues (fact-b under STUB_GH_DOWN_ONLY=edit, fact-c with gh up) right after its check; the curator's pr edit is the run end's first, before record_pr's
+- **Discovery** (affects N2-04): memory_edit takes a 4th arg `quiet` (auto's facts PR on the push path): its failure note is then memory_pr's single not-merged note
+- **Question for Michael:** Default taken (N2-02): a reused facts PR left open after a failed body refresh is merged only by a later segment that pushes a new tier-1 commit; a segment with nothing new refreshes its body but does not merge it, so under auto it can stay open for good. Should a successful bare refresh also merge an already-pushed head? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-1/lib/record.sh:509, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-1/journal/decisions/2026-11-08-memory-session-and-answers.md
+- *03-N2-02 · claude-opus-5-5*
+
 ### 2026-11-08 23:41 · N2-01 · passes
 
 The curator runs under --disallowedTools Bash(git push:*) Bash(gh:*): session() takes an S_DENY array (last on the claude -p line), curator() fixes CURATOR_DENY, logs `curator · <model> · deny …` and notes `curator: session denied …`. The stub records every headless argv in argv/<n>-<kind>.args; STUB_CURATOR_PUSH pushes unless denied. Decision file created; docs updated.
