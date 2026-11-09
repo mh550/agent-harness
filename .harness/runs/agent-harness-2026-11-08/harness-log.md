@@ -30,3 +30,7 @@
 - 2026-11-08 05:40 · memory: dropped add ## Gotchas (not stated by entries.jsonl:4)
 - 2026-11-08 05:40 · memory PR: none (no tier-1 change); the body is in memory.md
 - 2026-11-08 05:40 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-11-08 22:09 · lane N1 opened (slot 0, port 7830, from ae9c243)
+- 2026-11-08 22:09 · merged main into harness-lane/agent-harness-2026-11-08/N1
+- 2026-11-08 22:09 · verify N1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-08 22:20 · context.md for N1: 14567 bytes
