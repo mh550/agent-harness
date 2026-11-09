@@ -1,0 +1,33 @@
+- 2026-11-08 02:48 · memlint: CLAUDE.md:98 gotchas: 16 lines, over 15
+- 2026-11-08 03:00 · test count: parsed (generic)
+- 2026-11-08 03:11 · feature list written: 0/8 passing
+- 2026-11-08 03:11 · lint: clean
+- 2026-11-08 03:11 · lane N1 opened (slot 0, port 7830, from 5c206ac)
+- 2026-11-08 03:11 · context.md for N1-03: 4111 bytes
+- 2026-11-08 03:26 · N1-03: suite ran 2x (239 s) in the session
+- 2026-11-08 03:26 · N1-03: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-08 03:26 · N1-03 · claude-opus-5-5 · passes=true · 15 min · 1/8 passing
+- 2026-11-08 03:26 · context.md for N1-02: 4731 bytes
+- 2026-11-08 03:48 · N1-02: suite ran 5x (388 s) in the session
+- 2026-11-08 03:48 · N1-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-08 03:48 · N1-02 · claude-opus-5-5 · passes=true · 22 min · 2/8 passing
+- 2026-11-08 03:48 · context.md for N1-01: 6214 bytes
+- 2026-11-08 04:25 · N1-01: suite ran 2x (238 s) in the session
+- 2026-11-08 04:25 · N1-01 · claude-opus-5-5 · passes=true · 36 min · 3/8 passing
+- 2026-11-08 04:25 · review N1-04: 1343 changed lines, at or over 0; opus
+- 2026-11-08 04:25 · context.md for N1-04: 7497 bytes
+- 2026-11-08 05:11 · N1-04: suite ran 2x (1491 s) in the session
+- 2026-11-08 05:11 · N1-04: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-08 05:11 · N1-04 · claude-opus-5-5 · passes=true · 46 min · 4/8 passing · tests 1911
+- 2026-11-08 05:11 · verify N1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-08 05:23 · context.md for N1: 13892 bytes
+- 2026-11-08 05:39 · verify N1: evidence still short of the steps (N1-03 6/7; N1-02 6/7; N1-01 7/8) after opus; not verified (needs Michael)
+- 2026-11-08 05:39 · lane N1 closed (N1 needs Michael: verify evidence too thin)
+- 2026-11-08 05:39 · waiting on Michael: the remaining features wait on N1 (needs Michael; see harness-log.md)
+- 2026-11-08 05:39 · run ended (waiting on Michael: N1): 4/8 passing · 6 sessions (6 real) · 4 features passed · $31.83 · 2.4 h · by kind: init 1 ($5.98), coding 4 ($23.35), verify 1 ($2.50) · by model: claude-fable-5-1 1 ($5.98), claude-opus-5-5 5 ($25.85)
+- 2026-11-08 05:39 · services stopped (waiting on Michael: N1)
+- 2026-11-08 05:40 · memory: 1 ops · 0 applied · 1 dropped · 0 proposals
+- 2026-11-08 05:40 · memory: dropped add ## Gotchas (not stated by entries.jsonl:4)
+- 2026-11-08 05:40 · memory PR: none (no tier-1 change); the body is in memory.md
+- 2026-11-08 05:40 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-11-08 05:40 · record PR merged into main · https://github.com/mh550/agent-harness/pull/146

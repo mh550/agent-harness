@@ -1,0 +1,165 @@
+{
+  "run": "agent-harness-2026-11-08",
+  "branch": "harness/agent-harness-2026-11-08",
+  "check_budget": {
+    "N1": 50,
+    "N2": 30
+  },
+  "features": [
+    {
+      "id": "N1-03",
+      "milestone": "N1",
+      "kind": "build",
+      "model": "opus",
+      "description": "`apply` checks the cap per operation: the writes are ordered (delete, replace, anchored add, plain add), each tier-1 write is capChecked on its own and a breach drops that op alone with `over the cap: …`; `refused` retires from the result, the body and `memory_pr`; an anchored add on a file under both caps lands as a plain add, and a real eviction's body line and note name the evicted line.",
+      "steps": [
+        "Written first and watched failing in tests/unit/curator.test.mjs: a 16th `## Gotchas` add without an anchor on a file at 15 is dropped with `over the cap: ## Gotchas: 16 entries, over 15` while a `replace` beside it lands (replacing `curator.mjs: a 16th Gotchas add without an anchor refuses the tier-1 commit, naming the breach`); the op that crosses 120 lines is dropped with `over the cap: CLAUDE.md: 121 lines, over 120` and the ops before and after it land (replacing `curator.mjs: a result over 120 lines refuses the tier-1 commit`); a `delete` and an anchorless `add` in one list on a file at 15 Gotchas both land, the delete first; a file over the cap takes its `replace` and `delete` and drops its anchorless `add` naming the cap (extending `curator.mjs: a file already over the cap takes a replace or a delete`); the result has no `refused` key; an anchored `add` on a file under both caps is appended with its anchor line kept (lib/memlint.mjs `gotchasDiff`: added 1, edited 0, deleted 0) and the same op on a file at 15 Gotchas evicts (edited 1); the replaced names leave tests/fixtures/check-names.txt and tests/fixtures/check-names-fast.txt in the same commit.",
+        "lib/curator.mjs: `apply` orders the writes (`delete`, `replace`, `add` with an anchor, `add` without, each group in file order: *default*) and runs `capCheck` on the one file's text before and after each tier-1 write, reverting a breaching op alone (`dropped` with `over the cap: …`) and trying the next op on the text before it; `write` appends an anchored `add` when the appended text passes `capCheck` and evicts the anchor's line only when it would not; an applied op that evicted carries `evicted` (the line it replaced, *default*); the result has no `refused` field; `body` has no `The tier-1 commit was refused` line and its *Applied (tier 1)* line reads `(in place of: <evicted line>)` for an eviction as for a `replace`, nothing of the kind for a plain add; `node --check lib/curator.mjs` passes.",
+        "lib/record.sh `memory_pr`: the refusal branch and the note `memory: tier-1 commit refused (…)` are gone; a cap drop is noted as every drop is (`memory: dropped add ## Gotchas (over the cap: ## Gotchas: 16 entries, over 15)`); an eviction is noted `memory: evicted \"<line cut to 80>\" for add ## Gotchas` (*default* wording); an `apply` that prints nothing is still `memory: apply failed (see run.log)`; `bash -n lib/record.sh` passes.",
+        "tests/fixtures/memory/stub-cap.json gains a second op, a `replace` of the seeded 2nd Gotchas line (`seeded gotcha 02`) with B's fact (`{{LINE:B}}`), and tests/fixtures/memory/README.md's line says so; tests/checks/memory-branch.sh's `mc` run gets `STUB_FACTS=A,B` and its check, written first: the run ends done with exactly one `memory: dropped add ## Gotchas (over the cap: ## Gotchas: 16 entries, over 15)` note, `harness-memory/mc` on origin one commit past main whose CLAUDE.md has 15 Gotchas lines with B's fact and without `seeded gotcha 02`, the `memory: mc` PR open with the dropped op under `## Dropped`, and no `tier-1 commit refused` note in its harness-log.md (replacing `memory PR: a 16th Gotchas add without an anchor refuses the tier-1 commit; no branch, no PR`); the `me` run's eviction check also reads `(in place of: - seeded gotcha 03` in the PR body's Applied section and the eviction note in harness-log.md.",
+        "`journal/decisions/2026-11-08-memory-rules-pr.md` is created (title, provenance: this run, the spec's N1 in docs/specs/2026-11-07-memory-followup.md, journal/learning/2026-11-07-memory-curator.md §12 answer 5) with N1-03's row: the per-op cap, the write order, the eviction only past the cap, `refused` retired, each *default* marked; `journal/decisions/2026-11-07-memory-tiers.md`'s cap answer gets one line saying N1-03 built it.",
+        "`bash tests/run.sh memory-branch` ends with every check passing (its `N/N checks passed` line).",
+        "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+      ],
+      "after": [],
+      "passes": true
+    },
+    {
+      "id": "N1-02",
+      "milestone": "N1",
+      "kind": "build",
+      "model": "opus",
+      "description": "`.claude/CLAUDE.md` and `.claude/rules/` are project memory and guarded as such: `restrict … memory` reverts them, the curator's `FILES` and base take `.claude/CLAUDE.md`, and memlint lints the twin on its own cap and reports `twin` when both files exist.",
+      "steps": [
+        "Written first and watched failing in tests/checks/memory-one-writer.sh (fast): the sourced `restrict … memory` case also adds `.claude/CLAUDE.md` and `.claude/rules/a/b.md` and edits `.claude/settings.json`, and the first two go back while the third stays (replacing `restrict memory: CLAUDE.md and .harness/project.md go back, added, edited or deleted; docs/CLAUDE.md, lib/ and .harness/config.sh stay` in tests/fixtures/check-names.txt and check-names-fast.txt); a stub run with `STUB_DOT_CLAUDE=A` (a new knob in tests/stub-claude.sh: that feature's first coding session writes `.claude/CLAUDE.md` and adds `.claude/rules/r.md`) ends done with neither file on the milestone branch `run/<run>/M1` nor on origin main and two revert notes, one naming `.claude/CLAUDE.md` and one `.claude/rules/r.md`.",
+        "Written first in tests/unit/curator.test.mjs: `validate` accepts `.claude/CLAUDE.md` as a `file` and refuses `.claude/rules/x.md` with a reason naming the three files; `capCheck` caps `.claude/CLAUDE.md` as it caps `CLAUDE.md`; `apply` writes a `## Gotchas` op into `.claude/CLAUDE.md`, and the CLI never writes through a symlinked `.claude/`. In tests/unit/memlint.test.mjs: `lint` finds `twin` (`.claude/CLAUDE.md:1 twin: CLAUDE.md exists too; Claude Code loads both as project memory`) when both exist and no `twin` with one, and lints `.claude/CLAUDE.md`'s size and Gotchas on their own cap.",
+        "tests/checks/memlint-run.sh (fast): a project with both files gets the `twin` note before the initializer's and `harness memlint <project>` prints it. tests/checks/memory-branch.sh: a run on a project whose memory is `.claude/CLAUDE.md` alone (no root CLAUDE.md) lands its facts in `.claude/CLAUDE.md` on `harness-memory/<run>`, folded into an existing seed when the file's time allows, else its own run.",
+        "lib/record.sh: `restrict`'s memory spec is `CLAUDE.md .harness/project.md .claude/CLAUDE.md .claude/rules` (the whole directory: *default*), `memory_base` copies `.claude/CLAUDE.md` into `$SCRATCH/memory-base/` when the base has it, `memory_foreign`'s path filter admits it; lib/curator.mjs `FILES` gains `.claude/CLAUDE.md` and `plain` reads it; lib/memlint.mjs runs `size`, `gotchas`, `derivable-count` and `run-scope` on `.claude/CLAUDE.md` on its own cap (*default*) and adds the `twin` finding; prompts/curator.md names `{{MEMORY_BASE}}/.claude/CLAUDE.md` when present; `.claude/rules/*.md` is guarded but no operation target (*default*); `bash -n lib/record.sh tests/stub-claude.sh` and `node --check lib/curator.mjs lib/memlint.mjs` pass.",
+        "`journal/decisions/2026-11-08-memory-rules-pr.md` gets N1-02's row with the documentation page cited (https://code.claude.com/docs/en/memory, read 2026-11-07), the four pathspecs, and what stays unguarded by choice (`CLAUDE.local.md`, the user's own rules directory), defaults marked; tests/stub-claude.sh's header gets the `STUB_DOT_CLAUDE` line; tests/fixtures/memory/README.md is updated where a fixture changed.",
+        "`bash tests/run.sh memory-one-writer memlint-run memory-branch` ends with every check passing (its `N/N checks passed` line).",
+        "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+      ],
+      "after": [
+        "N1-03"
+      ],
+      "passes": true
+    },
+    {
+      "id": "N1-01",
+      "milestone": "N1",
+      "kind": "build",
+      "model": "opus",
+      "description": "Tier 2 lands on `harness-rules/<run>` with its own `memory rules: <run>` PR that the driver never merges: `apply` cuts `texts` and `ruleTexts` from one base under a union cap, `memory_pr` runs once per tier, `auto` merges the facts PR only, the bodies number every rule and proposal `<run>/<n>`, and `memory.json`, the report, `ledger/memory.jsonl` and `harness memory` count facts and rules apart.",
+      "steps": [
+        "Written first and watched failing in tests/unit/curator.test.mjs: `apply` writes a tier-2 op into `ruleTexts` and not `texts`, a tier-1 op the reverse, `rules` holding the tier-2 ops in order and `proposed` tier 3 only (replacing `curator.mjs: only tier 1 is written; a tier-2 op leaves the texts as they were`); the union shadow drops a tier-2 `add` that would take the merged file past 120 lines while each tier alone fits, with `over the cap: CLAUDE.md: 121 lines, over 120`; a rules write that would change a protected section's raw lines is dropped; `body` renders the facts body, the rules body and the union, every tier-2 rule then tier-3 proposal numbered `<run>/<n>` in one sequence in the headings (`### 3 · add CLAUDE.md · ## Live system (entries.jsonl:7)`), the facts body ending `Rules of this run: <url>` (or `none`) and the rules body `Facts of this run: <url>` (replacing `curator.mjs: body lists the applied and tier-2 ops with their from, then the proposals, then the dropped with reasons`).",
+        "Written first in tests/unit/summary.test.mjs: `memoryState` reads `memory: <run>: 2 rules` commits as the driver's and `Merge branch 'main' into harness-rules/<run>` as neither; `memory-line` writes two rows for a summary with both PRs, each with `tier` (`facts` or `rules`) and `sections` (the `##` headings its ops touched), replacing by `url`; `memoryView` prints the tier in each line (`<run> · <project> · facts · 2/0/1 · <url> · open`, `<run> · <project> · rules · 1 · ## Code rules · <url> · open`) and one tally line per tier (`facts: merged unchanged a · edited b · closed c · open d`, then `rules: …`), a row without `tier` counted as facts.",
+        "Written first in tests/checks/memory-branch.sh: the `mp` run's `## Code rules` line is one commit `memory: mp: 1 rules` on `harness-rules/mp` and absent from `harness-memory/mp`, its PR is titled `memory rules: mp`, left for Michael, with `Facts of this run:` naming the facts PR in its body and `Rules of this run:` naming it in the facts PR's (replacing `memory PR: the workflow line is not committed and is in the PR body with its entries.jsonl line`); the record PR still opens; the notes read `memory: 3 ops · 2 facts · 1 rules · 0 dropped · 1 proposals`; `harness memory` lists two `mp` lines with `facts` and `rules` and two tally lines, and `ledger/memory.jsonl` has two `mp` rows with `tier` and `sections`; `mp`'s continue reuses the open rules PR (`gh pr edit` on its URL in its gh log); the `ma` run (auto) merges the facts PR and leaves the rules PR open with `memory rules PR opened; left for Michael · <url>` and no `gh pr merge` of its URL in its gh log; a `harness-rules/<run>` branch on origin with a commit the driver would not write stops the rules half with its note while the facts half lands; no run leaves a local `harness-rules/*` or `harness-memory/*` branch or a registered scratch worktree (replacing `memory PR: no run leaves its scratch worktree registered or a local harness-memory branch`); the report's `Memory` row reads `2 applied · 1 rules · 0 dropped · 1 proposals · PR <url> · rules PR <url>` and `memory-result.json` sits in the run record beside `memory-ops.json`.",
+        "lib/curator.mjs: `apply` returns `{texts, ruleTexts, rules, applied, proposed, dropped, rederived, run}`, both sets cut from the base, the write gate unchanged (a `proposed_changes` string never gates tier 1), the protected raw-line check on both, the per-op cap on tier 1 and then on the union shadow (tier 1's ops then tier 2's on one text); `memory-result.json` carries `ruleTexts` and the numbered items so `memory_pr`'s rules pass can write them into the recreated scratch worktree and N2-03 can name them (the CLI shape is the session's: *default*); `body` takes which body to render (facts, rules or the union for `memory.md`); `node --check lib/curator.mjs` passes.",
+        "lib/record.sh: `memory_pr` is one path run for `facts` (`harness-memory/<run>`, subject `memory: <run>: <n> facts`, title `memory: <run>`) and then `rules` (`harness-rules/<run>`, `memory: <run>: <n> rules`, `memory rules: <run>`), `memory_base` and `memory_foreign` taking the branch and the subject word, `memory_wt_gone` between the two passes (one worktree path reused: *default*), each push never forced, each PR opened or its body refreshed on a continue, a failure in one pass its own note that does not stop the other; `memory_merge` is called with the facts URL alone (`grep -n memory_merge lib/record.sh` shows no call on the rules path); a closed rules PR with its branch on origin stops the rules half with the delete-the-branch note; `memory_json` gains `rules` and `rules_pr`; the notes `memory rules PR opened; left for Michael · <url>`, `memory rules PR updated · <url>`, `memory rules PR: none (no tier-2 change)`; lib/driver.sh `curator()` copies `memory-result.json` into the run record; `bash -n lib/record.sh lib/driver.sh` passes.",
+        "lib/summary.mjs: `memoryOf` reads `rules` and `rules_pr`, `memoryLine` prints the report row, `memoryRow` gives one row per PR with `tier` and `sections`, `memoryState` reads the subject word, `memoryView` the tier and the two tallies; prompts/curator.md says tier 2 is a diff on `harness-rules/<run>` that Michael merges and the driver never does; templates/user/config.sh and templates/project/config.sh's `MEMORY_POLICY` comment says `auto` merges facts only; tests/fixtures/memory/README.md says stub-three-ops's `## Code rules` op lands on the rules branch; `journal/decisions/2026-11-08-memory-rules-pr.md` gets N1-01's rows (the sibling prefix `harness-rules/`, two text sets from one base, the union cap, facts first, the numbering, both bodies carrying tier 3 and the dropped ops, counted apart) and the three invariants each with the check that proves it, every *default* marked.",
+        "`bash tests/run.sh memory-branch curator-run` ends with every check passing (its `N/N checks passed` line).",
+        "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+      ],
+      "after": [
+        "N1-02"
+      ],
+      "passes": true
+    },
+    {
+      "id": "N1-04",
+      "milestone": "N1",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of N1 on Opus: a reviewer reads the milestone diff from a file and answers the five hard questions (the union cap, no merge of the rules PR under `auto`, the four pathspecs, every removed check name's successor, `harness memory` on a pre-N1 `memory.jsonl`); Critical/Important findings fixed RED→GREEN; simplifications applied; docs/architecture.md, README.md and the decision file describe N1 as built.",
+      "steps": [
+        "The milestone diff is written to a file (`git diff $(git merge-base HEAD origin/main) -- lib prompts tests docs journal templates README.md > $HARNESS_SCRATCH/N1.diff`) and read by an Opus subagent, one round (a second only when the first finds something Critical), which answers with file and line: that the union shadow holds (two PRs each under the cap cannot merge into a file over 120 lines or 15 Gotchas); that no path lets the driver merge the rules PR under `MEMORY_POLICY=auto` (every `memory_merge` call in lib/record.sh named); that `restrict`'s four pathspecs revert nothing beside them (`.claude/settings.json` edited in a run survives); that every check name N1 removed has a successor named in `journal/decisions/2026-11-08-memory-rules-pr.md` (decisions/2026-11-03-trim's rule); that `harness memory` on a `memory.jsonl` written before N1 (rows without `tier`) still prints; its findings (Critical, Important, Minor, each with file, line and what was done) are in `docs/plans/2026-11-08-N1-review.md`.",
+        "Every Critical and Important finding is fixed with a failing test first (a unit test in tests/unit/ for a pure branch, a check in tests/checks/ for a driver behaviour) and then green; simplification passes are applied; `bash -n` passes on every shell file N1 touched and `node --check` on every `.mjs`.",
+        "docs/architecture.md: the component rows for lib/curator.mjs, lib/summary.mjs, lib/memory.sh and prompts/curator.md; the Memory curation state row (`memory-result.json` in the record, `memory.json`'s `rules` and `rules_pr`); the Memory PRs ledger row (`tier`, `sections`); the Project memory guard row names the four pathspecs; the Memory lint row the `twin` finding; the branches and PRs table gains `harness-rules/<run>` and PR `memory rules: <run>` (never merged by the driver); the CURATOR step (facts then rules, each op under the cap, a breaching one dropped); the `MEMORY_POLICY` row (`auto` merges facts only). README.md: *Memory curator*, *Memory lint*, the one-writer paragraph, `harness memory`'s tier lines.",
+        "`journal/decisions/2026-11-08-memory-rules-pr.md` is complete: title, provenance, finding, choice (N1-01, N1-02, N1-03 rows), rejected (`harness-memory/<run>/rules` as a ref, rules stacked on the facts commit, `.claude/rules/*.md` as an operation target, a cap budget shared across the twins, the whole-commit refusal); the N1 check names added, replaced and removed are counted against the budget of 50 (`git diff $(git merge-base HEAD origin/main) -- tests/fixtures/check-names.txt | grep -c '^+[^+]'` and `grep -c '^-[^-]'`) and the count, with any overrun's reason, is in the decision file and the entry's `checks` field.",
+        "`bash tests/run.sh` (in the background, a timeout of at least 1,500,000 ms) ends with every check passing (its `N/M checks passed` line with N = M); the suite is green."
+      ],
+      "after": [
+        "N1-01",
+        "N1-02",
+        "N1-03"
+      ],
+      "passes": true
+    },
+    {
+      "id": "N2-01",
+      "milestone": "N2",
+      "kind": "build",
+      "model": "opus",
+      "description": "The curator session runs under a deny list the driver passes: `session()` takes `S_DENY` and appends `--disallowedTools`, `curator()` fixes `CURATOR_DENY=(\"Bash(git push:*)\" \"Bash(gh:*)\")`, the run.log line and one note say so, and the stub records every headless argv and skips its push when denied.",
+      "steps": [
+        "Written first and watched failing in tests/checks/curator-run.sh: the `cu` run's curator argv (`$STUB_DIR/argv/<n>-curator.args`, the new record) has `--disallowedTools` followed by exactly `Bash(git push:*)` and `Bash(gh:*)`, and the same run's coding, verify and retro argv files have no `--disallowedTools` (*default*: the curator alone); its run.log line is `curator · <model> · deny Bash(git push:*) Bash(gh:*)` and harness-log.md has one `curator: session denied Bash(git push:*), Bash(gh:*)` note; a run with `STUB_CURATOR_PUSH=1` ends done with `harness-memory/<run>` holding the driver's one commit past main and no other, and its memory PR as tests/fixtures/memory/stub-three-ops.json predicts; tests/checks/queue-debrief.sh's `--disallowedTools` assertion is the model; the names go in tests/fixtures/check-names.txt.",
+        "tests/stub-claude.sh: every headless session records its argv in `$STUB_DIR/argv/<n>-<kind>.args` (the desk's `<n>-<name>.args` shape); `STUB_CURATOR_PUSH=1` has the stub curator commit a Gotchas line and push it to `harness-memory/<run>` unless its argv carries `--disallowedTools` with `Bash(git push:*)`, in which case it does not push; no denial event is printed (none captured from the real CLI: *default*); the header gets both lines; `bash -n tests/stub-claude.sh` passes.",
+        "lib/record.sh `session()`: `S_DENY` (an array, as `S_TURNS`, `S_BUDGET` and `S_TIMEOUT` are overrides) appended to the one `claude -p` line as `--disallowedTools \"${S_DENY[@]}\"` when set; lib/driver.sh `curator()`: `CURATOR_DENY=(\"Bash(git push:*)\" \"Bash(gh:*)\")` beside `MAX_TURNS=40 SESSION_BUDGET_USD=3`, passed as `S_DENY`, the `log` line and the `note`; `grep -n S_DENY lib/*.sh` shows the curator as the only caller; prompts/curator.md keeps its no-push, no-`gh` sentence and adds that the driver denies them; `bash -n lib/record.sh lib/driver.sh` passes.",
+        "`journal/decisions/2026-11-08-memory-session-and-answers.md` is created (title, provenance: this run, the spec's N2 in docs/specs/2026-11-07-memory-followup.md, journal/learning/2026-11-07-memory-curator.md §11 answer 7, the cli-reference and permissions pages read 2026-11-07) with N2-01's row: the flag over a `--settings` JSON, the colon form lib/debrief.sh already passes and its falsifier, no config knob, each *default* marked; `journal/decisions/2026-11-07-memory-tiers.md` gets one `Updated in place 2026-11-08` line closing its known limit.",
+        "`bash tests/run.sh curator-run queue-debrief` ends with every check passing (its `N/N checks passed` line).",
+        "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+      ],
+      "after": [
+        "N1"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-02",
+      "milestone": "N2",
+      "kind": "build",
+      "model": "opus",
+      "description": "Under `MEMORY_POLICY=auto` a reused facts PR whose `gh pr edit` failed is not merged: `memory_edit` returns its status, the merge runs only with the body on the PR, one note says so, and the next segment reuses the PR and merges once its body refresh succeeds.",
+      "steps": [
+        "Written first and watched failing in tests/checks/memory-branch.sh: a run under `MEMORY_POLICY=auto` whose facts PR is open at its continue (the `mw` run's shape: a hand-pushed `harness-memory/<run>` with the PR opened on it and no new tier-1 commit) is continued with one new tier-1 fact under `STUB_GH_DOWN=1 STUB_GH_DOWN_ONLY=edit`: the continue pushes a facts commit to `harness-memory/<run>`, its gh log has the failed `pr edit` and no `pr merge` of that URL, harness-log.md has the one note `memory PR: its body was not updated (see run.log); not merged (MEMORY_POLICY=auto), left open · <url>` and no `memory PR merged into main` note for that segment, and `harness memory` lists the PR `open`; a second continue with gh up and one more new fact refreshes the body and merges (`memory PR merged into main · <url>`, the PR's `.merged` marker in stub-gh's prs/); the names go in tests/fixtures/check-names.txt.",
+        "lib/record.sh: `memory_edit` returns `gh pr edit`'s status; in `memory_pr`'s facts pass the merge runs only when the body is on the PR (a fresh `pr create --body-file` PR merges as today; a reused PR merges only after a successful edit), with no retry of the edit inside the segment (*default*: the next segment is the retry); the rules pass never merges; under `pr` nothing changes; `bash -n lib/record.sh` passes.",
+        "templates/user/config.sh and templates/project/config.sh's `MEMORY_POLICY` comment says the facts PR is merged only with its body on it; `journal/decisions/2026-11-08-memory-session-and-answers.md` gets N2-02's row; `journal/decisions/2026-11-07-memory-policy.md`'s `Updated in place 2026-11-07` line on the flip gets one line saying N2-02 built it.",
+        "`bash tests/run.sh memory-branch` ends with every check passing (its `N/N checks passed` line).",
+        "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+      ],
+      "after": [
+        "N2-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-03",
+      "milestone": "N2",
+      "kind": "build",
+      "model": "opus",
+      "description": "`harness memory proposals <run>` and `harness memory accept|decline <run>/<n> --why \"…\"`: Michael's verdict on a numbered rule or proposal is one row of `ledger/memory-answers.jsonl` under the ledger's lock and commit, tallied by `harness memory`, rendered into the curator prompt as `{{MEMORY_ANSWERS}}`, and enforced by `apply`, which drops a tier-2 or tier-3 op whose key Michael answered.",
+      "steps": [
+        "Written first and watched failing in tests/unit/curator.test.mjs: `answers` renders declined then accepted, newest first, cut at `--max-bytes` with a line saying how many were left out, `(none yet)` for an empty or missing file; `apply` with an answers file drops a tier-2 op whose `lineKey` is a declined item's with `declined by Michael (<run>/<n>: <why cut to 80>)`, drops an accepted one with `accepted by Michael (<run>/<n>)`, and never matches a tier-1 op or a different key. In tests/unit/summary.test.mjs, or a new tests/unit/memory.test.mjs for a new lib/memory.mjs: the answers row shape `{run, project, n, tier, verdict, why, file, section, text, key, at}`, a row replacing an earlier one for the same `<run>/<n>`, the `answers: accepted a · declined d` tally counting a replaced verdict once, and `· 2 answered` on a listed run whose items carry verdicts.",
+        "Written first in tests/checks/memory-branch.sh: after `mp`, `harness memory proposals mp` lists its rule as `mp/1` with `rules` and `## Code rules` and its proposal as `mp/2`; `harness memory decline mp/1 --why \"the suite runs itself\"` appends the row to `ledger/memory-answers.jsonl`, commits it in the ledger repo (`git -C <ledger> log --format=%s -- memory-answers.jsonl` has one line) and prints `memory: mp/1 declined · ## Code rules · <text cut to 60>`; `harness memory` shows the `answers:` tally; a following run on the same project with the same `STUB_PROPOSE` op drops it as `declined by Michael (mp/1: the suite runs itself)`, notes `memory rules PR: none (no tier-2 change)`, and its `prompt-curator.md` carries the declined line; `harness memory accept mp/9 --why x` and `harness memory decline mp/1` without `--why` are one error line each, exit 1. In tests/checks/curator-run.sh: the `cu` run's rendered `prompt-curator.md` says `(none yet)` and has no `{{` left; the names go in tests/fixtures/check-names.txt.",
+        "lib/memory.sh gains `proposals <run>`, `accept <run>/<n> --why \"…\"` and `decline <run>/<n> --why \"…\"`: the items read from `ledger/<project>/<run>/memory-result.json` (found by `<run>` across projects), `--why` required, one line, at most 300 characters (`WHY_MAX`), an unknown run, an `<n>` the run has not, a tier-1 `<n>` or a missing `--why` one error line and exit 1, the row written under the ledger's lock and committed as lib/backlog.sh's `backlog set` is; lib/curator.mjs gains `answers <answers.jsonl> <project> --max-bytes 4000` and `apply`'s answers argument with the two reasons; lib/driver.sh `curator()` renders `{{MEMORY_ANSWERS}}` from `$LEDGER/memory-answers.jsonl` (`HARNESS_MEMORY_ANSWERS`) and lib/prompt.sh fills it; lib/record.sh `memory_pr` passes the answers file to `apply`; prompts/curator.md carries the placeholder under a heading saying what Michael declined and accepted; the rows and the tally in lib/summary.mjs or lib/memory.mjs; bin/harness's usage lines for the three verbs; `bash -n` on every shell file touched and `node --check` on every `.mjs` pass.",
+        "`journal/decisions/2026-11-08-memory-session-and-answers.md` gets N2-03's row: the file name `ledger/memory-answers.jsonl`, both verdicts closing the item, the key alone deciding (not the section), tier-1 ops never matched, no copy in the run record, the verbs Michael's, each *default* marked.",
+        "`bash tests/run.sh memory-branch curator-run` ends with every check passing (its `N/N checks passed` line).",
+        "`bash tests/run.sh --tier fast` ends with every check passing (its `N/N checks passed` line); the suite is green."
+      ],
+      "after": [
+        "N2-02"
+      ],
+      "passes": false
+    },
+    {
+      "id": "N2-04",
+      "milestone": "N2",
+      "kind": "review",
+      "model": "opus",
+      "description": "Review + simplify of N2 on Opus: a reviewer reads the milestone diff from a file and answers the five hard questions (no merge without the refreshed body, the deny list on the curator's `claude` line alone, the answers match by key, a replaced verdict counted once, `harness memory` without an answers file); Critical/Important findings fixed RED→GREEN; simplifications applied; docs/architecture.md, README.md and the decision file describe N2 as built.",
+      "steps": [
+        "The milestone diff is written to a file (`git diff $(git merge-base HEAD origin/main) -- lib bin prompts tests docs journal templates README.md > $HARNESS_SCRATCH/N2.diff`) and read by an Opus subagent, one round (a second only when the first finds something Critical), which answers with file and line: that no path merges a PR whose body refresh failed (the edit's status is read where the merge decides); that the deny list reaches the real `claude` line in `session()` for the curator and no other role (the stub's argv for the curator, `grep -n S_DENY lib/*.sh` for the rest); that the accept/decline match is by `key` and cannot drop a tier-1 op or a different sentence; that a replaced verdict is counted once; that `harness memory`'s listing runs with an empty or missing `memory-answers.jsonl`; its findings (Critical, Important, Minor, each with file, line and what was done) are in `docs/plans/2026-11-08-N2-review.md`.",
+        "Every Critical and Important finding is fixed with a failing test first (a unit test in tests/unit/ for a pure branch, a check in tests/checks/ for a driver behaviour) and then green; simplification passes are applied; `bash -n` passes on every shell file N2 touched and `node --check` on every `.mjs`.",
+        "docs/architecture.md: the Read-only sessions guard row says the curator also runs under `--disallowedTools`; the CURATOR step carries the deny list, the answers file and the merge only with the body; the `MEMORY_POLICY` row and the PR table say the facts PR is merged only with its body on it; the ledger files table gains `memory-answers.jsonl`; lib/memory.sh's and lib/curator.mjs's rows name the verbs, `answers` and the two drop reasons. README.md: *Memory curator*'s `auto` sentence, `harness memory`'s row with `proposals`, `accept` and `decline`.",
+        "`journal/decisions/2026-11-08-memory-session-and-answers.md` is complete: title, provenance, finding, choice (N2-01, N2-02, N2-03 rows), rejected (a `--settings` JSON deny list, a retry of the edit inside the segment, a verdict matched by section, a copy of the answers in the run record); the N2 check names added, replaced and removed are counted against the budget of 30 (`git diff $(git merge-base HEAD origin/main) -- tests/fixtures/check-names.txt | grep -c '^+[^+]'` and `grep -c '^-[^-]'`) and the count, with any overrun's reason, is in the decision file and the entry's `checks` field.",
+        "`bash tests/run.sh` (in the background, a timeout of at least 1,500,000 ms) ends with every check passing (its `N/M checks passed` line with N = M); the suite is green."
+      ],
+      "after": [
+        "N2-01",
+        "N2-02",
+        "N2-03"
+      ],
+      "passes": false
+    }
+  ]
+}

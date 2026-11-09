@@ -1,38 +1,34 @@
-# Debrief · 2026-11-07 20:59
+# Debrief · 2026-11-08 05:41
 
-_runs since 2026-11-07 15:06:15: agent-harness-2026-11-07-3 · claude-sonnet-5-5, $0.1715162 · context: /home/mh550/.local/state/harness/debrief/2026-11-07-205847/context.md_
+_runs since 2026-11-07 20:58:47: agent-harness-2026-11-08 · claude-sonnet-5-5, $0.14063399999999998 · context: /home/mh550/.local/state/harness/debrief/2026-11-08-054121/context.md_
 
 ## Headline
-agent-harness-2026-11-07-3 merged A1, A2 and A3 (13 features) to main. A4 (docs) is not merged: A4-01 failed verify on one wrong line in `docs/architecture.md`. The run cost $56.55. The usage window is open and seven_day is 44% (resets Sun 17:00).
+Nothing verified or merged: agent-harness-2026-11-08 built N1 (4/4 features pass) but stopped on a verify evidence gap, and N2 (0/4) was never started.
+The run branch was deleted by gc (`branch -D`, was 14f11a0), so check that the N1 code is on main (see "For the next interactive session").
+Spend $32.22 against a usage window that is open (seven_day 48%, resets Sun 17:00).
 
 ## Runs
-### agent-harness-2026-11-07-3 (agent-harness) · no feature left to try
-- 13/14 features pass. A1 (3), A2 (5) and A3 (5) are verified and merged. A4 (1 feature) is 0/1.
-- Tests went 1791 → 1898. There were 0 flakes and 0 fix rounds, and 107 checks were added.
-- It cost $56.55 over 5.5 h, which is $4.35 per passing feature. Build was $23.50 and review $9.32.
-- A4-01 (docs, Sonnet) failed verify at step 6: a docs review found `docs/architecture.md:58` saying the debrief notification passes `since=`.
-  - `lib/notify.sh` has no `since=` key. `lib/debrief.sh:251` passes `bundle="$WS"`.
-  - The fix is one clause. The other six steps held, including the fast suite (1064/1064) and the full suite (1898 green).
-- The retro proposed `verify-failed-recheck`: re-verify only the failed steps after a fix, instead of closing the lane as "nothing left to try". That is what happened here.
-- The memory PR #137 is open for you (`MEMORY_POLICY=pr`). It applied one op and dropped one ("add ## How to verify", not stated by `entries.jsonl:17`). The record PR #138 merged.
+### agent-harness-2026-11-08 (agent-harness) · waiting on Michael: N1
+- Features 4/8 passing, 0 verified, 0 merged. N1 is 4/4 built and N2 is 0/4 (not reached).
+- Tests went 1898 → 1911 (+13), with 0 flakes, 0 fix rounds and a first-attempt pass rate of 1.0.
+- Cost was $32.22 ($8.06 per passing feature) over 2.87 h. Build was $17.56, review $5.79, verify $2.50 and init $5.98 (Fable).
+- The stop: verify N1 ran the full suite, but its evidence rows fell short of the steps (N1-03 6/7, N1-02 6/7, N1-01 7/8). It was retried on Opus and still fell short, so the lane closed as "needs Michael". The remaining features wait on N1, so N2 never started.
+- The N1-04 review ran once and found issues, so it wasn't wasted. The retro also says N1-03, N1-02 and N1-04 left design questions in `needs.md`. gc has since resolved those needs, and `progress.md` shows no open questions.
+- Memory curator: 1 op, dropped ("not stated by entries.jsonl:4"). No memory PR.
+- Record PR #146 was merged into main.
 
 ## Needs Michael
-- Memory PR #137 is waiting for your review and merge.
-- The A4-01 docs fix is trivial, but the run ended without it. It also leaves the live checklist at `docs/plans/2026-10-22-n8n-events-live.md` unmerged. Say whether to continue the run for it (see the next section).
+- Decide how to handle the N1 verify gap (run agent-harness-2026-11-08, `harness-log.md` 05:39). Choose between re-running verify and accepting N1 as built. The retro can't say whether steps were skipped or just not logged, because `entries.jsonl` has no per-step rows.
+- Check what happened to the N1-01..04 design questions that gc marked "resolved (run removed)" (`needs.md`). They may have been lost with the run.
 
 ## For the next interactive session
-- The A4-01 fix: in `docs/architecture.md:58`, replace the clause "passes `since=` its SINCE" with `bundle=$WS`. Then merge A4 (README, config template, architecture, decision files, live checklist).
-  - The run ended with "no feature left to try", so I can't queue a continuation.
-- No merge conflicts or refused merges.
-- Open `proposed` retro items, most `runs_seen` first:
-  1. `verify-evidence-rows`, record per-step evidence rows in `entries.jsonl` (10 runs).
-  2. `suite-time-budget`, cap or warn on repeated full-suite runs (9). This run's full suite took 709 s against the ~210 s in CLAUDE.md.
-  3. `suite-flake-retry`, re-run failed test files serially before calling the suite red (5).
-  4. `verify-failed-recheck`, re-verify only the failed steps (1, new this run).
-  5. `record-push-retry-noise` (1).
-  6. `memlint-before-session-end` (1).
-  7. `session-entry-write-guard` (1).
-  8. `step-contradiction-lint` (1).
-  - Unseen backlog items: `no-retry-on-denial`, `base-branch-runs-reverted`, `restrict-merge-tree-base`, `slot-copy-overwritten-on-merge`, `cli-verbiage-and-syntax`, `git-provider-migration`.
-- A discovery from `progress.md`: the spec's A4 step 6 diff, `git merge-base HEAD origin/main`, covers only A4's own files once A1–A3 have merged per milestone. The run's docs as one piece need `git diff 8e05980 HEAD`. Fix the step wording in the spec.
-- Several retro-backlog items were not re-raised by this debrief.
+- Branch and merge state: `harness/agent-harness-2026-11-08` was deleted locally and on origin with 0 milestones merged. Confirm whether N1 reached main (via PR #146 or otherwise) before re-running. If it didn't, the work is only in the ledger record and the reflog. No merge conflicts were reported.
+- Open `proposed` retro items, most `runs_seen` first (all re-raised by this run):
+  1. `verify-evidence-rows`, seen 11: record per-step evidence rows from verify sessions in `entries.jsonl`. This is the direct cause of this stop.
+  2. `suite-time-budget`, seen 10: cap or warn on repeated full-suite runs. N1-04 spent 1491 s on 2 runs and N1-02 ran the suite 5 times.
+  3. `suite-flake-retry`, seen 5: re-run failed test files serially before declaring the suite red.
+  4. `verify-failed-recheck`, seen 2: after thin verify evidence, re-verify only the short steps instead of closing the lane.
+  5. `memlint-before-session-end`, seen 1: init logged a `CLAUDE.md:98` Gotchas overflow (16 lines, cap 15).
+  6. Seen once each: `session-entry-write-guard`, `step-contradiction-lint`, `record-push-retry-noise`.
+  7. Seen 0 times: `no-retry-on-denial`, `base-branch-runs-reverted`, `restrict-merge-tree-base`, `slot-copy-overwritten-on-merge`, `cli-verbiage-and-syntax`, `git-provider-migration`.
+- None of these is `specced` or `queued`.

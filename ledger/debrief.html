@@ -27,55 +27,50 @@ dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
 pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
 <body><main>
-<h1>Debrief · 2026-11-07 20:59</h1>
-<p class="sub">1 run · page built 2026-11-08 01:59 UTC from each run's summary.json and the debrief note</p>
-<section class="headline"><p>agent-harness-2026-11-07-3 merged A1, A2 and A3 (13 features) to main. A4 (docs) is not merged: A4-01 failed verify on one wrong line in <code>docs/architecture.md</code>. The run cost $56.55. The usage window is open and seven_day is 44% (resets Sun 17:00).</p></section>
+<h1>Debrief · 2026-11-08 05:41</h1>
+<p class="sub">1 run · page built 2026-11-08 10:41 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>Nothing verified or merged: agent-harness-2026-11-08 built N1 (4/4 features pass) but stopped on a verify evidence gap, and N2 (0/4) was never started.</p></section>
 <section class="cards"><article class="card">
-  <header><h3>agent-harness-2026-11-07-3</h3><span class="proj">agent-harness</span><span class="pill muted">no feature left to try</span></header>
-  <div class="big"><b>13/14 passing</b><span>13 verified · 13 merged</span></div>
-  <ul class="milestones"><li class="ms merged" title="A1: 3/3 passing, merged">A1</li><li class="ms merged" title="A2: 5/5 passing, merged">A2</li><li class="ms merged" title="A3: 5/5 passing, merged">A3</li><li class="ms todo" title="A4: 0/1 passing, todo">A4</li></ul>
-  <dl><div><dt>Spend</dt><dd>$56.55</dd></div><div><dt>Per feature</dt><dd>$4.35</dd></div>
-  <div><dt>Wall</dt><dd>5.49 h</dd></div><div><dt>Tests</dt><dd>1791 → 1898</dd></div></dl>
-  <ul class="open"><li><span class="cause">failed verify</span> <code>A4-01</code><div class="detail">the verify session found a step that doesn&#39;t hold</div></li></ul>
+  <header><h3>agent-harness-2026-11-08</h3><span class="proj">agent-harness</span><span class="pill warn">waiting on Michael: N1</span></header>
+  <div class="big"><b>4/8 passing</b><span>0 verified · 0 merged</span></div>
+  <ul class="milestones"><li class="ms built" title="N1: 4/4 passing, built">N1</li><li class="ms todo" title="N2: 0/4 passing, todo">N2</li></ul>
+  <dl><div><dt>Spend</dt><dd>$32.22</dd></div><div><dt>Per feature</dt><dd>$8.06</dd></div>
+  <div><dt>Wall</dt><dd>2.87 h</dd></div><div><dt>Tests</dt><dd>1898 → 1911</dd></div></dl>
+  <ul class="open"><li><span class="cause">not reached</span> <code>N2-01</code> <code>N2-02</code> <code>N2-03</code> <code>N2-04</code><div class="detail">run ended: waiting on Michael: N1</div></li></ul>
 </article></section>
-<section class="note"><p><em>runs since 2026-11-07 15:06:15: agent-harness-2026-11-07-3 · claude-sonnet-5-5, $0.1715162 · context: /home/mh550/.local/state/harness/debrief/2026-11-07-205847/context.md</em></p>
+<section class="note"><p><em>runs since 2026-11-07 20:58:47: agent-harness-2026-11-08 · claude-sonnet-5-5, $0.14063399999999998 · context: /home/mh550/.local/state/harness/debrief/2026-11-08-054121/context.md</em></p>
+<p>The run branch was deleted by gc (<code>branch -D</code>, was 14f11a0), so check that the N1 code is on main (see &quot;For the next interactive session&quot;).<br>Spend $32.22 against a usage window that is open (seven_day 48%, resets Sun 17:00).</p>
 <h3>Runs</h3>
-<h4>agent-harness-2026-11-07-3 (agent-harness) · no feature left to try</h4>
+<h4>agent-harness-2026-11-08 (agent-harness) · waiting on Michael: N1</h4>
 <ul>
-<li>13/14 features pass. A1 (3), A2 (5) and A3 (5) are verified and merged. A4 (1 feature) is 0/1.</li>
-<li>Tests went 1791 → 1898. There were 0 flakes and 0 fix rounds, and 107 checks were added.</li>
-<li>It cost $56.55 over 5.5 h, which is $4.35 per passing feature. Build was $23.50 and review $9.32.</li>
-<li>A4-01 (docs, Sonnet) failed verify at step 6: a docs review found <code>docs/architecture.md:58</code> saying the debrief notification passes <code>since=</code>.</li>
-<li><code>lib/notify.sh</code> has no <code>since=</code> key. <code>lib/debrief.sh:251</code> passes <code>bundle=&quot;$WS&quot;</code>.</li>
-<li>The fix is one clause. The other six steps held, including the fast suite (1064/1064) and the full suite (1898 green).</li>
-<li>The retro proposed <code>verify-failed-recheck</code>: re-verify only the failed steps after a fix, instead of closing the lane as &quot;nothing left to try&quot;. That is what happened here.</li>
-<li>The memory PR #137 is open for you (<code>MEMORY_POLICY=pr</code>). It applied one op and dropped one (&quot;add ## How to verify&quot;, not stated by <code>entries.jsonl:17</code>). The record PR #138 merged.</li>
+<li>Features 4/8 passing, 0 verified, 0 merged. N1 is 4/4 built and N2 is 0/4 (not reached).</li>
+<li>Tests went 1898 → 1911 (+13), with 0 flakes, 0 fix rounds and a first-attempt pass rate of 1.0.</li>
+<li>Cost was $32.22 ($8.06 per passing feature) over 2.87 h. Build was $17.56, review $5.79, verify $2.50 and init $5.98 (Fable).</li>
+<li>The stop: verify N1 ran the full suite, but its evidence rows fell short of the steps (N1-03 6/7, N1-02 6/7, N1-01 7/8). It was retried on Opus and still fell short, so the lane closed as &quot;needs Michael&quot;. The remaining features wait on N1, so N2 never started.</li>
+<li>The N1-04 review ran once and found issues, so it wasn&#39;t wasted. The retro also says N1-03, N1-02 and N1-04 left design questions in <code>needs.md</code>. gc has since resolved those needs, and <code>progress.md</code> shows no open questions.</li>
+<li>Memory curator: 1 op, dropped (&quot;not stated by entries.jsonl:4&quot;). No memory PR.</li>
+<li>Record PR #146 was merged into main.</li>
 </ul>
 <h3>Needs Michael</h3>
 <ul>
-<li>Memory PR #137 is waiting for your review and merge.</li>
-<li>The A4-01 docs fix is trivial, but the run ended without it. It also leaves the live checklist at <code>docs/plans/2026-10-22-n8n-events-live.md</code> unmerged. Say whether to continue the run for it (see the next section).</li>
+<li>Decide how to handle the N1 verify gap (run agent-harness-2026-11-08, <code>harness-log.md</code> 05:39). Choose between re-running verify and accepting N1 as built. The retro can&#39;t say whether steps were skipped or just not logged, because <code>entries.jsonl</code> has no per-step rows.</li>
+<li>Check what happened to the N1-01..04 design questions that gc marked &quot;resolved (run removed)&quot; (<code>needs.md</code>). They may have been lost with the run.</li>
 </ul>
 <h3>For the next interactive session</h3>
 <ul>
-<li>The A4-01 fix: in <code>docs/architecture.md:58</code>, replace the clause &quot;passes <code>since=</code> its SINCE&quot; with <code>bundle=$WS</code>. Then merge A4 (README, config template, architecture, decision files, live checklist).</li>
-<li>The run ended with &quot;no feature left to try&quot;, so I can&#39;t queue a continuation.</li>
-<li>No merge conflicts or refused merges.</li>
-<li>Open <code>proposed</code> retro items, most <code>runs_seen</code> first:</li>
+<li>Branch and merge state: <code>harness/agent-harness-2026-11-08</code> was deleted locally and on origin with 0 milestones merged. Confirm whether N1 reached main (via PR #146 or otherwise) before re-running. If it didn&#39;t, the work is only in the ledger record and the reflog. No merge conflicts were reported.</li>
+<li>Open <code>proposed</code> retro items, most <code>runs_seen</code> first (all re-raised by this run):</li>
 </ul>
 <ol>
-<li><code>verify-evidence-rows</code>, record per-step evidence rows in <code>entries.jsonl</code> (10 runs).</li>
-<li><code>suite-time-budget</code>, cap or warn on repeated full-suite runs (9). This run&#39;s full suite took 709 s against the ~210 s in CLAUDE.md.</li>
-<li><code>suite-flake-retry</code>, re-run failed test files serially before calling the suite red (5).</li>
-<li><code>verify-failed-recheck</code>, re-verify only the failed steps (1, new this run).</li>
-<li><code>record-push-retry-noise</code> (1).</li>
-<li><code>memlint-before-session-end</code> (1).</li>
-<li><code>session-entry-write-guard</code> (1).</li>
-<li><code>step-contradiction-lint</code> (1).</li>
+<li><code>verify-evidence-rows</code>, seen 11: record per-step evidence rows from verify sessions in <code>entries.jsonl</code>. This is the direct cause of this stop.</li>
+<li><code>suite-time-budget</code>, seen 10: cap or warn on repeated full-suite runs. N1-04 spent 1491 s on 2 runs and N1-02 ran the suite 5 times.</li>
+<li><code>suite-flake-retry</code>, seen 5: re-run failed test files serially before declaring the suite red.</li>
+<li><code>verify-failed-recheck</code>, seen 2: after thin verify evidence, re-verify only the short steps instead of closing the lane.</li>
+<li><code>memlint-before-session-end</code>, seen 1: init logged a <code>CLAUDE.md:98</code> Gotchas overflow (16 lines, cap 15).</li>
+<li>Seen once each: <code>session-entry-write-guard</code>, <code>step-contradiction-lint</code>, <code>record-push-retry-noise</code>.</li>
+<li>Seen 0 times: <code>no-retry-on-denial</code>, <code>base-branch-runs-reverted</code>, <code>restrict-merge-tree-base</code>, <code>slot-copy-overwritten-on-merge</code>, <code>cli-verbiage-and-syntax</code>, <code>git-provider-migration</code>.</li>
 </ol>
 <ul>
-<li>Unseen backlog items: <code>no-retry-on-denial</code>, <code>base-branch-runs-reverted</code>, <code>restrict-merge-tree-base</code>, <code>slot-copy-overwritten-on-merge</code>, <code>cli-verbiage-and-syntax</code>, <code>git-provider-migration</code>.</li>
-<li>A discovery from <code>progress.md</code>: the spec&#39;s A4 step 6 diff, <code>git merge-base HEAD origin/main</code>, covers only A4&#39;s own files once A1–A3 have merged per milestone. The run&#39;s docs as one piece need <code>git diff 8e05980 HEAD</code>. Fix the step wording in the spec.</li>
-<li>Several retro-backlog items were not re-raised by this debrief.</li>
+<li>None of these is <code>specced</code> or <code>queued</code>.</li>
 </ul></section>
 </main></body></html>
