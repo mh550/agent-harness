@@ -68,3 +68,10 @@
 - 2026-11-09 00:57 · context.md for N2: 15742 bytes
 - 2026-11-09 01:19 · N2: checks +19 ~0 −0 against a budget of 30
 - 2026-11-09 01:19 · N2 verified and tagged run/agent-harness-2026-11-08/N2
+- 2026-11-09 01:19 · N2 merged into main · https://github.com/mh550/agent-harness/pull/152
+- 2026-11-09 01:19 · lane N2 closed (N2 merged)
+- 2026-11-09 01:19 · lane N2: branch harness-lane/agent-harness-2026-11-08/N2 deleted (merged)
+- 2026-11-09 01:19 · every feature passes
+- 2026-11-09 01:19 · run ended (done): 8/8 passing · 16 sessions (16 real) · 8 features passed · $54.20 · 5.0 h · by kind: init 1 ($5.98), coding 9 ($37.61), verify 4 ($10.21), retro 1 ($0.14), curator 1 ($0.25) · by model: claude-fable-5-1 1 ($5.98), claude-opus-5-5 14 ($48.08), claude-sonnet-5-5 1 ($0.14)
+- 2026-11-09 01:19 · services stopped (done)
+- 2026-11-09 01:19 · services stopped (done)

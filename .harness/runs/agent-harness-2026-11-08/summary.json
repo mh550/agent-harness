@@ -3,34 +3,34 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-11-08",
   "started": "2026-11-08T07:48:49.000Z",
-  "ended_at": "2026-11-08T10:40:47.000Z",
-  "end_reason": "waiting on Michael: N1",
-  "continuations": 0,
+  "ended_at": "2026-11-09T06:19:26.000Z",
+  "end_reason": "done",
+  "continuations": 1,
   "features": {
     "total": 8,
-    "passing": 4,
-    "verified": 0,
-    "merged": 0
+    "passing": 8,
+    "verified": 8,
+    "merged": 8
   },
   "milestones": [
     {
       "id": "N1",
       "features": 4,
       "passing": 4,
-      "verified": false,
-      "merged": false
+      "verified": true,
+      "merged": true
     },
     {
       "id": "N2",
       "features": 4,
-      "passing": 0,
-      "verified": false,
-      "merged": false
+      "passing": 4,
+      "verified": true,
+      "merged": true
     }
   ],
   "tests": {
     "start": 1898,
-    "end": 1911
+    "end": 1930
   },
   "flakes": {
     "count": 0,
@@ -42,25 +42,32 @@
     "by_milestone": {}
   },
   "suite_runs": {
-    "sessions": 4,
-    "full": 2,
-    "fast": 6,
-    "runs": 11,
-    "full_per_session": 0.5,
-    "fast_per_session": 1.5
-  },
-  "memory": {
-    "ops": 1,
-    "applied": 0,
-    "dropped": 1,
-    "proposed": 0,
-    "pr": null
+    "sessions": 9,
+    "full": 4,
+    "fast": 10,
+    "runs": 17,
+    "full_per_session": 0.4,
+    "fast_per_session": 1.1
   },
   "checks": {
-    "added": 13,
-    "source": "counts",
-    "from": 1898,
-    "to": 1911
+    "added": 33,
+    "replaced": 18,
+    "removed": 1,
+    "source": "fixture",
+    "by_milestone": {
+      "N1": {
+        "added": 14,
+        "replaced": 18,
+        "removed": 1,
+        "budget": 50
+      },
+      "N2": {
+        "added": 19,
+        "replaced": 0,
+        "removed": 0,
+        "budget": 30
+      }
+    }
   },
   "conflicts": {
     "resolved": 0,
@@ -69,40 +76,40 @@
   },
   "resolutions": [],
   "cost": {
-    "total": 32.22,
-    "per_passing_feature": 8.06,
+    "total": 54.2,
+    "per_passing_feature": 6.77,
     "by_role": {
       "init": 5.98,
-      "build": 17.56,
-      "review": 5.79,
-      "verify": 2.5,
+      "build": 27.33,
+      "review": 10.28,
+      "verify": 10.21,
       "retro": 0.14,
       "curator": 0.25
     },
     "by_model": {
       "claude-fable-5-1": 5.98,
-      "claude-opus-5-5": 26.1,
+      "claude-opus-5-5": 48.07,
       "claude-sonnet-5-5": 0.14
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 2.87,
-    "sessions_h": 2.46,
-    "driver_h": 0.4,
+    "wall_h": 6.04,
+    "sessions_h": 5.02,
+    "driver_h": 1.02,
     "by_role_h": {
       "init": 0.18,
-      "build": 1.23,
-      "review": 0.77,
-      "verify": 0.27,
+      "build": 2.12,
+      "review": 1.45,
+      "verify": 1.25,
       "retro": 0.01,
       "curator": 0.01
     }
   },
   "lanes": {
-    "max_open": 1,
-    "lane_hours": 2.48,
-    "wall_hours": 2.87
+    "max_open": 2,
+    "lane_hours": 5.65,
+    "wall_hours": 6.04
   },
   "helper": {
     "restarts": 0,
@@ -110,10 +117,10 @@
     "whys": {}
   },
   "tokens": {
-    "in": 1466,
-    "cache_read": 48840910,
-    "cache_write": 1501479,
-    "out": 425827,
+    "in": 2250,
+    "cache_read": 87830440,
+    "cache_write": 2679223,
+    "out": 690162,
     "cache_hit_rate": 0.97,
     "context_peak": 240340,
     "by_role": {
@@ -124,22 +131,22 @@
         "out": 42522
       },
       "build": {
-        "in": 548,
-        "cache_read": 32386414,
-        "cache_write": 845013,
-        "out": 264530
+        "in": 834,
+        "cache_read": 48677701,
+        "cache_write": 1341856,
+        "out": 402314
       },
       "review": {
-        "in": 182,
-        "cache_read": 10236412,
-        "cache_write": 284311,
-        "out": 91710
+        "in": 364,
+        "cache_read": 17316961,
+        "cache_write": 559685,
+        "out": 151234
       },
       "verify": {
-        "in": 78,
-        "cache_read": 4079870,
-        "cache_write": 154302,
-        "out": 22630
+        "in": 394,
+        "cache_read": 19697564,
+        "cache_write": 559829,
+        "out": 89657
       },
       "retro": {
         "in": 8,
@@ -156,38 +163,40 @@
     }
   },
   "per_verified_feature": {
-    "cost": null,
-    "tokens": null
+    "cost": 6.77,
+    "tokens": 11400259
   },
   "orientation": {
-    "tokens": 8441866,
-    "turns": 79,
-    "seconds": 1244.64
+    "tokens": 4558790,
+    "turns": 38,
+    "seconds": 769.57
   },
-  "rework": [],
-  "first_attempt_pass_rate": 1,
-  "verify_fail_rate": null,
+  "rework": [
+    "N1-04"
+  ],
+  "first_attempt_pass_rate": 0.88,
+  "verify_fail_rate": 0.11,
   "review": {
-    "cost_pct": 18,
+    "cost_pct": 19,
     "found_nothing": 0,
-    "reviews": 1
+    "reviews": 2
   },
   "harness": {
-    "version": "f34c59d",
+    "version": "7afbac7",
     "dirty": false
   },
   "sessions": {
-    "total": 8,
-    "real": 8,
+    "total": 16,
+    "real": 16,
     "environmental": 0
   },
   "guards": {
     "repairs": 0,
     "red_unpass": 0,
-    "verify_failed": 0,
+    "verify_failed": 1,
     "limit_waits": 0,
     "verify_escalations": 0,
-    "merges": 0
+    "merges": 2
   },
   "features_detail": [
     {
@@ -196,8 +205,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 15,
@@ -211,8 +220,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 22,
@@ -226,8 +235,8 @@
       "kind": "build",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
+      "verified": true,
+      "merged": true,
       "sessions": 1,
       "refused": 0,
       "minutes": 36,
@@ -241,12 +250,12 @@
       "kind": "review",
       "model": "opus",
       "passes": true,
-      "verified": false,
-      "merged": false,
-      "sessions": 1,
+      "verified": true,
+      "merged": true,
+      "sessions": 2,
       "refused": 0,
-      "minutes": 46,
-      "cost": 5.79,
+      "minutes": 62,
+      "cost": 6.54,
       "cause": null,
       "detail": null
     },
@@ -255,60 +264,60 @@
       "milestone": "N2",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: waiting on Michael: N1"
+      "minutes": 15,
+      "cost": 2.56,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "N2-02",
       "milestone": "N2",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: waiting on Michael: N1"
+      "minutes": 13,
+      "cost": 1.73,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "N2-03",
       "milestone": "N2",
       "kind": "build",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: waiting on Michael: N1"
+      "minutes": 25,
+      "cost": 5.48,
+      "cause": null,
+      "detail": null
     },
     {
       "id": "N2-04",
       "milestone": "N2",
       "kind": "review",
       "model": "opus",
-      "passes": false,
-      "verified": false,
-      "merged": false,
-      "sessions": 0,
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
       "refused": 0,
-      "minutes": 0,
-      "cost": 0,
-      "cause": "not reached",
-      "detail": "run ended: waiting on Michael: N1"
+      "minutes": 25,
+      "cost": 3.74,
+      "cause": null,
+      "detail": null
     }
   ]
 }
