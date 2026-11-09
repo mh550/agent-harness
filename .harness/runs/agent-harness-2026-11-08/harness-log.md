@@ -75,3 +75,7 @@
 - 2026-11-09 01:19 · run ended (done): 8/8 passing · 16 sessions (16 real) · 8 features passed · $54.20 · 5.0 h · by kind: init 1 ($5.98), coding 9 ($37.61), verify 4 ($10.21), retro 1 ($0.14), curator 1 ($0.25) · by model: claude-fable-5-1 1 ($5.98), claude-opus-5-5 14 ($48.08), claude-sonnet-5-5 1 ($0.14)
 - 2026-11-09 01:19 · services stopped (done)
 - 2026-11-09 01:19 · services stopped (done)
+- 2026-11-09 01:20 · memory: 1 ops · 0 applied · 1 dropped · 0 proposals
+- 2026-11-09 01:20 · memory: dropped add ## Gotchas (not stated by entries.jsonl:4)
+- 2026-11-09 01:20 · memory PR: none (no tier-1 change); the body is in memory.md
+- 2026-11-09 01:20 · summary.json and report.md kept in the state dir (harness report reads them after gc)

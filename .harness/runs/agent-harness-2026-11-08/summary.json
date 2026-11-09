@@ -3,7 +3,7 @@
   "project": "agent-harness",
   "branch": "harness/agent-harness-2026-11-08",
   "started": "2026-11-08T07:48:49.000Z",
-  "ended_at": "2026-11-09T06:19:26.000Z",
+  "ended_at": "2026-11-09T06:20:24.000Z",
   "end_reason": "done",
   "continuations": 1,
   "features": {
@@ -49,6 +49,13 @@
     "full_per_session": 0.4,
     "fast_per_session": 1.1
   },
+  "memory": {
+    "ops": 1,
+    "applied": 0,
+    "dropped": 1,
+    "proposed": 0,
+    "pr": null
+  },
   "checks": {
     "added": 33,
     "replaced": 18,
@@ -76,40 +83,40 @@
   },
   "resolutions": [],
   "cost": {
-    "total": 54.2,
-    "per_passing_feature": 6.77,
+    "total": 54.61,
+    "per_passing_feature": 6.83,
     "by_role": {
       "init": 5.98,
       "build": 27.33,
       "review": 10.28,
       "verify": 10.21,
-      "retro": 0.14,
-      "curator": 0.25
+      "retro": 0.27,
+      "curator": 0.53
     },
     "by_model": {
       "claude-fable-5-1": 5.98,
-      "claude-opus-5-5": 48.07,
-      "claude-sonnet-5-5": 0.14
+      "claude-opus-5-5": 48.35,
+      "claude-sonnet-5-5": 0.27
     },
     "manager": 0
   },
   "time": {
-    "wall_h": 6.04,
-    "sessions_h": 5.02,
-    "driver_h": 1.02,
+    "wall_h": 6.06,
+    "sessions_h": 5.03,
+    "driver_h": 1.03,
     "by_role_h": {
       "init": 0.18,
       "build": 2.12,
       "review": 1.45,
       "verify": 1.25,
       "retro": 0.01,
-      "curator": 0.01
+      "curator": 0.02
     }
   },
   "lanes": {
     "max_open": 2,
     "lane_hours": 5.65,
-    "wall_hours": 6.04
+    "wall_hours": 6.06
   },
   "helper": {
     "restarts": 0,
@@ -117,10 +124,10 @@
     "whys": {}
   },
   "tokens": {
-    "in": 2250,
-    "cache_read": 87830440,
-    "cache_write": 2679223,
-    "out": 690162,
+    "in": 2268,
+    "cache_read": 88094113,
+    "cache_write": 2729374,
+    "out": 694354,
     "cache_hit_rate": 0.97,
     "context_peak": 240340,
     "by_role": {
@@ -149,22 +156,22 @@
         "out": 89657
       },
       "retro": {
-        "in": 8,
-        "cache_read": 117383,
-        "cache_write": 26560,
-        "out": 2015
+        "in": 16,
+        "cache_read": 232165,
+        "cache_write": 52115,
+        "out": 3716
       },
       "curator": {
-        "in": 8,
-        "cache_read": 109973,
-        "cache_write": 22794,
-        "out": 2420
+        "in": 18,
+        "cache_read": 258864,
+        "cache_write": 47390,
+        "out": 4911
       }
     }
   },
   "per_verified_feature": {
-    "cost": 6.77,
-    "tokens": 11400259
+    "cost": 6.83,
+    "tokens": 11440014
   },
   "orientation": {
     "tokens": 4558790,
@@ -177,7 +184,7 @@
   "first_attempt_pass_rate": 0.88,
   "verify_fail_rate": 0.11,
   "review": {
-    "cost_pct": 19,
+    "cost_pct": 18.8,
     "found_nothing": 0,
     "reviews": 2
   },
@@ -186,8 +193,8 @@
     "dirty": false
   },
   "sessions": {
-    "total": 16,
-    "real": 16,
+    "total": 18,
+    "real": 18,
     "environmental": 0
   },
   "guards": {
