@@ -214,6 +214,22 @@ test("curator.mjs: the write gate drops a text the entry its from names does not
   // a fact cut short (a long discovery fits 160) passes; the run's suffix aside
   const long = [...ENTRIES, E({ discoveries: [{ text: "The resident helper answers every .mjs question over one coproc, and a missing answer is empty, so give the bash a safe branch", affects: ["project"] }] })];
   assert.equal(apply([op({ text: "The resident helper answers every .mjs question over one coproc (r1 2026-11-07)", from: "entries.jsonl:3" })], T(MD), long, RUN).applied.length, 1);
+  // after its first 40 characters a line may leave words out, never add, change or reorder one (agent-harness-2026-11-08's
+  // dropped op: the entry's 199-character fact at 160, three phrases left out, passes)
+  const stated = "A note given before the curator session (memory_base) is reverted by its restrict with harness-log.md; give it after ro_rescue, as curator() does with RULES_NOTE (r1 2026-11-08)";
+  const words = [...ENTRIES, E({ discoveries: [{ text: stated, affects: ["project"] }, { text: "The lock is never taken twice by one lane (r1 2026-11-08)", affects: ["project"] }] })];
+  const w = text => apply([op({ text, from: "entries.jsonl:3" })], T(MD), words, RUN);
+  assert.equal(w("A note given before the curator session is reverted by its restrict: give it after ro_rescue, as curator() does RULES_NOTE (r1 2026-11-08)").applied.length, 1);
+  assert.equal(reasons(w("A note given before the curator session is reverted by its restrict: give it quietly after ro_rescue (r1 2026-11-08)")), 'not stated by entries.jsonl:3 ("quietly" is not the entry\'s next word)');
+  assert.equal(reasons(w("A note given before the curator session is reverted by its restrict: give it before ro_rescue (r1 2026-11-08)")), 'not stated by entries.jsonl:3 ("before" is not the entry\'s next word)');
+  assert.equal(reasons(w("A note given before the curator session is reverted by its restrict: give it after ro_rescue, as curator() does RULES_NOTE with (r1 2026-11-08)")), 'not stated by entries.jsonl:3 ("with" is not the entry\'s next word)');
+  assert.equal(reasons(w("The lock is never taken twice by one lane; the lock is taken twice (r1 2026-11-08)")), 'not stated by entries.jsonl:3 ("the" is not the entry\'s next word)');
+  assert.equal(reasons(w("The lock is taken twice by one lane (r1 2026-11-08)")), "not stated by entries.jsonl:3");   // the first 40 characters are no entry's
+  const neg = [...ENTRIES, E({ discoveries: [{ text: "Never pipe a multi-write producer into grep -q in a check: the early exit does not reach the producer, so it is not stopped (r1 2026-11-08)", affects: ["project"] }] })];
+  assert.equal(reasons(apply([op({ text: "Never pipe a multi-write producer into grep -q in a check: the early exit does reach the producer (r1 2026-11-08)", from: "entries.jsonl:3" })], T(MD), neg, RUN)), 'not stated by entries.jsonl:3 ("not" left out)');
+  // a cut whose lost tail holds a negation is a left-out negation too; a tail cut around it passes
+  assert.equal(reasons(apply([op({ text: "Never pipe a multi-write producer into grep -q in a check: the early exit does not reach the producer (r1 2026-11-08)", from: "entries.jsonl:3" })], T(MD), neg, RUN)), 'not stated by entries.jsonl:3 ("not" left out)');
+  assert.equal(apply([op({ text: "Never pipe a multi-write producer into grep -q in a check: the early exit does not reach the producer, it is not stopped (r1 2026-11-08)", from: "entries.jsonl:3" })], T(MD), neg, RUN).applied.length, 1);
   assert.equal(r.applied.map(o => o.op).join(), "delete");
   assert.equal(r.rules.length, 1);
   assert.equal(gotchasLines(r.texts["CLAUDE.md"]).join("|"), "- first gotcha line (r0 2026-11-01)");
@@ -273,7 +289,7 @@ test("curator.mjs: harm, a fact no entry states gives no op", () => {
 test("curator.mjs: harm, a line from a tool result is dropped by the gate", () => {
   const r = harm("tool-result");
   assert.equal(r.applied.length, 0);
-  assert.equal(reasons(r), "not stated by entries.jsonl:2 | not stated by entries.jsonl:2");   // the second: a stated fact's first 40 characters and a tail no entry states
+  assert.equal(reasons(r), 'not stated by entries.jsonl:2 | not stated by entries.jsonl:2 ("then" is not the entry\'s next word)');   // the second: a stated fact's first 40 characters and a tail no entry states
   assert.equal(r.texts["CLAUDE.md"].includes("evil.example"), false);
 });
 

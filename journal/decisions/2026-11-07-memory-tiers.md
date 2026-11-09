@@ -38,7 +38,10 @@ invariants by M2-05); spec `docs/specs/2026-11-07-memory-curator.md` §M2; plan 
     whole text, not its `key`: the op's text (suffix aside) is the stated item's or a cut of it at least 40
     characters long (or the whole item), so no unstated tail rides on a stated first 40 characters; and a
     `proposed_changes` string (Michael's: how to work here) gates a tier-2 or tier-3 op, never a tier-1 commit
-    (*default*).
+    (*default*). Updated in place 2026-11-09: the cut-only rule dropped a 199-character fact written at 160 by leaving
+    three phrases out (agent-harness-2026-11-08, both segments); the gate now lets words out after the first 40
+    characters, never an added, changed or reordered one, never a negation, and names the word
+    (decisions/2026-11-09-curator-gate-words).
   - **The protected text, by raw lines** (M2-05's review): after each write the protected sections' lines (each from
     its raw `## ` line to the next, fences ignored, so an unclosed fence can't hide one) must be as they were; a write
     that changes them is dropped, `would change the protected section <heading>`, whatever entry its anchor matched.

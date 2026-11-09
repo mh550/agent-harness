@@ -143,7 +143,9 @@ reverted), and the driver denies it `git push` and `gh` (`--disallowedTools`, no
 checkout: the tier comes from the heading, never from the session (`## Gotchas` is tier 1 and committed; any other
 heading is tier 2, committed on its own branch; `Live system`, `Off-limits`, `On-limits`, `Hardware facts`, `Hardware and
 Mixxx rules` and `This repo runs Michael's harness runs` are tier 3, a proposal only); an op whose text no entry states
-as a `project` fact is dropped, and so is a tier-1 op whose text `memlint` finds a stored count or a run-scope word in; the cap is checked per op, in the order delete, replace, anchored add, plain add: an op that would grow a file past 120 lines or 15 Gotchas is dropped `over the cap: …` while the ops beside it land, and an anchored add appends while it fits and evicts its anchor's line only when it would not (the PR body and a note name that line). Tier 1 is
+as a `project` fact is dropped (its first 40 characters are the entry's and after that it may leave words out, never add,
+change or reorder one, never leave out a `not`, `never`, `no`, `without` or `n't`; the drop names the word where it parts,
+`not stated by entries.jsonl:<n> ("<word>" is not the entry's next word)`; decisions/2026-11-09-curator-gate-words), and so is a tier-1 op whose text `memlint` finds a stored count or a run-scope word in; the cap is checked per op, in the order delete, replace, anchored add, plain add: an op that would grow a file past 120 lines or 15 Gotchas is dropped `over the cap: …` while the ops beside it land, and an anchored add appends while it fits and evicts its anchor's line only when it would not (the PR body and a note name that line). Tier 1 is
 one commit on `harness-memory/<run>`, and its `memory: <run>` PR is left for you; tier 2 is one commit on
 `harness-rules/<run>`, cut from the same base, in a `memory rules: <run>` PR that only you merge (the union of both is
 kept under the cap). Each body lists its tier's ops (the rules and the protected proposals numbered `<n>` in one
@@ -258,7 +260,8 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
 - **Entries:** each session ends by running the entry check (`{{ENTRY_CHECK}}`, `node lib/entries.mjs validate`) on
   its `entry.json` and fixing what it prints, and never ends its turn on a running background task. A summary over
   400 characters (or a header over 2000), the entry's only fault, is cut to fit and the entry kept (`<id>: entry.json
-  summary <n> characters; cut to 400 and kept`). A missing or otherwise invalid entry of a session no usage limit
+  summary <n> characters; cut to 400 and kept`); a `project` discovery over 160 characters is kept whole and noted
+(`<id>: a project fact is <n> characters, over 160`), nothing stops. A missing or otherwise invalid entry of a session no usage limit
   refused gets **one resume** of that session (`claude --resume`, 8 turns, 10 min, `$1` over its cost) to write it,
   and nothing else; its cost is an `entry-resume` row in `metrics.jsonl`, never a session. Still none: the minimal
   entry from git, as before (decisions/2026-10-29-entries-survive).
