@@ -80,3 +80,5 @@
 - 2026-11-09 01:20 · memory PR: none (no tier-1 change); the body is in memory.md
 - 2026-11-09 01:20 · summary.json and report.md kept in the state dir (harness report reads them after gc)
 - 2026-11-09 01:20 · record PR merged into main · https://github.com/mh550/agent-harness/pull/153
+- 2026-11-09 01:20 · backlog: 0 new, 3 seen again
+- 2026-11-09 01:20 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-11-08 (in the state dir: init.out check-last.out)
