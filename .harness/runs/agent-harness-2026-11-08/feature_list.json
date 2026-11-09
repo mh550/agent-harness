@@ -102,7 +102,7 @@
       "after": [
         "N1"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N2-02",
@@ -120,7 +120,7 @@
       "after": [
         "N2-01"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N2-03",
@@ -139,7 +139,7 @@
       "after": [
         "N2-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "N2-04",
@@ -159,7 +159,7 @@
         "N2-02",
         "N2-03"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
