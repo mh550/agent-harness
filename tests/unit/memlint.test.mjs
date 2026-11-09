@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { sameAsCli } from "./cli-same.mjs";
-import { currentRules as cr, decisionsStore, gotchasDiff, gotchasLines } from "../../lib/memlint.mjs";
+import { currentRules as cr, decisionsStore, gotchasDiff, gotchasLines, lintText, sectionEntries } from "../../lib/memlint.mjs";
 
 const F = { path: "docs/decisions.md", kind: "file" };
 const starts = (s, prefix) => assert.equal(s.slice(0, prefix.length), prefix);
@@ -298,5 +298,27 @@ test("memlint: a current-rule-set header under a ## section before the first dec
   await lintWt({ ...DIRSTORE, "journal/decisions": null, "elsewhere/old.md": "# Old\n- Superseded by decisions/x.\n" }, async d => {
     symlinkSync("../../elsewhere/old.md", join(d, "journal/decisions/2026-10-25-old.md"));
     assert.equal(await ml(d), 'journal/decisions/2026-10-25-old.md:2 decisions: superseded with no "Updated in place" line\n');
+  });
+});
+
+// ---- a comment line is not a Gotcha (decisions/2026-11-09-thin-verify-and-comment-lines): templates/project/CLAUDE.md opens
+// `## Gotchas` with a one-line HTML comment; counted as an entry it put 15 facts over the cap ----
+const COMMENT = "<!-- At most 15 lines, one fact each, edited in place: replace a wrong or least useful line, never rewrite the section. -->";
+test("memlint: a one-line HTML comment under ## Gotchas is no entry: 15 facts and the comment are at the cap, not over; gotchasLines and gotchasDiff leave it out", async () => {
+  const md = n => `# p\nrules\n\n## Gotchas\n${COMMENT}\n${Array.from({ length: n }, (_, i) => `- fact ${i + 1} (r 2026-10-26)`).join("\n")}\n\n## Later\nx\n`;
+  assert.equal(sectionEntries(md(2), "## Gotchas").map(e => `${e.line} ${e.text}`).join("|"), "6 - fact 1 (r 2026-10-26)|7 - fact 2 (r 2026-10-26)");
+  assert.equal(gotchasLines(md(0)).length, 0);
+  assert.equal(JSON.stringify(gotchasDiff(md(2), md(2).replace(`${COMMENT}\n`, ""))), '{"added":0,"edited":0,"deleted":0}');
+  assert.equal(lintText("CLAUDE.md", md(15), { claude: true }).length, 0);
+  assert.equal(lintText("CLAUDE.md", md(16), { claude: true }).map(f => `${f.line} ${f.check}: ${f.text}`).join(), "21 gotchas: 16 lines, over 15");
+  // only a comment on one line: an opener without its close is a line as before, and a comment inside a fence is code
+  assert.equal(sectionEntries("## Gotchas\n<!-- open\n- a\n", "## Gotchas").map(e => e.text).join("|"), "<!-- open|- a");
+  assert.equal(sectionEntries("## Gotchas\n```\n<!-- c -->\n```\n", "## Gotchas").length, 1);
+  // the CLI, on the rane fixture with the comment under its heading and 15 facts: nothing; the 16th fact is the finding
+  const added = n => fx("rane-claude-tidy.md").split("\n").flatMap(l => /^## Gotchas/.test(l) ? [l, COMMENT, ...Array.from({ length: n }, (_, i) => `- added fact ${i + 1}`)] : [l]).join("\n");
+  await lintWt({ "docs/decisions.md": fx("rane-decisions-tidy.md"), "CLAUDE.md": added(8) }, async d => {
+    assert.equal(await ml(d), "");
+    writeFileSync(join(d, "CLAUDE.md"), added(9));
+    assert.equal(await ml(d), "CLAUDE.md:95 gotchas: 16 lines, over 15\n");
   });
 });

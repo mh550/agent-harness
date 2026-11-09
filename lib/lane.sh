@@ -140,6 +140,7 @@ verify() {
   # the verified tree's suite runs in full: a session can leave a stale green marker (decisions/2026-10-26-verify-runs-the-suite)
   note "verify $m: suite cache cleared; the suite runs in full on the verified tree"
   run_init fresh
+  local thin=""   # the escalated round's {{THIN}}: the round before it fell short, and of what (decisions/2026-11-09-thin-verify-and-comment-lines)
   for model in "${models[@]}"; do
     pack_and_copy "$m" "$CONTEXT_PACK_BYTES_VERIFY"   # each round: an escalated verify's pack has the first round's entry
     before=$(vcount "$m"); vstart=$(git rev-parse HEAD)
@@ -148,7 +149,7 @@ verify() {
       run_init
     fi
     local vids; Fv vids ids "$LIST" "$m"   # Fv: answered in this shell, so the memo keeps it (lib/record.sh)
-    HARNESS_CLOCK=$(clock "$what") HARNESS_MILESTONE=$m HARNESS_FEATURES=${vids//$'\n'/ } prompt verify
+    HARNESS_CLOCK=$(clock "$what") HARNESS_MILESTONE=$m HARNESS_FEATURES=${vids//$'\n'/ } HARNESS_THIN=$thin prompt verify
     vlog="$LOGS/$(date +%H%M%S)-verify-$m.jsonl"
     log "verify $m · $(F model "$model")"; echo "$what" > "$LDIR/now"
     session verify "$(F model "$model")" "$vlog" "verify $m"
@@ -184,6 +185,7 @@ verify() {
     [[ -n $vr ]] || { [[ $vdone == true ]] && vr=thin || vr=fail; }
     case $vr in fail | hold | thin) result=$vr; break ;; esac
     note "verify $m: evidence short of the steps ($short); re-running on $VERIFY_ESCALATE_MODEL"
+    thin=$short   # the next round is told what to repair, not only run on a stronger model
   done
   echo "$rounds" > "$STATE/verify-rounds-$m"
   # The suite runs on the slot's tree, the one tagged below, and only on a hold or on a fail where fix features are all
@@ -268,7 +270,8 @@ verify() {
     note "verify $m: the re-based tree did not hold; tag run/$RUN_ID/$m removed"
   fi
   printf '%s' "$need" > "$LDIR/need"
-  [[ -n $need ]] && nref=$(needs_open "$reason" "$m" milestone="$m" failed="${failed[*]}" variant="$variant" ${fixj:+"rounds=$fixj"})   # its record, committed with the verdict
+  # its record, committed with the verdict; short= is a thin verdict's shortfall (the card's why names the steps with no row)
+  [[ -n $need ]] && nref=$(needs_open "$reason" "$m" milestone="$m" failed="${failed[*]}" variant="$variant" ${fixj:+"rounds=$fixj"} ${short:+"short=$short"})
   rec_commit "HARNESS: verify $m"; sync_record
   [[ -n $need ]] && needs_you "$m" "$need" progress.md "$nref"   # after the push: the click shows the verify entry
   return 1

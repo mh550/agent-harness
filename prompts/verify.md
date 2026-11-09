@@ -22,7 +22,9 @@ It says what the milestone's sessions tried. It is not evidence: re-run every st
    you may make to the feature list, and only for the milestone's features. Do **not** fix code;
    the next coding session does that.
 4. Write the run directory's `entry.json`, your entry in the run's journal: one JSON object with
-   **one `evidence` row per step of every feature** of the milestone (`holds` true or false). The
+   **one `evidence` row per step of every feature** of the milestone (`holds` true or false). A step
+   that runs the suite or the fast tier gets its own row, never folded into the row before it; a step
+   whose wording is wrong still gets its row, `holds` true or false with the reason in `saw`. The
    harness validates it, adds it to `entries.jsonl`, deletes it and renders it into `progress.md` as
    a table for Michael's phone (don't edit progress.md yourself). Required: `feature` (the milestone
    id), `kind` (`"verify"`), `outcome` (`passes` when every feature holds, else `not yet`) and
@@ -64,6 +66,12 @@ Milestone: {{MILESTONE}}
 Features: {{FEATURES}}
 {{CLOCK}}
 Suite: last full run {{SUITE_LENGTH}}
+{{?THIN}}
+{{?THIN}}## The round before this one
+{{?THIN}}
+{{?THIN}}Its evidence fell short of the steps: {{THIN}}. Write the rows it lacked, one per step named, with
+{{?THIN}}what you ran and saw, `holds` true or false; a step that runs the suite or the fast tier is a row of
+{{?THIN}}its own, never folded into the row before it.
 
 ## Init output
 
