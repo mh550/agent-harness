@@ -39,3 +39,6 @@
 - 2026-11-08 22:42 · context.md for N1-04: 8094 bytes, 3 items left out
 - 2026-11-08 22:58 · N1-04: suite ran 2x (846 s) in the session
 - 2026-11-08 22:58 · N1-04 · claude-opus-5-5 · passes=true · 15 min · 4/8 passing · tests 1911
+- 2026-11-08 22:58 · merged main into harness-lane/agent-harness-2026-11-08/N1
+- 2026-11-08 22:58 · verify N1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-08 23:10 · context.md for N1: 16153 bytes
