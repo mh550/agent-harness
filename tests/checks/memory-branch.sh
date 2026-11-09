@@ -222,11 +222,29 @@ check "memory PR: a refused auto merge leaves the memory PR open with one note" 
 # mw: auto, harness-memory/mw on origin with no PR and this segment's one op a proposal: the PR opens, nothing to merge
 git -C "$O" update-ref refs/heads/main "$seed3"; mw0=$(hand mw)
 cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=auto RECORD_PR=end' >> "$T/user-config.sh"
-run mw STUB_FACTS=A STUB_PROPOSE=A STUB_CURATOR_OPS=proposal
+run mw STUB_FACTS=A,B,C STUB_PROPOSE=A STUB_CURATOR_OPS=proposal
 check "memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note" \
   'p=$(mpr mw) && [[ -n $mw0 && ! -f $p.merged && $(git -C "$O" rev-parse harness-memory/mw) == "$mw0" ]] \
   && [[ $(hlog mw | grep -c " · memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · https://example.test/pr/${p##*-}$") == 1 ]] \
   && ! grep "^gh pr merge https://example.test/pr/${p##*-} " "$T/gh-mw.log" > /dev/null'
+# mw's continues reuse the open PR, one new fact each (N2-02): the first's body refresh fails, so no merge; the second's lands and merges
+rm -f "$T"/gh-down-*
+STUB_GH_DOWN=1 STUB_GH_DOWN_ONLY=edit STUB_CURATOR_OPS=fact-b STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue mw --foreground > "$T/mw2.out" 2>&1
+mv "$T/gh.log" "$T/gh-mw2.log" 2> /dev/null; mw2=$(git -C "$O" rev-parse -q --verify harness-memory/mw)
+HARNESS_TTY=0 "$H" memory > "$T/mw-memory.out" 2>&1; mv "$T/gh.log" "$T/gh-mw-memory.log" 2> /dev/null
+check "memory PR: under MEMORY_POLICY=auto a reused PR whose body refresh failed gets its commit but no merge, with one note" \
+  'p=$(mpr mw) && u=$(url "$p") && [[ -n $mw2 && ! -f $p.merged && $(git -C "$O" rev-list --count "$mw0..$mw2") == 1 && $(git -C "$O" log -1 --format=%s "$mw2") == "memory: mw: 1 facts" ]] \
+  && grep -x "gh pr edit $u --body-file .*" "$T/gh-mw2.log" > /dev/null && ! grep "^gh pr merge $u " "$T/gh-mw2.log" > /dev/null \
+  && [[ $(hlog mw | grep -c " · memory PR: its body was not updated (see run.log); not merged (MEMORY_POLICY=auto), left open · $u$") == 1 ]] \
+  && ! hlog mw | grep -F " · memory PR: its body was not updated (see run.log) · " > /dev/null && ! hlog mw | grep -F " · memory PR merged" > /dev/null \
+  && grep -E "^mw · proj · facts · .* · $u · open$" "$T/mw-memory.out" > /dev/null'
+STUB_CURATOR_OPS=fact-c STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue mw --foreground > "$T/mw3.out" 2>&1
+mv "$T/gh.log" "$T/gh-mw3.log" 2> /dev/null; mw3=$(git -C "$O" rev-parse -q --verify harness-memory/mw)
+check "memory PR: the next segment refreshes the reused PR's body and merges it at the commit it pushed" \
+  'p=$(mpr mw) && u=$(url "$p") && [[ -n $mw3 && -f $p.merged && $(git -C "$O" rev-list --count "$mw2..$mw3") == 1 ]] && on_main "$mw3" \
+  && grep -x "gh pr edit $u --body-file .*" "$T/gh-mw3.log" > /dev/null && grep -x "gh pr merge $u --merge --match-head-commit $mw3" "$T/gh-mw3.log" > /dev/null \
+  && [[ $(hlog mw | grep -c " · memory PR updated · $u$") == 1 && $(hlog mw | grep -c " · memory PR merged into main · $u$") == 1 ]] \
+  && [[ $(cat "$T/gh-mw.log" "$T/gh-mw2.log" "$T/gh-mw3.log" | grep -c "^gh pr create .*--head harness-memory/mw ") == 1 ]]'
 # md: the project's memory is .claude/CLAUDE.md alone (no root CLAUDE.md): the facts land there (N1-02)
 w=$T/seed-dot; rm -rf "$w"; git clone -q "$O" "$w" && git -C "$w" checkout -q --detach "$seed3" && mkdir -p "$w/.claude" \
   && git -C "$w" mv CLAUDE.md .claude/CLAUDE.md && git -C "$w" -c user.name=m -c user.email=m@test commit -qm "memory in .claude/CLAUDE.md" \

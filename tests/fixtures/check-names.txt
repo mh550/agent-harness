@@ -1033,11 +1033,13 @@ memory PR: no run leaves a local harness-memory or harness-rules branch or a reg
 memory PR: summary.json's memory holds the counts and both URLs, harness report prints the Memory row, and memory-result.json is in the run record
 memory PR: the PR is opened and left for Michael under MEMORY_POLICY=pr
 memory PR: the commit changes CLAUDE.md alone
+memory PR: the next segment refreshes the reused PR's body and merges it at the commit it pushed
 memory PR: the notes count the ops, re-derived tiers and each dropped op; memory.json holds the counts
 memory PR: the run's record PR opens too
 memory PR: the same add with an anchor lands as one edit
 memory PR: the two project facts land under Gotchas in one commit on harness-memory/<run>, with their suffix
 memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note
+memory PR: under MEMORY_POLICY=auto a reused PR whose body refresh failed gets its commit but no merge, with one note
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note

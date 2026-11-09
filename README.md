@@ -148,7 +148,7 @@ kept under the cap). Each body lists its tier's ops (the rules and the protected
 sequence, for `<run>/<n>`), the proposals and every dropped op with its reason, and links the other PR; `memory.md` in
 the run record is the union. A `harness continue` adds to the open PRs. `harness-log.md` says `memory: <n> ops · <a>
 facts · <r> rules · <d> dropped · <p> proposals` and each PR's fate. `MEMORY_POLICY=auto` has the driver merge the
-facts PR (never the rules PR) itself when the segment pushed a tier-1 commit to it (a refused merge stays open with a note; a segment that applies nothing leaves it open),
+facts PR (never the rules PR) itself when the segment pushed a tier-1 commit to it and the PR carries this segment's body (a reused PR whose body refresh failed, or a refused merge, stays open with a note and the next segment merges it; a segment that applies nothing leaves it open),
 `MEMORY_POLICY=off` runs no curator; it is separate from `MERGE_POLICY`, so verified code can merge itself while the
 instruction file waits for you (decisions/2026-11-07-memory-tiers, decisions/2026-11-07-memory-policy).
 

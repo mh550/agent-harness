@@ -1,6 +1,6 @@
 # The memory session and the answers: a denied curator, an `auto` that keeps its body, answers the next curator reads
 
-*(2026-11-08, run agent-harness-2026-11-08, N2 (the deny-list row by N2-01); spec
+*(2026-11-08, run agent-harness-2026-11-08, N2 (the deny-list row by N2-01, the body-refresh row by N2-02); spec
 `docs/specs/2026-11-07-memory-followup.md` §N2; journal/learning/2026-11-07-memory-curator.md §11 answer 7 (build the
 deny list: `Bash(git push:*)`, `Bash(gh:*)`; `memory_foreign` stays the second layer) and §13 item 3; Claude Code's
 https://code.claude.com/docs/en/cli-reference (`--disallowedTools`, "Deny rules", one quoted rule per argument;
@@ -52,3 +52,32 @@ decisions/2026-11-07-memory-tiers (the known limit this closes).)*
   dontAsk` with an allowlist, as the debrief runs (the curator reads with `jq` and arbitrary commands; an allowlist is a
   larger change than answer 7 asked for); the deny list on every session (the coding and verify sessions push their
   own branches by design).
+- **Finding (N2-02):** under `MEMORY_POLICY=auto` `memory_pr` merged the facts PR whenever its segment pushed a tier-1
+  commit, whether or not `memory_edit`'s `gh pr edit` had put this segment's body on a reused PR: the merge went into
+  `main` with an older body, which is the audit trail of what was merged (Michael's flip of M3-02's question,
+  decisions/2026-11-07-memory-policy).
+- **Choice (N2-02):**
+  - `memory_edit` returns `gh pr edit`'s status; `memory_pass` returns 1 when it pushed a commit to a reused PR whose
+    edit failed. `memory_pr` merges the facts PR only when that status is 0: a fresh PR (`pr create --body-file`)
+    carries its body and merges as before; a reused PR whose edit failed gets one note in place of the two
+    (`its body was not updated …` and `merged into main`): `memory PR: its body was not updated (see run.log); not
+    merged (MEMORY_POLICY=auto), left open · <url>`. The edit's own failure note is held back for this one case (its
+    `quiet` argument), so the segment says it once.
+  - *Default*: no retry of the edit inside the segment (one `gh` call per step is the harness's origin rule); the
+    branch is pushed and the PR open, so the next segment reuses both, refreshes the body and merges then at the head
+    it pushed.
+  - *Default*: the second facts edit, the one that names a rules PR opened after the facts body was written, does not
+    decide the merge: a failed first edit stays unmerged even when the second succeeds (one rule, and the first
+    failure keeps its note), and a failed second edit after a good first one still merges, since this segment's body is
+    on the PR and only the other PR's URL is missing, which its own note says.
+  - Under `pr` nothing changes (no merge either way, the edit's failure note as before); the rules PR is never merged
+    (invariant 3), so this concerns the facts PR alone.
+  - Checks (tests/checks/memory-branch.sh, slow): `memory PR: under MEMORY_POLICY=auto a reused PR whose body refresh
+    failed gets its commit but no merge, with one note` and `memory PR: the next segment refreshes the reused PR's body
+    and merges it at the commit it pushed`, on two continues of the `mw` run (`STUB_GH_DOWN=1 STUB_GH_DOWN_ONLY=edit`,
+    then gh up), each adding one fact (`tests/fixtures/memory/stub-fact-b.json`, `stub-fact-c.json`). Both red before
+    the change (the first continue merged). No unit test: no pure function changed.
+- **Rejected (N2-02):** a retry of the edit inside the segment (a second `gh` call for one step, and the next segment
+  retries anyway); merging a reused PR that is already pushed on a bare body refresh with no new tier-1 commit (a new
+  behaviour the spec does not ask for: only a new tier-1 commit merges, as before); clearing `PASS_HEAD` on a failed
+  edit to stop the merge (it would hide the pushed commit from the decision that reads it).

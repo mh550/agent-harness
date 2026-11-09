@@ -458,11 +458,12 @@ memory_json() {
 # again at RULES_BASE) on harness-rules/<run> as `memory rules: <run>`, each one commit, pushed (never forced) and its PR
 # opened or its body refreshed; a failure in one is its own note and never stops the other. Tier 3 and every dropped op
 # are in both bodies, each body naming the other PR; the union is memory.md in the run record. MEMORY_POLICY=auto
-# merges the facts PR alone, at the head pushed and after both bodies are written (never --delete-branch, as
+# merges the facts PR alone, at the head pushed and after both bodies are written, and only with this segment's body on
+# it: a reused PR whose refresh failed stays open, the next segment the retry (never --delete-branch, as
 # record_pr); the rules PR is Michael's under every policy: memory_merge never sees its URL (invariant 3). The record
 # branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
 memory_pr() {
-  local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" o a rl d p rd x f files=() rfiles=() rb=()
+  local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" fbody=0 o a rl d p rd x f files=() rfiles=() rb=()
   rm -f "$r"; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
   [[ -z $RULES_STOP && -d $SCRATCH/memory-rules-mb ]] && rb+=("$SCRATCH/memory-rules-mb" "$SCRATCH/memory-main")
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
@@ -488,7 +489,7 @@ memory_pr() {
   # the facts: tier 1 as apply wrote it into the worktree; its body names the rules PR this run already has
   mapfile -t files < <(jq -r '.files[]?' "$r")
   memory_body "$r" facts "$RULES_URL"
-  memory_pass facts "$a" "${files[@]}"; url=$PASS_URL fhead=$PASS_HEAD
+  memory_pass facts "$a" "${files[@]}"; fbody=$?; url=$PASS_URL fhead=$PASS_HEAD
   # the rules: the worktree made again at their own base, tier 2's texts written into it
   if [[ -z $RULES_STOP ]]; then
     memory_wt_gone
@@ -506,7 +507,11 @@ memory_pr() {
     if origin_t $GH pr edit "${url:-$MEM_URL}" --body-file "$SCRATCH/memory-body-facts.md" > /dev/null 2>> "$STATE/run.log"; then note "memory PR: its body names the rules PR · ${url:-$MEM_URL}"
     else note "memory PR: its body could not name the rules PR (see run.log) · ${url:-$MEM_URL}"; fi
   fi
-  [[ $MEMORY_POLICY == auto && -n $fhead && $url == http* ]] && memory_merge "$url" "$fhead"   # the facts PR alone
+  # the facts PR alone, and only with this segment's body on it (N2-02): no retry of a failed edit here
+  if [[ $MEMORY_POLICY == auto && -n $fhead && $url == http* ]]; then
+    if (( fbody == 0 )); then memory_merge "$url" "$fhead"
+    else note "memory PR: its body was not updated (see run.log); not merged (MEMORY_POLICY=auto), left open · $url"; fi
+  fi
   memory_record "$r"
   memory_wt_gone
   memory_json "$o" "$a" "$rl" "$d" "$p" "${url:-$MEM_URL}" "${rurl:-$RULES_URL}"
@@ -514,7 +519,7 @@ memory_pr() {
 # <facts|rules> <count> <files…> → that tier's change committed in $SCRATCH/memory (`memory: <run>: <n> <tier>`), pushed
 # to its branch (never forced: a reused head moves forward) and its PR opened or its body refreshed; with no change, a
 # PR this run already has gets this segment's body and a pushed branch without one gets its PR. PASS_URL ← the PR's
-# URL, PASS_HEAD ← the commit pushed (auto merges the facts PR only at it)
+# URL, PASS_HEAD ← the commit pushed (auto merges the facts PR only at it); 1 when that commit's PR kept an older body
 memory_pass() {
   local t=$1 k=$2 prior nopr B LBL TITLE WORD NONE; shift 2
   memory_tier "$t"; PASS_URL="" PASS_HEAD=""
@@ -531,8 +536,11 @@ memory_pass() {
     note "$LBL: could not push $B (see run.log)"
   else
     PASS_HEAD=$(git -C "$SCRATCH/memory" rev-parse HEAD)
-    if [[ $prior == http* ]]; then PASS_URL=$prior; memory_edit "$prior" "" "$t"; else memory_open "$t" merge; fi
+    # auto's facts PR: memory_pr's merge decision says it in one note, so the edit stays quiet on a failure
+    if [[ $prior == http* ]]; then PASS_URL=$prior; memory_edit "$prior" "" "$t" "$([[ $t == facts && $MEMORY_POLICY == auto ]] && echo quiet)" || return 1
+    else memory_open "$t" merge; fi
   fi
+  return 0
 }
 # <result.json> <facts|rules> <other PR url|""> → $SCRATCH/memory-body-<tier>.md, that PR's body: on a reused PR this
 # segment's body over the earlier ones (memory.md: the PR's first commit is explained there), while that fits GitHub's
@@ -574,11 +582,11 @@ memory_merge() {   # <url> <head> (MEMORY_POLICY=auto, the facts PR alone): merg
   if origin_t $GH pr merge "$1" --merge --match-head-commit "$2" > /dev/null 2>> "$STATE/run.log"; then note "memory PR merged into $MAIN_BRANCH · $1"
   else note "memory PR: the merge was refused; left open · $1"; fi
 }
-memory_edit() {   # <url> <why suffix> <facts|rules>: that open PR's body refreshed, noted; PASS_URL ← <url>
+memory_edit() {   # <url> <why suffix> <facts|rules> [quiet]: that open PR's body refreshed, noted; PASS_URL ← <url>; gh's status (quiet: a failure's note is the caller's)
   local B LBL TITLE WORD NONE
   memory_tier "$3"; PASS_URL=$1
   if origin_t $GH pr edit "$1" --body-file "$SCRATCH/memory-body-$3.md" > /dev/null 2>> "$STATE/run.log"; then note "$LBL updated$2 · $1"
-  else note "$LBL: its body was not updated (see run.log) · $1"; fi
+  else [[ -n ${4:-} ]] || note "$LBL: its body was not updated (see run.log) · $1"; return 1; fi
 }
 # the scratch worktree goes after every path: a stale registration would trip gc (prune is the fallback)
 memory_wt_gone() { git -C "$RWT" worktree remove --force "$SCRATCH/memory" 2> /dev/null; rm -rf "$SCRATCH/memory"; git -C "$RWT" worktree prune 2> /dev/null; return 0; }
