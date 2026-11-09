@@ -459,7 +459,7 @@ memory_json() {
 # opened or its body refreshed; a failure in one is its own note and never stops the other. Tier 3 and every dropped op
 # are in both bodies, each body naming the other PR; the union is memory.md in the run record. MEMORY_POLICY=auto
 # merges the facts PR alone, at the head pushed and after both bodies are written, and only with this segment's body on
-# it: a reused PR whose refresh failed stays open, the next segment the retry (never --delete-branch, as
+# it: a reused PR whose refresh failed stays open, the next segment with a new tier-1 commit the retry (never --delete-branch, as
 # record_pr); the rules PR is Michael's under every policy: memory_merge never sees its URL (invariant 3). The record
 # branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
 memory_pr() {
@@ -474,7 +474,7 @@ memory_pr() {
   memory_wt_gone
   git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
     || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
-  # Michael's verdicts close their rules and proposals by key (this project's rows of the ledger's memory-answers.jsonl)
+  # Michael's verdicts close their rules and proposals by line (this project's rows of the ledger's memory-answers.jsonl)
   node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" \
     --answers "$LEDGER/memory-answers.jsonl" --project "$PROJECT_NAME" > "$r" 2>> "$STATE/run.log"
   # a stopped rules half commits nothing: its tier-2 ops are dropped (named in both bodies), the proposals renumbered

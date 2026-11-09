@@ -521,6 +521,8 @@ const ans = o => ({ run: "r0", project: "p", n: 1, tier: 2, verdict: "declined",
 
 test("curator.mjs answers: declined then accepted, newest first, (none yet) for none, cut at --max-bytes naming how many were left out", () => {
   assert.equal(answersText([], "p"), "(none yet)");
+  // a hand-written row without a why reads as a verdict with none, never `: undefined`
+  assert.equal(answersText([ans({ why: undefined })], "p").split("\n")[1], `- ${PROPOSAL} (r0/1)`);
   assert.equal(answersText([ans({ project: "q" })], "p"), "(none yet)");   // another project's verdicts are not this one's
   const rows = [ans({ n: 1, text: "old declined", at: "2026-11-01T00:00:00Z" }), ans({ n: 2, verdict: "accepted", text: "an accepted line", why: "placed", at: "2026-11-05T00:00:00Z" }),
     ans({ n: 3, text: "new declined", why: "no", at: "2026-11-07T00:00:00Z" })];
@@ -537,7 +539,7 @@ test("curator.mjs answers: declined then accepted, newest first, (none yet) for 
   assert.equal(cut.split("\n").at(-1), `(${60 - kept} more left out: the prompt's cap is 1000 bytes; ledger/memory-answers.jsonl has them all)`);
 });
 
-test("curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; a tier-1 op and a different key never match", () => {
+test("curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; a tier-1 op and a different sentence never match, not even one sharing its 40-character key", () => {
   const rule = op({ section: "## Code rules", text: PROPOSAL, tier: 2 });
   const declined = apply([rule], T(MD), ENTRIES, RUN, { answers: [ans()] });
   assert.equal(`${declined.rules.length} ${reasons(declined)}`, "0 declined by Michael (r0/1: the suite runs itself)");
@@ -554,6 +556,11 @@ test("curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>
   // a different key: the rule lands
   const other = apply([rule], T(MD), ENTRIES, RUN, { answers: [ans({ text: "another rule entirely, of other words", key: itemKey({ op: "add", text: "another rule entirely, of other words" }) })] });
   assert.equal(`${other.rules.length} ${other.dropped.length}`, "1 0");
+  // a sentence sharing the first 40 characters (lineKey) is another rule: the whole text decides, not the key's prefix
+  const twin = "Run the fast tier once, last, after the suite is cached";
+  assert.equal(itemKey({ op: "add", text: twin }), itemKey({ op: "add", text: PROPOSAL }));
+  const near = apply([rule], T(MD), ENTRIES, RUN, { answers: [ans({ text: twin, key: itemKey({ op: "add", text: twin }) })] });
+  assert.equal(`${near.rules.length} ${near.dropped.length}`, "1 0");
   // a declined delete matches a delete of that line only, never an add of it
   const del = { op: "delete", anchor: "bash only." };
   assert.equal(itemKey(del) === itemKey({ op: "add", text: "bash only." }), false);

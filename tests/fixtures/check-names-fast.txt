@@ -233,7 +233,7 @@ coverage: shScan leaves out comments, closing words, a case's bare pattern, a fu
 coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
 coverage: two processes' V8 documents add up: a character ran when it did in either
 curator.mjs answers: declined then accepted, newest first, (none yet) for none, cut at --max-bytes naming how many were left out
-curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; a tier-1 op and a different key never match
+curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; a tier-1 op and a different sentence never match, not even one sharing its 40-character key
 curator.mjs main: apply --answers <file> --project <p> drops the project's answered rule; answers <file> <project> renders the prompt's block
 curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/
 curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands
@@ -614,7 +614,7 @@ memlint: the pathways project.md (4cafb65^) yields a run-scope finding for tonig
 memlint: the store lookup is decisionsStore, the one function reading .harness/config.sh and docs/decisions.md, each on one line
 memlint: the tidy rane store (aa88421) beside its tidy CLAUDE.md (3d7abc9, Where things go) yields no finding
 memlint: the voice-concierge store (99091b5) yields no finding (the rows they superseded is prose, not a marker)
-memory.mjs main: answer appends the row (an earlier one for that <run>/<n> replaced) and prints its line; a bad <n> is one line, exit 1
+memory.mjs main: answer appends the row (an earlier one for that <run>/<n> replaced) and prints its line; a bad <n> or a torn line in the file is one line, exit 1
 memory.mjs: a continue's renumbered item is another item: its answer never replaces the first one's, nor shows its verdict
 memory.mjs: a row replaces an earlier one for the same <run>/<n>; the answers: tally counts a replaced verdict once
 memory.mjs: answerRow is {run, project, n, tier, verdict, why, file, section, text, key, at} from the result's item

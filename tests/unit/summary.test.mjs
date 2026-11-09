@@ -5,6 +5,7 @@ import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { answerRow } from "../../lib/memory.mjs";
 import { sameAsCli, mainOf } from "./cli-same.mjs";
 import { parseRunLog, redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine, memoryState, memoryView, memoryShown } from "../../lib/summary.mjs";
 
@@ -539,3 +540,23 @@ test("summary.mjs memory: memoryView prints the tier in each line and one tally 
     assert.equal((await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1"])).out, "e · q · facts · 2/1/5 · https://example.test/pr/5 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\nanswers: accepted 0 · declined 0\n");
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+// a run's memory-result.json with one rule (mp/1) and one proposal (mp/2), as tests/unit/memory.test.mjs has it
+const MEM_RESULT = { ops: 3, applied: [], dropped: [], run: "mp",
+  rules: [{ op: "add", file: "CLAUDE.md", section: "## Code rules", text: "stub proposal: run the stub suite before each commit", tier: 2, why: "w", from: "entries.jsonl:2", n: 1 }],
+  proposed: [{ op: "add", file: "CLAUDE.md", section: "## Live system", text: "deploy only through scripts/deploy.sh from git", tier: 3, why: "w", from: "entries.jsonl:3", n: 2 }] };
+
+test("summary.mjs memoryView: an answers: tally line after the tiers' and `· n answered` on a listed run's first line; none or no answers file still lists", () => {
+  const rows = [{ run: "mp", project: "proj", tier: "facts", url: "u1", applied: 2, dropped: 0, proposed: 1, at: "1" }, { run: "mp", project: "proj", tier: "rules", url: "u2", rules: 1, sections: ["## Code rules"], at: "1" },
+    { run: "mo", project: "proj", tier: "facts", url: "u3", applied: 1, dropped: 0, proposed: 0, at: "0" }];
+  const a = [answerRow(MEM_RESULT, { run: "mp", project: "proj", n: 1, verdict: "declined", why: "x", at: "2026-11-08T12:00:00.000Z" }).row, answerRow(MEM_RESULT, { run: "mp", project: "proj", n: 2, verdict: "accepted", why: "x", at: "2026-11-08T12:00:00.000Z" }).row];
+  const out = memoryView(rows, {}, 10, "", a);
+  assert.equal(out[0], "mp · proj · rules · 1 · ## Code rules · u2 · unknown · 2 answered");
+  assert.equal(out[1], "mp · proj · facts · 2/0/1 · u1 · unknown");
+  assert.equal(out.at(-1), "answers: accepted 1 · declined 1");
+  assert.equal(memoryView(rows, {}, 10).at(-1), "answers: accepted 0 · declined 0");
+  assert.equal(memoryView(rows, {}, 1, "", a).at(-1), "answers: accepted 1 · declined 1");
+  assert.equal(memoryView(rows.slice(2), {}, 10, "", a).at(-1), "answers: accepted 0 · declined 0");   // not a shown run's
+  assert.equal(memoryView([], {}, 10, "", a).join("\n"), "(none)");
+});
+

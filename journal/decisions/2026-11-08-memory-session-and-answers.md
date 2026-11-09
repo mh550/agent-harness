@@ -103,15 +103,21 @@ decisions/2026-11-07-memory-tiers (the known limit this closes).)*
   - *Default*: `<n>` is the numbering of the run's last segment, the one the ledger's `memory-result.json` holds (each
     segment numbers from 1); an answer to an earlier segment's item is given before the run is continued.
   - *Default*: both verdicts close the item. `apply` (lib/curator.mjs) takes the project's rows (`--answers <file>
-    --project <p>`, flags because the fifth positional is the rules base) and drops a tier-2 or tier-3 op whose key is
+    --project <p>`, flags because the fifth positional is the rules base) and drops a tier-2 or tier-3 op whose line is
     an answered item's, after the gate and the dedupe and before the tier-3 proposal: `declined by Michael (<run>/<n>:
     <why cut to 80>)` or `accepted by Michael (<run>/<n>)` (an accepted line is his to place by hand; once placed, the
     "already in section" rule drops it anyway). The reason reaches both bodies' *Dropped* and the notes as every drop
     does, so a curator that keeps proposing a declined rule shows in the drop rate.
-  - The key alone decides, not the section: the same sentence under another heading is the same rule. The key is
-    `lineKey` (the anchor normalizer: marker and suffix cut, `factKey`'s first 40 characters) of the op's text; a
-    delete's is its anchor's, marked `delete ` (*default*), so declining a deletion never drops an add of that line.
-    Tier-1 ops are never matched: a fact is not a rule Michael declines; a wrong fact is a `delete` op's job.
+  - The line alone decides, not the section: the same sentence under another heading is the same rule. The row's `key`
+    is `lineKey` (the anchor normalizer: marker and suffix cut, `factKey`'s first 40 characters) of the op's text, the
+    item's identity beside `<run>/<n>`; the match is the whole normalized line (`factText` of the text, marker and
+    suffix cut), since two rules can share their first 40 characters (N2-04's review: declining `Never pipe a
+    multi-write producer into grep -q …` dropped `… into grep -m …`). A delete's is its anchor's, marked `delete `
+    (*default*), so declining a deletion never drops an add of that line. Tier-1 ops are never matched: a fact is not
+    a rule Michael declines; a wrong fact is a `delete` op's job. Known limit (N2-04's review): a declined rule a later
+    curator restates under `## Gotchas` is tier 1 and lands (under `auto` merged); the write gate still needs a
+    `project` discovery saying it. A declined line already committed on an open rules PR stays there: decline it by
+    taking it out of that PR too.
   - The next curator is told: `prompts/curator.md`'s `## What Michael declined and accepted` carries
     `{{MEMORY_ANSWERS}}`, which `curator()` renders (`memory_answers` in lib/prompt.sh, `curator.mjs answers <file>
     <project> --max-bytes 4000`): `Michael declined (never propose again):` then `Michael accepted (already his to
@@ -130,3 +136,11 @@ decisions/2026-11-07-memory-tiers (the known limit this closes).)*
 - **Rejected (N2-03):** a verdict matched by section (the same rule under another heading would come back); a copy of
   the answers in the run record (the ledger and the rendered prompt already hold it); a verdict on a tier-1 fact (the
   delete op is the tool); a session writing the answers file (the verbs are Michael's).
+- **Rejected (N2-04's review):** matching a verdict on the 40-character `key` (two rules sharing a prefix are one: the
+  whole normalized line decides); matching tier-1 ops against declined rows (the spec's rule: a fact is never his to
+  decline; the Gotchas hole is a known limit above, asked of Michael).
+- **The checks (N2):** `tests/fixtures/check-names.txt` gains 19 names and loses none (`git diff $(git merge-base HEAD
+  origin/main) -- tests/fixtures/check-names.txt`: `grep -c '^+[^+]'` 19, `grep -c '^-[^-]'` 0), within the budget of
+  30: N2-01 3 (curator-run), N2-02 2 (memory-branch), N2-03 14 (8 unit, 6 stub), N2-04 none new (two of N2-03's unit
+  names reworded in place for the asserts the review added: a sentence sharing the 40-character key, a torn answers
+  line).

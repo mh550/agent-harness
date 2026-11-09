@@ -7,7 +7,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { answerRow, answersTally, items, main, proposalsView, upsert } from "../../lib/memory.mjs";
 import { itemKey } from "../../lib/curator.mjs";
-import { memoryView } from "../../lib/summary.mjs";
 
 const RULE = { op: "add", file: "CLAUDE.md", section: "## Code rules", text: "stub proposal: run the stub suite before each commit", tier: 2, why: "w", from: "entries.jsonl:2", n: 1 };
 const PROP = { op: "add", file: "CLAUDE.md", section: "## Live system", text: "deploy only through scripts/deploy.sh from git", tier: 3, why: "w", from: "entries.jsonl:3", n: 2 };
@@ -49,7 +48,7 @@ test("memory.mjs: proposalsView lists each numbered item with its tier, section 
   assert.equal(proposalsView({ ...RESULT, rules: [{ ...RULE, op: "delete", anchor: "bash only", text: undefined }], proposed: [] }, "mp", []).join("\n"), "mp/1 · rules · CLAUDE.md · ## Code rules · delete: bash only");
 });
 
-test("memory.mjs main: answer appends the row (an earlier one for that <run>/<n> replaced) and prints its line; a bad <n> is one line, exit 1", () => {
+test("memory.mjs main: answer appends the row (an earlier one for that <run>/<n> replaced) and prints its line; a bad <n> or a torn line in the file is one line, exit 1", () => {
   const d = mkdtempSync(join(tmpdir(), "memory-"));
   try {
     const res = join(d, "memory-result.json"), file = join(d, "memory-answers.jsonl");
@@ -62,21 +61,12 @@ test("memory.mjs main: answer appends the row (an earlier one for that <run>/<n>
     const bad = main(["answer", file, res, "proj", "mp", "9", "accepted", "x"], { env: {} });
     assert.equal(`${bad.rc} ${bad.out}`, "1 mp has no item 9 (its rules and proposals: mp/1 to mp/2; tier 1 is not numbered)\n");
     assert.equal(main(["proposals", res, "mp", join(d, "missing.jsonl")], { env: {} }).out.split("\n").length, 3);
+    // a line that is no JSON row (a hand edit gone wrong) is never erased by the rewrite: one line, exit 1, the file as it was
+    writeFileSync(file, `{"run":"mp",\n${readFileSync(file, "utf8")}`);
+    const before = readFileSync(file, "utf8"), torn = main(["answer", file, res, "proj", "mp", "2", "declined", "y"], { env: {} });
+    assert.equal(`${torn.rc} ${torn.out}`, `1 ${file} line 1 is not a JSON row: fix or remove it by hand first\n`);
+    assert.equal(readFileSync(file, "utf8") === before, true);
   } finally { rmSync(d, { recursive: true, force: true }); }
-});
-
-test("summary.mjs memoryView: an answers: tally line after the tiers' and `· n answered` on a listed run's first line; none or no answers file still lists", () => {
-  const rows = [{ run: "mp", project: "proj", tier: "facts", url: "u1", applied: 2, dropped: 0, proposed: 1, at: "1" }, { run: "mp", project: "proj", tier: "rules", url: "u2", rules: 1, sections: ["## Code rules"], at: "1" },
-    { run: "mo", project: "proj", tier: "facts", url: "u3", applied: 1, dropped: 0, proposed: 0, at: "0" }];
-  const a = [answerRow(RESULT, { run: "mp", project: "proj", n: 1, verdict: "declined", why: "x", at: AT }).row, answerRow(RESULT, { run: "mp", project: "proj", n: 2, verdict: "accepted", why: "x", at: AT }).row];
-  const out = memoryView(rows, {}, 10, "", a);
-  assert.equal(out[0], "mp · proj · rules · 1 · ## Code rules · u2 · unknown · 2 answered");
-  assert.equal(out[1], "mp · proj · facts · 2/0/1 · u1 · unknown");
-  assert.equal(out.at(-1), "answers: accepted 1 · declined 1");
-  assert.equal(memoryView(rows, {}, 10).at(-1), "answers: accepted 0 · declined 0");
-  assert.equal(memoryView(rows, {}, 1, "", a).at(-1), "answers: accepted 1 · declined 1");
-  assert.equal(memoryView(rows.slice(2), {}, 10, "", a).at(-1), "answers: accepted 0 · declined 0");   // not a shown run's
-  assert.equal(memoryView([], {}, 10, "", a).join("\n"), "(none)");
 });
 
 test("memory.mjs: a continue's renumbered item is another item: its answer never replaces the first one's, nor shows its verdict", () => {
