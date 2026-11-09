@@ -474,6 +474,7 @@ each session's scope is stopped after it returns
 ended: done; status says so
 endless limit ends the run (frees the queue)
 ends waiting on Michael; the summary says so
+entries survive: STUB_LONG_FACT=A keeps A's 199-character project fact whole with the over-160 note, no stop
 entries survive: STUB_LONG_SUMMARY=A keeps A's entry whole with the cut-to-400 note
 entries survive: STUB_NO_ENTRY=A is resumed once with the init line's session id, beside 01-A.resume.jsonl
 entries survive: STUB_NO_ENTRY=A writes no entry.json
@@ -809,7 +810,9 @@ init: vercel.json gets git.deploymentEnabled harness/** false, other keys kept
 journal: a 2001-character init header is cut to 2000 and kept
 journal: a 410-character summary and outcome "maybe" is minimal with why invalid (outcome
 journal: a 410-character summary is cut to 400 code points ending … and keeps dead_ends and questions, no minimal
+journal: a project fact over 160 characters is kept whole and named long with its length; a run fact or a short one is not
 journal: a summary over its cap beside another fault is minimal for the other fault, never the cap
+journal: ingest prints long 199 for a project fact over 160, exits 0 and keeps the fact whole
 journal: ingest prints trimmed summary 410, exits 0 and appends the cut entry whole
 journal: validate exits 2 when its only errors are the caps, 1 with any other
 key map lint: a check file passing the bare root to a new command is named with its line, exit 1

@@ -318,6 +318,18 @@ test("journal: a 2001-character init header is cut to 2000 and kept", () => {
   assert.deepEqual(validate(it.entry), []);
 });
 
+test("journal: a project fact over 160 characters is kept whole and named long with its length; a run fact or a short one is not", () => {
+  const fact = "A note given before the curator session (memory_base) is reverted by its restrict with harness-log.md; give it after ro_rescue, as curator() does with RULES_NOTE (r1 2026-11-08)";
+  const e = { feature: "N1-01", kind: "coding", outcome: "passes", summary: "s", discoveries: [
+    { text: fact, affects: ["project"] }, { text: "x".repeat(170), affects: ["run"] }, { text: "short (r1 2026-11-08)", affects: ["project"] }, { text: "y".repeat(161), affects: ["N1-02", "project"] }] };
+  const r = journalEntry(JSON.stringify(e), { ...o, feature: "N1-01" });
+  assert.equal(r.why, "");
+  assert.deepEqual(r.long, [[...fact].length, 161]);
+  assert.equal(r.entry.discoveries[0].text, fact);   // kept whole: the curator's gate, not the ingest, decides what is written
+  assert.deepEqual(journalEntry(JSON.stringify({ ...e, discoveries: [] }), { ...o, feature: "N1-01" }).long, []);
+  assert.deepEqual(journalEntry(JSON.stringify({ ...e, outcome: "maybe" }), { ...o, feature: "N1-01" }).long, []);   // a minimal entry has no facts
+});
+
 test("journal: a summary over its cap beside another fault is minimal for the other fault, never the cap", () => {
   const cw = journalEntry(JSON.stringify({ ...long, header: "# no" }), o);
   starts(cw.entry.minimal, "invalid: header", cw.why);

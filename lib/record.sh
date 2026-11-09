@@ -883,6 +883,8 @@ journal_() {   # who kind id name model outcome worktree: the ingest and the ren
   # a summary or header over its cap, the entry's only fault: cut and kept, not minimal (docs/plans/2026-10-29-R2-entries.md)
   while read -r f n; do [[ -n $n ]] && note "$1: entry.json $f $n characters; cut to $([[ $f == header ]] && echo 2000 || echo 400) and kept"
   done < <(sed -n 's/^trimmed //p' <<< "$out"); out=$(grep -v '^trimmed ' <<< "$out")
+  # a project discovery over prompts/coding.md's 160 characters: named and kept whole, no stop (the curator's gate writes it short)
+  while read -r n; do [[ -n $n ]] && note "$1: a project fact is $n characters, over 160"; done < <(sed -n 's/^long //p' <<< "$out"); out=$(grep -v '^long ' <<< "$out")
   if (( rc == 3 )); then note "$1: entry.json ${ENTRY_RESUMED:+still }$out${ENTRY_RESUMED:+ after one resume}; recorded a minimal entry"
   elif (( rc == 0 && ${ENTRY_RESUMED:-0} )); then note "$1: entry.json written on a resume"; fi
   (( rc == 0 || rc == 3 )) || { note "$1: the journal append failed (exit $rc): $out"   # aside, so the next session's ingest can't take it

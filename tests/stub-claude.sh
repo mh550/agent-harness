@@ -163,12 +163,15 @@ RS=${HARNESS_SCRATCH:-}; RS=${RS%%/lanes/*}   # the run's scratch, not a lane's:
 count() { local f=$RS/count-$1 n; n=$(( $(cat "$f" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$f"; echo "$n"; }
 set_passes() { node -e 'const fs=require("fs"),[f,id,v]=process.argv.slice(1),l=JSON.parse(fs.readFileSync(f));for(const x of l.features)if(x.id===id)x.passes=v==="true";fs.writeFileSync(f,JSON.stringify(l,null,2))' "$L" "$1" "$2"; }
 # <id> <n> <jq args…> → the session's journal entry, built by jq (E4-03); STUB_BAD_ENTRY=<id>: that id's first session writes `{not json`;
-# STUB_LONG_SUMMARY=<id>: that id's first coding session's summary is 410 characters, "<id>: " padded with x (R2-02)
-entry() { local id=$1 n=$2 long=; shift 2
+# STUB_LONG_SUMMARY=<id>: that id's first coding session's summary is 410 characters, "<id>: " padded with x (R2-02);
+# STUB_LONG_FACT=<id>: that one's entry has a 199-character project fact (over prompts/coding.md's 160; the ingest notes it)
+entry() { local id=$1 n=$2 long= lfact=; shift 2
   [[ ${STUB_LONG_SUMMARY:-} == "$id" && $n == 1 ]] && long=$id
+  [[ ${STUB_LONG_FACT:-} == "$id" && $n == 1 ]] && lfact=$id
   if [[ ${STUB_NO_ENTRY:-} == "$id" && $n == 1 && $first == "# Coding session" ]]; then return 0
   elif [[ ${STUB_BAD_ENTRY:-} == "$id" && $n == 1 ]]; then printf '{not json' > "$HARNESS_RUN_DIR/entry.json"
-  else jq -n "$@" | jq --arg long "$long" 'if $long != "" and .kind == "coding" then .summary = ("\($long): " | . + "x" * (410 - length)) else . end' > "$HARNESS_RUN_DIR/entry.json"; fi; }
+  else jq -n "$@" | jq --arg long "$long" --arg lfact "$lfact" 'if $long != "" and .kind == "coding" then .summary = ("\($long): " | . + "x" * (410 - length)) else . end
+    | if $lfact != "" and .kind == "coding" then .discoveries = ((.discoveries // []) + [{text: ("\($lfact): a project fact of 199 characters " | . + "x" * (199 - length)), affects: ["project"]}]) else . end' > "$HARNESS_RUN_DIR/entry.json"; fi; }
 main_touch() {   # <who>: STUB_MAIN_TOUCH's merge, once, when <who> is its session
   [[ ${STUB_MAIN_TOUCH:-} && ${STUB_MAIN_TOUCH%%:*} == "$1" ]] || return 0
   local p=${STUB_MAIN_TOUCH#*:} d; d=$(mktemp -d)

@@ -46,6 +46,11 @@ mkdir -p "$T/jt" && node -e 'process.stdout.write(JSON.stringify({ feature: "A",
   && echo done > "$T/jt-final" && node "$HERE/../lib/entries.mjs" ingest "$T/jt" coding A 01-A m "not yet" /dev/null "$T/jt-final" > "$T/jt.out"; echo "exit $?" >> "$T/jt.out"
 check "journal: ingest prints trimmed summary 410, exits 0 and appends the cut entry whole" '[[ $(cat "$T/jt.out") == "trimmed summary 410"$'"'"'\n'"'"'"exit 0" ]] \
   && jq -e "(.minimal | not) and (.dead_ends | length) == 1 and (.summary | length) == 400" "$T/jt/entries.jsonl" > /dev/null'
+# a project fact over 160 characters (prompts/coding.md's cap, which nothing checked before) is kept whole and named: the curator's gate decides what is written
+mkdir -p "$T/jl" && node -e 'process.stdout.write(JSON.stringify({ feature: "N1-01", kind: "coding", outcome: "passes", summary: "s", discoveries: [{ text: "A project fact of 199 characters: " + "x".repeat(165), affects: ["project"] }, { text: "y".repeat(170), affects: ["run"] }] }))' > "$T/jl/entry.json" \
+  && node "$HERE/../lib/entries.mjs" ingest "$T/jl" coding N1-01 01-N1-01 m passes /dev/null "$T/jt-final" > "$T/jl.out"; echo "exit $?" >> "$T/jl.out"
+check "journal: ingest prints long 199 for a project fact over 160, exits 0 and keeps the fact whole" '[[ $(cat "$T/jl.out") == "long 199"$'"'"'\n'"'"'"exit 0" ]] \
+  && jq -e "(.minimal | not) and (.discoveries[0].text | length) == 199" "$T/jl/entries.jsonl" > /dev/null'
 node -e 'const w = (f, e) => require("fs").writeFileSync(process.argv[1] + "/" + f, JSON.stringify(e)), c = { feature: "A", kind: "coding", outcome: "passes" };
   w("caps.json", { ...c, summary: "s".repeat(401) }); w("hcap.json", { feature: "init", kind: "init", outcome: "passes", summary: "s", header: "h".repeat(2001) });
   w("hnum.json", { feature: "init", kind: "init", outcome: "passes", summary: "s", header: 7 }); w("mixed.json", { ...c, summary: "s".repeat(401), files: "f" }); w("good.json", { ...c, summary: "s" })' "$T/jt"
