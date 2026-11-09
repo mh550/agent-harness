@@ -137,7 +137,7 @@ no store`.
 **Memory curator.** At a run's end, after the retro, one read-only session (`CURATOR_MODEL`, opus; `prompts/curator.md`)
 reads the run's entries and writes `memory-ops.json`: itemized operations (`add`, `replace`, `delete`) on a section of
 `CLAUDE.md`, `.claude/CLAUDE.md` or `.harness/project.md`, each naming the entry it comes from. It edits nothing else (its edits are
-reverted). The driver applies them (`lib/curator.mjs`) in a scratch worktree at `origin/main`, never in the run's
+reverted), and the driver denies it `git push` and `gh` (`--disallowedTools`, noted `curator: session denied …`). The driver applies them (`lib/curator.mjs`) in a scratch worktree at `origin/main`, never in the run's
 checkout: the tier comes from the heading, never from the session (`## Gotchas` is tier 1 and committed; any other
 heading is tier 2, committed on its own branch; `Live system`, `Off-limits`, `On-limits`, `Hardware facts`, `Hardware and
 Mixxx rules` and `This repo runs Michael's harness runs` are tier 3, a proposal only); an op whose text no entry states

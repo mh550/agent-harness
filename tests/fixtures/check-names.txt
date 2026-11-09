@@ -435,6 +435,7 @@ curator.mjs: tierOf protects a heading by prefix, its dated or parenthesised suf
 curator.mjs: validate passes a file of three ops and returns them
 curator.mjs: validate refuses a malformed file whole with its first reason
 curator: MEMORY_POLICY=off runs no curator and writes no curator or memory note
+curator: a curator that would push is denied; harness-memory/<run> holds the driver's one commit and its memory PR opens as stub-three-ops predicts
 curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept and the record PR opened
 curator: a run under MEMORY_POLICY=pr ends done with one zz-curator transcript and a curator metrics row
 curator: an empty memory-ops.json counts zeros and PR none (summary.json, the Memory row), and harness memory lists no PR for it
@@ -442,7 +443,9 @@ curator: an empty memory-ops.json notes no operations; no memory branch, no memo
 curator: an invalid memory-ops.json is one note; the run ends done and its record PR opens
 curator: an unknown MEMORY_POLICY is one note and the curator runs as under pr
 curator: its run.log line comes after the retro's, its notes before the record PR's
+curator: its run.log line names the deny list and harness-log.md has one note saying so
 curator: memory-ops.json is kept in the run record
+curator: the curator session alone runs under --disallowedTools, with Bash(git push:*) and Bash(gh:*) and nothing else
 curator: the rendered prompt names memory-ops.json, the three ops, the write gate and that it writes no project file
 debrief --dry-run gathers the retro backlog, not Earlier retros
 debrief notifications go to NTFY_URL when set

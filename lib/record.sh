@@ -752,11 +752,13 @@ clock() {
 # kind model log who → runs claude headless on $LS/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);
 # sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
 # read-only retro and curator, whose callers note them after restrict, which would revert them). The caller's S_RESUME (a session id:
-# --resume, and its entry.json kept), S_TURNS, S_TIMEOUT and S_BUDGET override the defaults (entry_resume's)
+# --resume, and its entry.json kept), S_TURNS, S_TIMEOUT and S_BUDGET override the defaults (entry_resume's); an S_DENY
+# array is the session's deny rules, --disallowedTools last on the line (the curator's: decisions/2026-11-08-memory-session-and-answers)
 session() {
-  local settings=() mcp=(--strict-mcp-config) t0 seq unit left x resume=()
+  local settings=() mcp=(--strict-mcp-config) t0 seq unit left x resume=() deny=()
   t0=$(date +%s) S_NOTES=()
   [[ -n ${S_RESUME:-} ]] && resume=(--resume "$S_RESUME")
+  [[ -v S_DENY ]] && (( ${#S_DENY[@]} )) && deny=(--disallowedTools "${S_DENY[@]}")
   # an entry.json no ingest took (the driver died after its session) would pass for this session's own
   [[ -z ${S_RESUME:-} && -e $RUN_DIR/entry.json ]] && { mv -f "$RUN_DIR/entry.json" "$STATE/entry-stale-$(date +%s).json"; note "an earlier session's entry.json moved aside before this $1 session"; }
   cp "$LS/prompt.md" "${3%.jsonl}.prompt.md"   # each session's prompt beside its transcript, so two can be diffed (decisions/2026-10-21-static-first-prompts)
@@ -770,7 +772,7 @@ session() {
   S_UNIT=$unit   # the EXIT trap stops it when the driver dies mid-session
   scope_run "$unit" "$SESSION_MEMORY_HIGH" "$SESSION_MEMORY_MAX" timeout -k 30s "${S_TIMEOUT:-$SESSION_TIMEOUT}" \
     "$CLAUDE" -p "$(cat "$LS/prompt.md")" --model "$2" --permission-mode auto "${settings[@]}" "${mcp[@]}" \
-    --max-turns "${S_TURNS:-$MAX_TURNS}" --max-budget-usd "${S_BUDGET:-$SESSION_BUDGET_USD}" --output-format stream-json --verbose "${resume[@]}" > "$3" 2>&1
+    --max-turns "${S_TURNS:-$MAX_TURNS}" --max-budget-usd "${S_BUDGET:-$SESSION_BUDGET_USD}" --output-format stream-json --verbose "${resume[@]}" "${deny[@]}" > "$3" 2>&1
   S_EXIT=$? S_WALL=$(( $(date +%s) - t0 ))
   # read what the wrapper recorded, then stop the scope: whatever the session left running goes with it
   S_PEAK=$(scope_peak "$unit") left=$(scope_left "$unit"); scope_stop "$unit"; S_UNIT=""

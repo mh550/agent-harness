@@ -265,6 +265,9 @@ retro() {   # a short read-only session that turns this run's evidence into prop
 # the safe one). decisions/2026-11-07-memory-tiers, decisions/2026-11-07-memory-policy
 curator() {
   local clog=$LOGS/zz-curator-$(date +%H%M%S).jsonl cstart reverted x
+  # a floor, not a knob: no push and no gh from the session, whatever the mode or a project's allow says (deny wins);
+  # memory_foreign stays the second layer for a push in another form (decisions/2026-11-08-memory-session-and-answers)
+  local CURATOR_DENY=("Bash(git push:*)" "Bash(gh:*)")
   case $MEMORY_POLICY in off) return 0 ;; pr|auto) ;;
     *) note "memory PR: MEMORY_POLICY=$MEMORY_POLICY is none of pr, auto, off; treated as pr"; MEMORY_POLICY=pr ;; esac
   # the retro's notes, retro.md, its proposals and metrics row are uncommitted here: restrict commits the tree and then
@@ -273,11 +276,13 @@ curator() {
   cstart=$(git rev-parse HEAD)
   memory_base || return 0   # the texts the apply will see, in $SCRATCH/memory-base/
   HARNESS_MEMORY_BASE=$SCRATCH/memory-base HARNESS_STATE=$STATE prompt curator
-  log "curator · $(F model "$CURATOR_MODEL")"
+  log "curator · $(F model "$CURATOR_MODEL") · deny ${CURATOR_DENY[*]}"
+  local S_DENY=("${CURATOR_DENY[@]}")
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session curator "$(F model "$CURATOR_MODEL")" "$clog" curator
   ro_rescue "$cstart" memory-ops.json curator; reverted=$RO_REVERTED   # its one output file, as the retro's proposals
   rm -f "$STATE/memory.json"   # the driver's alone: memory_pr writes it, or no file says no curation
   for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict, as the retro's: session() leaves them to us
+  x=$(printf '%s, ' "${CURATOR_DENY[@]}"); note "curator: session denied ${x%, }"
   [[ -n $reverted ]] && note "curator: reverted edits (it is read-only): $reverted"
   [[ -n $RULES_NOTE ]] && note "$RULES_NOTE"   # memory_base's: the rules half stopped, the facts half goes on
   record MET append "$clog" "$REC/metrics.jsonl" "$RUN_ID" curator "" "$(F model "$CURATOR_MODEL")" true "$S_WALL" "$S_EXIT" false curator "$S_PEAK"
