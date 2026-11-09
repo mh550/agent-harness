@@ -250,3 +250,14 @@ test("needs.mjs: main's card and open read HOME from io.env at call time", () =>
   assert.equal(loaded({ features: [] }, { HOME: "/home/b" }).home, "/home/b");
   assert.equal(loaded({ features: [], home: "/given" }, { HOME: "/home/b" }).home, "/given");
 }));
+
+// ---- verify-thin.sh: the lane's short= fact (F evidence's words) on the card (decisions/2026-11-09-thin-verify-and-comment-lines) ----
+test("needs verify_thin: the card's why names the steps with no row, per feature, from the lane's short= fact; without it the card reads as today", () => {
+  const f = fixture("verify_thin"), plain = N.card("verify_thin", f), short = "P2-01 6/7: step 7 has no row; P2-02 0/1: step 1 has no row";
+  const c = N.card("verify_thin", { ...f, short });
+  assert.equal(plain.headline, "P2 not verified: evidence too thin");
+  assert.match(plain.why, /only the evidence is short\.$/);
+  assert.equal(c.why, plain.why.replace(/short\.$/, `short: ${short}.`));
+  assert.deepEqual({ ...c, why: plain.why }, plain);
+  assert.doesNotMatch(JSON.stringify(c), /undefined|NaN|\[object/);
+});

@@ -585,3 +585,21 @@ test("curator.mjs main: apply --answers <file> --project <p> drops the project's
     assert.equal(main(["answers", join(d, "del.jsonl"), "p"], { env: {} }).out.split("\n")[1], "- delete: bash only. (r0/1): the suite runs itself");
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+// ---- a comment line is not a Gotcha (decisions/2026-11-09-thin-verify-and-comment-lines): the template's one-line HTML
+// comment under `## Gotchas` counted as an entry, so capCheck saw 15 facts as over the cap (PR #137 evicted at 14 facts
+// and the comment: at the cap by this count, not under it) ----
+const COMMENT = "<!-- At most 15 lines, one fact each, edited in place: replace a wrong or least useful line, never rewrite the section. -->";
+test("curator.mjs: the Gotchas comment line is no entry: at 15 facts and the comment a plain add is dropped and an anchored add evicts; at 14 a plain add lands; an add into a section holding only the comment lands under it", () => {
+  const withC = n => gotchas(n).replace("## Gotchas\n\n", `## Gotchas\n${COMMENT}\n\n`), full = withC(15);
+  assert.equal(sectionEntries(full, "## Gotchas").length, 15);
+  assert.equal(reasons(apply([op()], T(full), ENTRIES, RUN)), "over the cap: ## Gotchas: 16 entries, over 15");
+  const ev = apply([op({ anchor: G(3) })], T(full), ENTRIES, RUN);
+  assert.equal(`${ev.applied.length} ${ev.applied[0]?.evicted} ${reasons(ev)}`, `1 - ${G(3)} `);
+  assert.equal(`${gotchasLines(ev.texts["CLAUDE.md"]).length} ${ev.texts["CLAUDE.md"].includes(`${COMMENT}\n`)}`, "15 true");   // the comment stays
+  const at = apply([op()], T(withC(14)), ENTRIES, RUN);
+  assert.equal(`${at.applied.length} ${at.applied[0]?.evicted} ${reasons(at)} ${gotchasLines(at.texts["CLAUDE.md"]).length}`, "1 undefined  15");
+  assert.equal(capCheck("CLAUDE.md", withC(14), at.texts["CLAUDE.md"]), null);
+  const only = apply([op()], T(withC(0)), ENTRIES, RUN);
+  assert.equal(only.texts["CLAUDE.md"].split("\n").slice(2, 6).join("|"), `## Gotchas|${COMMENT}|- ${FACT}|`);
+});

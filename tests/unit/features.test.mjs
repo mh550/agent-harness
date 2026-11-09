@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { sameAsCli } from "./cli-same.mjs";
-import { deps, lint, lintNote, RULES, fixFeature, kindOf, repairList, schedule, budgetOf } from "../../lib/features.mjs";
+import { deps, evidence, lint, lintNote, RULES, fixFeature, kindOf, repairList, schedule, shortfall, budgetOf } from "../../lib/features.mjs";
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const got = (...steps) => lint([{ id: "A", milestone: "M1", steps }]).map(f => `${f.step}:${f.rule}`).join();
@@ -272,4 +272,20 @@ test("features.mjs: budgetOf reads a milestone's check_budget from the list's to
     const after = { features: [{ id: "A", milestone: "M1", passes: true }] };
     assert.deepEqual(repairList(list, after, () => true).list.check_budget, list.check_budget);
   } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// ---- the thin verify names its missing steps (decisions/2026-11-09-thin-verify-and-comment-lines): run
+// agent-harness-2026-11-08's verifier folded each feature's last step (the fast tier) into the row before it, and the
+// note said only `N1-03 6/7`. The rule (fewer rows than steps is thin) is unchanged: a row twice for one step counts twice.
+test("features.mjs: evidence names each step with no row from the rows' step cells; shortfall says `<id> <rows>/<steps>: step <n> has no row` per short feature and nothing when none is", () => {
+  const list = [{ id: "N1-03", milestone: "N1", steps: ["a", "b", "c"] }, { id: "N1-02", milestone: "N1", steps: ["d", "e"] }, { id: "N1-01", milestone: "N1", steps: ["f"] }, { id: "N2-01", milestone: "N2", steps: ["g"] }];
+  const row = (id, s) => `| ${id} | ${s} | ran | saw | yes |`;
+  const p = ["### 2026-11-08 05:39 · verify N1 · passes", "", "| feature | step | ran | saw | holds |", "|---|---|---|---|---|", row("N1-03", 1), row("**N1-03**", "**2**"), row("N1-02", 1), row("N1-02", 1), row("N1-01", 1), "",
+    "### 2026-11-08 05:11 · N1-04 · passes", "", row("N1-03", 3), ""].join("\n");   // the last row is another entry's
+  const r = evidence(list, "N1", p);
+  assert.deepEqual(r, [{ id: "N1-03", rows: 2, steps: 3, missing: [3] }, { id: "N1-02", rows: 2, steps: 2, missing: [2] }, { id: "N1-01", rows: 1, steps: 1, missing: [] }]);
+  assert.equal(shortfall(r), "N1-03 2/3: step 3 has no row");
+  assert.equal(shortfall(evidence(list, "N1", "")), "N1-03 0/3: steps 1, 2 and 3 have no row; N1-02 0/2: steps 1 and 2 have no row; N1-01 0/1: step 1 has no row");
+  assert.equal(shortfall(evidence(list, "N2", `### x · verify N2 · passes\n${row("N2-01", 1)}\n`)), "");
+  assert.equal(shortfall(evidence([{ id: "Q", milestone: "N3", steps: ["a", "b"] }], "N3", `### x · verify N3 · passes\n${row("Q", "two")}\n`)), "Q 1/2: steps 1 and 2 have no row");   // a step cell that is no number names no step
 });

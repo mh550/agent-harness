@@ -94,7 +94,8 @@
 # then as a subset (`x`), before its commit (R3-04's "suite ran" note). STUB_RUN_SUITE2=<id>: the same with suite2-<id>.txt
 # written between the two full calls, so both run in full (C1-05's suite_full 2 of suite_runs 3). STUB_RUN_FAST=<id>: that
 # feature's first coding session runs `$HARNESS_CHECK --fast` twice (the second answers cached: T2-03's suite_fast 1).
-# STUB_THIN_VERIFY=all: every verify round is thin (the escalated one too), so the milestone needs Michael (U2-06).
+# STUB_THIN_VERIFY=1: verify round 1 is thin (every row but each feature's last step's: `A 1/2: step 2 has no row; B 0/1:
+# step 1 has no row`); =all: every round is thin (the escalated one too), so the milestone needs Michael (U2-06).
 # STUB_BARRIER=<id>:<name>: that feature's first coding session touches $STUB_DIR/barriers/<name>.held, then waits
 # (≤ 180 s by the clock) for $STUB_DIR/barriers/<name> before its entry and its end, and then touches <name>.released
 # (or <name>.timedout, given up): tests/lib.sh's stub_wait <name>.held and stub_go <name> order a check's steps around
@@ -398,6 +399,7 @@ JSON
   "# Verify session")
     m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "verify-$m")
     echo "verify $m $n" >> "$RS/sessions.log"
+    printf '%s\n' "$prompt" > "$RS/verify-$m-$n.prompt.md"   # each round's prompt: the driver's logs/ copy is named by the second, which two stub rounds share
     if [[ ${STUB_VERIFY_WAIT:-} && ${STUB_VERIFY_WAIT%%:*} == "$m" ]]; then   # another lane merges meanwhile
       touch "$STUB_DIR/vwait-$HARNESS_RUN_ID-$m"
       for _ in $(seq 600); do git fetch -q origin main 2> /dev/null && git cat-file -e "origin/main:${STUB_VERIFY_WAIT#*:}" 2> /dev/null && break; sleep 0.2; done
@@ -411,9 +413,10 @@ JSON
     if [[ ${STUB_VERIFY_UNPASS_FIX:-} ]] && ! ( "$HARNESS_CHECK" > /dev/null 2>&1 ); then
       for fid in $(jq -r --arg m "$m" '.features[] | select(.milestone == $m and .kind == "fix") | .id' "$L"); do set_passes "$fid" false; done
     fi
-    # one evidence row per step of every feature of m (none in a thin round 1); passes when every feature of m still passes
+    # one evidence row per step of every feature of m; a thin round writes every row but each feature's last step's (the
+    # folded fast tier of run agent-harness-2026-11-08); passes when every feature of m still passes
     ev=$(node -e 'const [f,m,full]=process.argv.slice(1),fs=JSON.parse(require("fs").readFileSync(f)).features.filter(x=>x.milestone===m);console.log(JSON.stringify({done:fs.every(x=>x.passes),
-      rows:full==="1"?fs.flatMap(x=>x.steps.map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true}))):[]}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || ( $n -gt 1 && $STUB_THIN_VERIFY != all ) ]] && echo 1)")
+      rows:fs.flatMap(x=>x.steps.slice(0,full==="1"?x.steps.length:-1).map((s,i)=>({feature:x.id,step:i+1,ran:"check",saw:"ok",holds:true})))}))' "$L" "$m" "$([[ ! ${STUB_THIN_VERIFY:-} || ( $n -gt 1 && $STUB_THIN_VERIFY != all ) ]] && echo 1)")
     fail='[]'; [[ ${STUB_VERIFY_FAIL_ROW:-} == 1 && $m == M1 && $n == 1 ]] && fail='[{"feature":"A","step":1,"ran":"check","saw":"A fails: work-A.txt holds the line \"A 1\" the first approach wrote, where step 1 expects the session after the verify to rewrite it; the check read the stale line twice, so step 1 does not hold on this tree","holds":false}]'
     entry "$m" "$n" --arg m "$m" --arg n "$n" --argjson ev "$ev" --argjson fail "$fail" '{feature: $m, kind: "verify", outcome: (if $ev.done then "passes" else "not yet" end),
       summary: "verify \($m) (\($n))", evidence: ($ev.rows + $fail)}'

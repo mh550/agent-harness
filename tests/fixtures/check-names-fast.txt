@@ -258,6 +258,7 @@ curator.mjs: harm, a line from a tool result is dropped by the gate
 curator.mjs: main apply writes the worktree's CLAUDE.md and prints one JSON line
 curator.mjs: matchAnchor matches a line whose whitespace, backticks, emphasis or bullet differ
 curator.mjs: on a continue the union shadow is the rules tip with the facts tip's Gotchas, so neither tier's op takes the merge past 120 lines
+curator.mjs: the Gotchas comment line is no entry: at 15 facts and the comment a plain add is dropped and an anchored add evicts; at 14 a plain add lands; an add into a section holding only the comment lands under it
 curator.mjs: the curator prompt renders with no placeholder left
 curator.mjs: the op that crosses 120 lines is dropped naming the cap; the ops before and after it land
 curator.mjs: the union shadow drops a tier-2 add that takes the merged file past 120 lines while each tier alone fits
@@ -346,6 +347,7 @@ fast gate: with a part- sidecar and a mapped-only diff, --fast runs the fast tie
 fast gate: with no fast command, --fast runs the suite bare, writes green-<key> (count, wall) and prints the full green line
 fast gate: with no fast command, the next --fast call is the full form's cached line; rows full then cached
 features.mjs: budgetOf reads a milestone's check_budget from the list's top-level map (an integer ≥ 0, else none); budget prints it, exit 1 for none; repair keeps the map
+features.mjs: evidence names each step with no row from the rows' step cells; shortfall says `<id> <rows>/<steps>: step <n> has no row` per short feature and nothing when none is
 features.mjs: main gives the CLI's bytes for summary, next, poll, lanes, model and the read-only questions
 features.mjs: main throws where the CLI exits 70 (a list that is not JSON)
 features.mjs: main's exit codes are the CLI's: passes of a feature not passing is 1, of one passing 0, milestone-done, an unknown subcommand 2
@@ -601,6 +603,7 @@ memlint: a ### under a decision is part of it, a ## heading is named by itself, 
 memlint: a CLAUDE.md of 121 lines yields a size finding at line 121, MEMLINT_LINES moves the cap
 memlint: a current-rule-set header under a ## section before the first decision is a header; a symlinked file is linted
 memlint: a directory store file marked superseded with no Updated in place line yields a finding, with one none
+memlint: a one-line HTML comment under ## Gotchas is no entry: 15 facts and the comment are at the cap, not over; gotchasLines and gotchasDiff leave it out
 memlint: a stated rule is no count or run scope (1 test, as of decision 12), a month alone is a date (as of October)
 memlint: a worktree with neither DECISIONS= nor docs/decisions.md yields decisions: no store
 memlint: an unreadable CLAUDE.md is exit 1 and one stderr line naming the file and the error
@@ -708,6 +711,7 @@ needs sweep (pure): passes, verified-<m> and merged-<m> resolve too; a re-base f
 needs sweep: each reason's resolved fixture is resolved by its rule (its words), every open one stays; a second sweep moves nothing
 needs sweep: merge_failed: merged-<m> resolves milestone merged, its marker gone origin back, else kept
 needs verify_red own: a slow-tier red the fast gate let through, never main's disagreement
+needs verify_thin: the card's why names the steps with no row, per feature, from the lane's short= fact; without it the card reads as today
 needs.mjs card: a park whose question has no Files: takes session_files as where, files_from session; with Files: the question wins
 needs.mjs moveForward: two earlier items of the key become one, seen summed, asked_in every run's, both resolved as asked again in the new run
 needs.mjs synthesize: a driver_crash only for a dead driver without ended; ended, a live driver or no driver.pid make none
@@ -1001,6 +1005,9 @@ the same runner goes on to the next entry and starts it (a --brief start of the 
 the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
 the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/unit-tier/v8
 the weekly budget ends a run after the session that crossed it
+thin verify: after the escalated round the note and the card's why name the steps with no row
+thin verify: the escalated round's prompt carries the note's words under This session; the first round's has no such section; the round then holds and merges
+thin verify: the note names each step with no row, per feature, from the rows' step numbers
 tmux: TMUX_KEEP_HOURS=0: the driver window saves its scrollback and kills h-<run> when the driver exits
 tmux: a keep window keeps h-<run>, its supervisor window gone, the scrollback saved; a Ctrl-C there still closes it
 tmux: run id dot.run gets session h-dot-run, gone at keep 0

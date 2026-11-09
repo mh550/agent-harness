@@ -121,7 +121,7 @@ inside a named file. A suite omits the line when one isn't (this repo's `tests/r
 conformance check or a FAIL in a file that exited 0), and `CHECK_RERUN=auto` then reruns the whole suite.
 
 **Memory lint.** `harness memlint <project>` prints what `lib/memlint.mjs` finds in a project's memory files, one
-`<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines),
+`<file>:<line> <check>: <text>` per line: `size` (`CLAUDE.md` over `MEMLINT_LINES`, 120), `gotchas` (over 15 lines; a wrapped bullet is one, a one-line HTML comment such as the template's none),
 `derivable-count` (a stored `<n> tests`), `run-scope` (a line tied to one run: `this run`, `as of <date>`), `decisions` (no
 store, no current-rule-set header, a superseded entry without an `Updated in place` line) and `twin` (both `CLAUDE.md`
 and `.claude/CLAUDE.md`: Claude Code loads both; each is linted on its own cap). Every run segment starts
