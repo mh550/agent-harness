@@ -9,6 +9,15 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-08 22:58 · N1-04 · passes
+
+N1 review on Opus (attempt 1): 0 Critical, 1 Important, 8 Minor. Attempt 2 fixes the verify's step-3 miss: docs/architecture.md's prompts/curator.md row now names the three target files, the per-op cap, tier 2 on harness-rules/<run> in a memory rules: <run> PR Michael merges, and tier 3 in both bodies; the review file records it.
+
+- **Files:** docs/architecture.md, docs/plans/2026-11-08-N1-review.md
+- **Verified:** Read prompts/curator.md's N1 diff against the row; full suite (check.sh) green in 727 s, 1911 tests; fast tier green in 119 s, 1073 tests, both after the architecture.md edit. Check names unchanged since attempt 1: 32 added, 19 removed, as the decision file says.
+- **Tests:** 1911 → 1911
+- *01-N1-04 · claude-opus-5-5*
+
 ### 2026-11-08 22:42 · verify N1 · not yet
 
 N1-01, N1-02, N1-03 hold: full suite 1911/1911 (734 s), fast tier 1073/1073, each step's targeted run green, the unit files 91/91, code and tests read. N1-04 step 3 fails: docs/architecture.md's prompts/curator.md component row was left unchanged in N1 while the prompt gained tier 2 on harness-rules/<run> and .claude/CLAUDE.md. N1-01 step 3's `1 proposals` is 0, as the brief says.

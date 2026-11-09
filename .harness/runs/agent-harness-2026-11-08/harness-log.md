@@ -35,3 +35,7 @@
 - 2026-11-08 22:09 · verify N1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-08 22:20 · context.md for N1: 14567 bytes
 - 2026-11-08 22:42 · verify N1: N1-04 failed the re-check, back in the queue (one more attempt)
+- 2026-11-08 22:42 · review N1-04: 1489 changed lines, at or over 0; opus
+- 2026-11-08 22:42 · context.md for N1-04: 8094 bytes, 3 items left out
+- 2026-11-08 22:58 · N1-04: suite ran 2x (846 s) in the session
+- 2026-11-08 22:58 · N1-04 · claude-opus-5-5 · passes=true · 15 min · 4/8 passing · tests 1911
