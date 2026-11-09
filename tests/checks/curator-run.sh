@@ -43,6 +43,8 @@ check "curator: its run.log line names the deny list and harness-log.md has one 
 check "curator: the rendered prompt names memory-ops.json, the three ops, the write gate and that it writes no project file" \
   'P=$(st cu)/prompt-curator.md; grep -F ".harness/runs/cu/memory-ops.json" "$P" > /dev/null && grep -F "/memory-base/CLAUDE.md" "$P" > /dev/null && grep -F "\"add\"|\"replace\"|\"delete\"" "$P" > /dev/null && grep -F "write gate" "$P" > /dev/null \
   && grep -F "never a file" "$P" > /dev/null && [[ $(grep -c "{{" "$P") == 0 ]]'
+check "curator: with no answers file in the ledger the prompt's block of Michael's verdicts says (none yet)" \
+  'P=$(st cu)/prompt-curator.md; [[ ! -e $T/ledger/memory-answers.jsonl ]] && sed -n "/^## What Michael declined and accepted$/,/^## /p" "$P" | grep -x "(none yet)" > /dev/null'
 
 # ce: an empty list
 git -C "$T/origin.git" update-ref refs/heads/main "$main0"

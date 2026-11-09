@@ -1,6 +1,6 @@
 # The memory session and the answers: a denied curator, an `auto` that keeps its body, answers the next curator reads
 
-*(2026-11-08, run agent-harness-2026-11-08, N2 (the deny-list row by N2-01, the body-refresh row by N2-02); spec
+*(2026-11-08, run agent-harness-2026-11-08, N2 (the deny-list row by N2-01, the body-refresh row by N2-02, the answers row by N2-03); spec
 `docs/specs/2026-11-07-memory-followup.md` §N2; journal/learning/2026-11-07-memory-curator.md §11 answer 7 (build the
 deny list: `Bash(git push:*)`, `Bash(gh:*)`; `memory_foreign` stays the second layer) and §13 item 3; Claude Code's
 https://code.claude.com/docs/en/cli-reference (`--disallowedTools`, "Deny rules", one quoted rule per argument;
@@ -81,3 +81,52 @@ decisions/2026-11-07-memory-tiers (the known limit this closes).)*
   retries anyway); merging a reused PR that is already pushed on a bare body refresh with no new tier-1 commit (a new
   behaviour the spec does not ask for: only a new tier-1 commit merges, as before); clearing `PASS_HEAD` on a failed
   edit to stop the merge (it would hide the pushed commit from the decision that reads it).
+- **Finding (N2-03):** tier 2 and tier 3 were the least instrumented decisions: a rules PR's merge or close is counted
+  (N1-01), but a tier-3 proposal is no commit, a rule Michael took out of a rules PR before merging leaves no trace, and
+  nothing stopped the next curator from proposing a rule he declined last week (§12 of the learning file).
+- **Choice (N2-03):**
+  - `harness memory accept|decline <run>/<n> --why "<text>"` (lib/memory.sh, the work in lib/memory.mjs) is Michael's
+    verdict on a numbered rule or proposal of `ledger/<project>/<run>/memory-result.json` (found by `<run>` across the
+    ledger's projects; two projects with one run id is an error line). One row of `ledger/memory-answers.jsonl`
+    (*default* name, beside `memory.jsonl` and `retro-backlog.jsonl`): `{run, project, n, tier, verdict, why, file,
+    section, text, key, at}`, `verdict` `accepted` or `declined`, the item's `text`, `section` and `key` copied so the
+    row stands alone; an earlier row for the same item (`<run>/<n>` and its `key`: *default*, since a continue numbers
+    its items from 1 again, so an old number may name another item, whose answer then sits beside the first's) is
+    replaced (written whole, renamed), under the ledger's
+    lock and, with `LEDGER_COMMIT=1`, one ledger commit of that file (`ledger: memory decline <run>/<n>`), as `harness
+    backlog set` is. It prints `memory: <run>/<n> declined · <section> · <text cut to 60>`. An unknown run, an `<n>`
+    the run has not (tier 1 is never numbered, so a tier-1 `<n>` is one of these), a missing `--why`, or a why that is
+    not one line of at most 300 characters (`WHY_MAX`) is one error line, exit 1, and no row. **The verbs are
+    Michael's** (they write the ledger), as `backlog set` is; `harness memory` and `harness memory proposals <run>`
+    (the numbered items with their tier, file, section, text and any verdict: *default*, so he need not open the PR to
+    find `<n>`) are the listings.
+  - *Default*: `<n>` is the numbering of the run's last segment, the one the ledger's `memory-result.json` holds (each
+    segment numbers from 1); an answer to an earlier segment's item is given before the run is continued.
+  - *Default*: both verdicts close the item. `apply` (lib/curator.mjs) takes the project's rows (`--answers <file>
+    --project <p>`, flags because the fifth positional is the rules base) and drops a tier-2 or tier-3 op whose key is
+    an answered item's, after the gate and the dedupe and before the tier-3 proposal: `declined by Michael (<run>/<n>:
+    <why cut to 80>)` or `accepted by Michael (<run>/<n>)` (an accepted line is his to place by hand; once placed, the
+    "already in section" rule drops it anyway). The reason reaches both bodies' *Dropped* and the notes as every drop
+    does, so a curator that keeps proposing a declined rule shows in the drop rate.
+  - The key alone decides, not the section: the same sentence under another heading is the same rule. The key is
+    `lineKey` (the anchor normalizer: marker and suffix cut, `factKey`'s first 40 characters) of the op's text; a
+    delete's is its anchor's, marked `delete ` (*default*), so declining a deletion never drops an add of that line.
+    Tier-1 ops are never matched: a fact is not a rule Michael declines; a wrong fact is a `delete` op's job.
+  - The next curator is told: `prompts/curator.md`'s `## What Michael declined and accepted` carries
+    `{{MEMORY_ANSWERS}}`, which `curator()` renders (`memory_answers` in lib/prompt.sh, `curator.mjs answers <file>
+    <project> --max-bytes 4000`): `Michael declined (never propose again):` then `Michael accepted (already his to
+    place):`, newest first, each `- <text> (<run>/<n>)` (a decline with `: <why>`; a delete's as `delete: <line>`), cut oldest first with a line saying
+    how many were left out; `(none yet)` for no rows. *Default*: the run record gets no copy of the answers: what the
+    curator was told is in the state dir's `prompt-curator.md`, and the ledger holds the rows.
+  - Counted: `harness memory` adds `answers: accepted <a> · declined <d>` over the shown runs' latest rows (a replaced
+    verdict counted once) after the two tier lines, and marks a run's first line ` · <k> answered`; with no
+    `memory-answers.jsonl` the listing runs as before with `answers: accepted 0 · declined 0`. The rows carry `tier` and
+    `section`, so acceptance per tier and per section is readable from the ledger when F3e reads them.
+  - Checks: tests/unit/curator.test.mjs (`answers`, `apply`'s drop, its CLI), tests/unit/memory.test.mjs (the row, the
+    replace, the tally, the proposals view, memoryView's line), tests/checks/memory-branch.sh (slow: `proposals`,
+    `decline` and its commit, the error lines, the later run `mn` dropping the declined rule with no rules PR and its
+    prompt carrying the line), tests/checks/curator-run.sh (`(none yet)`). The spec's `mp/2` proposal does not exist:
+    `stub-three-ops` has no tier-3 op (N1's `0 proposals`), so the checks name `mp/1` alone.
+- **Rejected (N2-03):** a verdict matched by section (the same rule under another heading would come back); a copy of
+  the answers in the run record (the ledger and the rendered prompt already hold it); a verdict on a tier-1 fact (the
+  delete op is the tool); a session writing the answers file (the verbs are Michael's).

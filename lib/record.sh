@@ -474,7 +474,9 @@ memory_pr() {
   memory_wt_gone
   git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
     || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
-  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" > "$r" 2>> "$STATE/run.log"
+  # Michael's verdicts close their rules and proposals by key (this project's rows of the ledger's memory-answers.jsonl)
+  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" \
+    --answers "$LEDGER/memory-answers.jsonl" --project "$PROJECT_NAME" > "$r" 2>> "$STATE/run.log"
   # a stopped rules half commits nothing: its tier-2 ops are dropped (named in both bodies), the proposals renumbered
   [[ -n $RULES_STOP && -s $r ]] && jq -c '.dropped += [.rules[]? | {op: del(.n), reason: "the rules half stopped; its note says why"}]
     | .rules = [] | .ruleFiles = [] | .ruleTexts = {} | .proposed |= (to_entries | map(.value + {n: (.key + 1)}))' "$r" > "$r.t" 2> /dev/null && mv "$r.t" "$r"

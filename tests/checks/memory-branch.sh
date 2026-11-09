@@ -73,6 +73,29 @@ check "memory PR: summary.json's memory holds the counts and both URLs, harness 
   && grep -xF "| Memory | 2 applied · 1 rules · 0 dropped · 0 proposals · PR $u · rules PR $ru |" "$T/mp-report.out" > /dev/null \
   && [[ -s $(rec mp)/memory-ops.json ]] && jq -e "(.rules | map(.n)) == [1] and (.ruleFiles == [\"CLAUDE.md\"]) and (has(\"ruleTexts\") | not)" "$(rec mp)/memory-result.json" > /dev/null'
 
+# Michael's verdict on mp's rule (N2-03): proposals lists the numbered items (three-ops has no tier-3 op: mp/1 alone),
+# decline writes one memory-answers.jsonl row and one ledger commit; mp's continue and mn's run (below) meet it, then it goes
+"$H" memory proposals mp > "$T/mp-props.out" 2>&1; pp=$?
+"$H" memory decline mp/1 --why "the suite runs itself" > "$T/mp-decline.out" 2>&1; pd=$?
+HARNESS_TTY=0 "$H" memory > "$T/mp-memory-ans.out" 2>&1; mv "$T/gh.log" "$T/gh-mp-ans.log" 2> /dev/null
+"$H" memory proposals mp > "$T/mp-props2.out" 2>&1
+check "harness memory proposals: a run's numbered rules and proposals, each <run>/<n> with its tier, file, section and text, then its verdict" \
+  '[[ $pp == 0 && $(cat "$T/mp-props.out") == "mp/1 · rules · CLAUDE.md · ## Code rules · stub proposal: run the stub suite before each commit" ]] \
+  && [[ $(cat "$T/mp-props2.out") == "mp/1 · rules · CLAUDE.md · ## Code rules · stub proposal: run the stub suite before each commit · declined: the suite runs itself" ]]'
+check "harness memory decline: one memory-answers.jsonl row and one ledger commit, its line printed; harness memory tallies it and marks the run" \
+  '[[ $pd == 0 && $(cat "$T/mp-decline.out") == "memory: mp/1 declined · ## Code rules · stub proposal: run the stub suite before each commit" ]] \
+  && jq -e -s "length == 1 and (.[0] | keys_unsorted == [\"run\",\"project\",\"n\",\"tier\",\"verdict\",\"why\",\"file\",\"section\",\"text\",\"key\",\"at\"] and .run == \"mp\" and .project == \"proj\" and .n == 1 and .tier == 2 and .verdict == \"declined\" and .why == \"the suite runs itself\")" "$T/ledger/memory-answers.jsonl" > /dev/null \
+  && [[ $(git -C "$T/ledger" log --format=%s -- memory-answers.jsonl) == "ledger: memory decline mp/1" && -z $(git -C "$T/ledger" status --porcelain -- memory-answers.jsonl) ]] \
+  && [[ $(tail -1 "$T/mp-memory-ans.out") == "answers: accepted 0 · declined 1" ]] && grep -E "^mp · proj · rules · .* · open · 1 answered$" "$T/mp-memory-ans.out" > /dev/null'
+"$H" memory accept mp/9 --why x > "$T/mp-acc9.out" 2>&1; e9=$?
+"$H" memory decline mp/1 > "$T/mp-nowhy.out" 2>&1; ew=$?
+"$H" memory proposals nosuchrun > "$T/mp-norun.out" 2>&1; er=$?
+check "harness memory accept|decline: an <n> the run has not, no --why or an unknown run is one error line, exit 1, and no row" \
+  '[[ $e9 == 1 && $(cat "$T/mp-acc9.out") == "memory: mp has no item 9 (its rules and proposals: mp/1; tier 1 is not numbered)" ]] \
+  && [[ $ew == 1 && $(wc -l < "$T/mp-nowhy.out") == 1 ]] && grep -x "memory: decline mp/1 needs --why \"<text>\".*" "$T/mp-nowhy.out" > /dev/null \
+  && [[ $er == 1 && $(cat "$T/mp-norun.out") == "memory: no run nosuchrun in the ledger (no <project>/nosuchrun/memory-result.json)" ]] \
+  && [[ $(wc -l < "$T/ledger/memory-answers.jsonl") == 1 ]]'
+
 # mp's continue: the open memory PR's head is the base; A's and B's are already there, C's is the one new line
 STUB_CURATOR_OPS=continue STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue mp --foreground > "$T/mp2.out" 2>&1
 mv "$T/gh.log" "$T/gh-mp2.log" 2> /dev/null
@@ -93,15 +116,35 @@ p=$(mpr mp); (cd "$T/proj" && "$HARNESS_GH" pr merge "https://example.test/pr/${
 HARNESS_TTY=0 "$H" memory --last 5 proj > "$T/mp-memory3.out" 2>&1; mv "$T/gh.log" "$T/gh-mp-merge.log" 2> /dev/null
 check "harness memory: the run's facts and rules PRs are a line each with its tier, then one tally line per tier; the facts PR merged unchanged after its merge" \
   'p=$(mpr mp) && u=$(url "$p") && ru=$(url "$(rpr mp)") && [[ -f $p.merged ]] && nl=$'"'"'\n'"'"' \
-  && [[ $(cat "$T/mp-memory.out") == "mp · proj · rules · 1 · ## Code rules · $ru · open${nl}mp · proj · facts · 2/0/0 · $u · open${nl}facts: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1" ]] \
-  && [[ $(cat "$T/mp-memory2.out") == "mp · proj · rules · 0 · — · $ru · open${nl}mp · proj · facts · 1/3/0 · $u · open${nl}facts: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1" ]] \
-  && [[ $(cat "$T/mp-memory3.out") == "mp · proj · rules · 0 · — · $ru · open${nl}mp · proj · facts · 1/3/0 · $u · merged unchanged${nl}facts: merged unchanged 1 · edited 0 · closed 0 · open 0${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1" ]] \
+  && [[ $(cat "$T/mp-memory.out") == "mp · proj · rules · 1 · ## Code rules · $ru · open${nl}mp · proj · facts · 2/0/0 · $u · open${nl}facts: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 0" ]] \
+  && [[ $(cat "$T/mp-memory2.out") == "mp · proj · rules · 0 · — · $ru · open · 1 answered${nl}mp · proj · facts · 1/3/0 · $u · open${nl}facts: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 1" ]] \
+  && [[ $(cat "$T/mp-memory3.out") == "mp · proj · rules · 0 · — · $ru · open · 1 answered${nl}mp · proj · facts · 1/3/0 · $u · merged unchanged${nl}facts: merged unchanged 1 · edited 0 · closed 0 · open 0${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 1" ]] \
   && grep -x "gh pr view $u --json state,mergedAt,commits" "$T/gh-mp-merge.log" > /dev/null'
 check "ledger: each memory PR is one row of memory.jsonl with its tier and sections, committed with the ledger's paths" \
   'p=$(mpr mp) && ru=$(url "$(rpr mp)") && [[ $(jq -sc "map(select(.run == \"mp\")) | map({project, tier, url, ops, applied, rules, dropped, proposed, sections})" "$T/ledger/memory.jsonl") == "[{\"project\":\"proj\",\"tier\":\"facts\",\"url\":\"https://example.test/pr/${p##*-}\",\"ops\":4,\"applied\":1,\"rules\":null,\"dropped\":3,\"proposed\":0,\"sections\":[\"## Gotchas\"]},{\"project\":\"proj\",\"tier\":\"rules\",\"url\":\"$ru\",\"ops\":4,\"applied\":null,\"rules\":0,\"dropped\":3,\"proposed\":0,\"sections\":[]}]" ]] \
   && [[ $(git -C "$T/ledger" log --format=%s -- memory.jsonl | grep -c "^ledger: mp (proj): ") == 2 && -z $(git -C "$T/ledger" status --porcelain -- memory.jsonl) ]] \
   && [[ $(hlog mp | grep -c " · ledger: memory PR https://example.test/pr/${p##*-} in memory.jsonl (2 applied · 0 dropped · 0 proposals)$") == 1 ]] \
   && [[ $(hlog mp | grep -c " · ledger: memory rules PR $ru in memory.jsonl (1 rules · ## Code rules)$") == 1 ]]'
+
+# mn: harness-memory/mn already on origin with no PR (an earlier push whose pr create failed): it is the base, its PR opens
+hand() {   # <run> [<path>] → harness-memory/<run> pushed by hand, one commit past seed3 (that also adds <path>: not the driver's)
+  local w=$T/hand-$1; rm -rf "$w"; git clone -q "$O" "$w" && git -C "$w" checkout -q --detach "$seed3" \
+    && echo "- an earlier push of this memory branch keeps its own line ($1 2026-11-01)" >> "$w/CLAUDE.md" \
+    && { [[ -z ${2:-} ]] || { mkdir -p "$(dirname "$w/$2")" && echo "# not memory" > "$w/$2" && git -C "$w" add -- "$2"; }; } \
+    && git -C "$w" -c user.name=m -c user.email=m@test commit -qam "memory: $1: 1 facts" && git -C "$w" push -q origin "HEAD:refs/heads/harness-memory/$1" && git -C "$w" rev-parse HEAD
+}
+git -C "$O" update-ref refs/heads/main "$seed3"; mn0=$(hand mn)
+run mn STUB_FACTS=A,B STUB_PROPOSE=A STUB_CURATOR_OPS=three-ops
+check "memory PR: a memory branch on origin with no PR is the base, and its PR opens on it" \
+  'p=$(mpr mn) && [[ -n $mn0 && $(git -C "$O" rev-parse harness-memory/mn~1) == "$mn0" ]] \
+  && git -C "$O" show harness-memory/mn:CLAUDE.md | gotchas | grep -F "an earlier push of this memory branch" > /dev/null \
+  && [[ $(git -C "$O" show harness-memory/mn:CLAUDE.md | gotchas | wc -l) == 6 ]] && [[ $(hlog mn | grep -c " · memory PR opened; left for Michael (MEMORY_POLICY=pr) · ") == 1 ]]'
+check "memory rules PR: a rule Michael declined is dropped by a later run with his why and opens no rules PR; its curator prompt carries the line" \
+  'p=$(mpr mn) && [[ $(hlog mn | grep -c " · memory: dropped add ## Code rules (declined by Michael (mp/1: the suite runs itself))$") == 1 ]] \
+  && [[ $(hlog mn | grep -c " · memory rules PR: none (no tier-2 change)$") == 1 && -z $(rpr mn) ]] \
+  && sed -n "/^## Dropped$/,\$p" "$p.body" | grep -F "stub proposal: run the stub suite before each commit — declined by Michael (mp/1: the suite runs itself)" > /dev/null \
+  && sed -n "/^Michael declined (never propose again):$/,/^$/p" "$(st mn)/prompt-curator.md" | grep -xF -- "- stub proposal: run the stub suite before each commit (mp/1): the suite runs itself" > /dev/null'
+git -C "$T/ledger" rm -q memory-answers.jsonl && git -C "$T/ledger" commit -qm "the answers go: the runs below curate the rule afresh"
 
 # mc: a project at 15 Gotchas lines, a 16th add without an anchor and a replace of the 2nd line beside it
 git -C "$O" update-ref refs/heads/main "$seed15"
@@ -132,20 +175,6 @@ check "memory PR: the same add with an anchor lands as one edit" \
   && [[ $(hlog me | grep -c " · memory: evicted \"- seeded gotcha 03: the seeded project keeps its fact number 3 (seed 2026-11-01)\" for add ## Gotchas$") == 1 ]] \
   && [[ $(hlog me | grep -c " · memory: 3 ops · 1 facts · 0 rules · 2 dropped · 1 proposals$") == 1 ]] \
   && [[ $(git -C "$O" show "$seed15:CLAUDE.md" > "$T/me-main.md" && node -e "import(\"'$HERE'/../lib/memlint.mjs\").then(m => { const f = require(\"fs\"); console.log(JSON.stringify(m.gotchasDiff(f.readFileSync(process.argv[1], \"utf8\"), f.readFileSync(process.argv[2], \"utf8\")))) })" "$T/me-main.md" "$T/me-claude.md") == "{\"added\":0,\"edited\":1,\"deleted\":0}" ]]'
-
-# mn: harness-memory/mn already on origin with no PR (an earlier push whose pr create failed): it is the base, its PR opens
-hand() {   # <run> [<path>] → harness-memory/<run> pushed by hand, one commit past seed3 (that also adds <path>: not the driver's)
-  local w=$T/hand-$1; rm -rf "$w"; git clone -q "$O" "$w" && git -C "$w" checkout -q --detach "$seed3" \
-    && echo "- an earlier push of this memory branch keeps its own line ($1 2026-11-01)" >> "$w/CLAUDE.md" \
-    && { [[ -z ${2:-} ]] || { mkdir -p "$(dirname "$w/$2")" && echo "# not memory" > "$w/$2" && git -C "$w" add -- "$2"; }; } \
-    && git -C "$w" -c user.name=m -c user.email=m@test commit -qam "memory: $1: 1 facts" && git -C "$w" push -q origin "HEAD:refs/heads/harness-memory/$1" && git -C "$w" rev-parse HEAD
-}
-git -C "$O" update-ref refs/heads/main "$seed3"; mn0=$(hand mn)
-run mn STUB_FACTS=A,B STUB_PROPOSE=A STUB_CURATOR_OPS=three-ops
-check "memory PR: a memory branch on origin with no PR is the base, and its PR opens on it" \
-  'p=$(mpr mn) && [[ -n $mn0 && $(git -C "$O" rev-parse harness-memory/mn~1) == "$mn0" ]] \
-  && git -C "$O" show harness-memory/mn:CLAUDE.md | gotchas | grep -F "an earlier push of this memory branch" > /dev/null \
-  && [[ $(git -C "$O" show harness-memory/mn:CLAUDE.md | gotchas | wc -l) == 6 ]] && [[ $(hlog mn | grep -c " · memory PR opened; left for Michael (MEMORY_POLICY=pr) · ") == 1 ]]'
 
 # mk: harness-memory/mk on origin, its memory PR closed by Michael: no curator, the branch as it was
 git -C "$O" update-ref refs/heads/main "$seed3"; mk0=$(hand mk)

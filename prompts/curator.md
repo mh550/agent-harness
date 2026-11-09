@@ -42,4 +42,11 @@ Write `{{RUN_DIR}}/memory-ops.json`: a JSON array, `[]` when the run taught noth
   A protected change you think is needed is an op with `tier: 3`, which both PR bodies carry as a proposal.
 - Fewer is better: a longer file is followed less. Prefer a `replace` that sharpens a line to an `add` beside it.
 
+## What Michael declined and accepted
+
+His verdicts on earlier runs' rules and proposals (`harness memory accept|decline <run>/<n>`). Never propose a
+declined one again, nor an accepted one (it is his to place): the driver drops an op whose text says the same as either.
+
+{{MEMORY_ANSWERS}}
+
 Your final message: at most 60 words, how many ops and why.

@@ -275,7 +275,8 @@ curator() {
   rec_commit "HARNESS: retro"; sync_record
   cstart=$(git rev-parse HEAD)
   memory_base || return 0   # the texts the apply will see, in $SCRATCH/memory-base/
-  HARNESS_MEMORY_BASE=$SCRATCH/memory-base HARNESS_STATE=$STATE prompt curator
+  # Michael's verdicts (harness memory accept|decline) in its prompt; memory_pr's apply drops what they closed
+  HARNESS_MEMORY_ANSWERS=$(memory_answers) HARNESS_MEMORY_BASE=$SCRATCH/memory-base HARNESS_STATE=$STATE prompt curator
   log "curator · $(F model "$CURATOR_MODEL") · deny ${CURATOR_DENY[*]}"
   local S_DENY=("${CURATOR_DENY[@]}")
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session curator "$(F model "$CURATOR_MODEL")" "$clog" curator

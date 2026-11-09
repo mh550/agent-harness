@@ -516,16 +516,16 @@ test("summary.mjs memory: memoryView prints the tier in each line and one tally 
     "https://example.test/pr/3": ghPr("CLOSED"), "https://example.test/pr/4": ghPr("OPEN", "memory: d: 2 facts") };
   assert.equal(memoryView(rows, gh, 10).join("\n"), ["d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "c · p · facts · 2/1/3 · https://example.test/pr/3 · closed",
     "b · p · facts · 2/1/2 · https://example.test/pr/2 · merged edited", "a · p · facts · 2/1/1 · https://example.test/pr/1 · merged unchanged",
-    "facts: merged unchanged 1 · edited 1 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0"].join("\n"));
+    "facts: merged unchanged 1 · edited 1 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0"].join("\n"));
   assert.equal(memoryView(rows, gh, 2).join("\n"), ["d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "c · p · facts · 2/1/3 · https://example.test/pr/3 · closed",
-    "facts: merged unchanged 0 · edited 0 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0"].join("\n"), "at most n, the line over those shown");
+    "facts: merged unchanged 0 · edited 0 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0"].join("\n"), "at most n, the line over those shown");
   // gh could not say: unknown, counted on its own
-  assert.equal(memoryView([rows[0]], {}, 10).join("\n"), "a · p · facts · 2/1/1 · https://example.test/pr/1 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0");
+  assert.equal(memoryView([rows[0]], {}, 10).join("\n"), "a · p · facts · 2/1/1 · https://example.test/pr/1 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\nanswers: accepted 0 · declined 0");
   assert.equal(memoryView([], {}, 10).join("\n"), "(none)");
   // a rules row: its count and the sections it touched; its state read by the rules subject; counted on the rules line
   const rr = { run: "d", project: "p", tier: "rules", url: "https://example.test/pr/6", ops: 3, rules: 1, dropped: 0, proposed: 0, sections: ["## Code rules"], at: "2026-11-04T10:00:01Z" };
   assert.equal(memoryView([rows[3], rr], { ...gh, "https://example.test/pr/6": ghPr("MERGED", "memory: d: 1 rules") }, 10).join("\n"), ["d · p · rules · 1 · ## Code rules · https://example.test/pr/6 · merged unchanged",
-    "d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "facts: merged unchanged 0 · edited 0 · closed 0 · open 1", "rules: merged unchanged 1 · edited 0 · closed 0 · open 0"].join("\n"));
+    "d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "facts: merged unchanged 0 · edited 0 · closed 0 · open 1", "rules: merged unchanged 1 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0"].join("\n"));
   // a project's rows only; none of it is (none); an equal at lists the later row first; memory-urls asks gh about exactly those shown
   const q = { ...row("e", 5, "2026-11-04T10:00:00Z"), project: "q" };
   assert.equal(memoryView([...rows, q], gh, 10, "q")[0], "e · q · facts · 2/1/5 · https://example.test/pr/5 · unknown");
@@ -536,6 +536,6 @@ test("summary.mjs memory: memoryView prints the tier in each line and one tally 
     writeFileSync(join(d, "m.jsonl"), [...rows, q].map(r => JSON.stringify(r)).join("\n") + "\n{half\n");
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "2"]), { rc: 0, out: "https://example.test/pr/5\nhttps://example.test/pr/4\n" });
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "10", "q"]), { rc: 0, out: "https://example.test/pr/5\n" });
-    assert.equal((await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1"])).out, "e · q · facts · 2/1/5 · https://example.test/pr/5 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\n");
+    assert.equal((await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1"])).out, "e · q · facts · 2/1/5 · https://example.test/pr/5 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\nanswers: accepted 0 · declined 0\n");
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
