@@ -79,3 +79,4 @@
 - 2026-11-09 01:20 · memory: dropped add ## Gotchas (not stated by entries.jsonl:4)
 - 2026-11-09 01:20 · memory PR: none (no tier-1 change); the body is in memory.md
 - 2026-11-09 01:20 · summary.json and report.md kept in the state dir (harness report reads them after gc)
+- 2026-11-09 01:20 · record PR merged into main · https://github.com/mh550/agent-harness/pull/153
