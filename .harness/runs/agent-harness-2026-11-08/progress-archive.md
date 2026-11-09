@@ -9,6 +9,24 @@ How to read the feature list: `feature_list.json` is in priority order; a featur
 
 How to steer: edit `INBOX.md` in this directory from the phone or `harness answer`. A line `status: stop <why>` or `status: pause` on top stops or pauses the run; answers to questions go under `## Answers`; a brief under the steering comment changes scope for the next session. The brief says: proceed on every default marked *default*, record them, never park.
 
+### 2026-11-09 00:20 · N2-03 · passes
+
+harness memory proposals <run> and accept|decline <run>/<n> --why: one ledger/memory-answers.jsonl row per item under the ledger lock and commit (lib/memory.sh, new lib/memory.mjs); harness memory's answers: tally and · k answered; curator.mjs answersText renders {{MEMORY_ANSWERS}} and apply --answers drops an answered tier-2/3 op by key. Decision row, architecture, README.
+
+- **Files:** lib/memory.sh, lib/memory.mjs, lib/curator.mjs, lib/summary.mjs, lib/prompt.sh, lib/driver.sh, lib/record.sh, bin/harness, prompts/curator.md, tests/unit/memory.test.mjs, tests/unit/curator.test.mjs, tests/unit/summary.test.mjs, +7 more
+- **Verified:** Units red first (no lib/memory.mjs), then 73/73 for memory, curator, summary. memory-branch + curator-run red first (7 failing), then 47/47 (twice, the second after the review fixes). check.sh --fast green, 1082 tests. bash -n on all 7 shell files, node --check on all 3 .mjs.
+- **Tests:** 1916 → 1930
+- **Dead end:** the decline before mp's continue, with mn left where it was — me's tier-3 Live system op has the same text as the declined rule; the key alone decides, so me's proposal dropped. mn now runs right after mp's checks, and the answers file is git rm'd before mc
+- **Discovery** (affects N2-04): memory-branch.sh: mn now runs right after mp's continue and meets mp/1's decline; memory-answers.jsonl is git rm'd from the ledger right after mn, so mc..md curate the rule afresh
+- **Discovery** (affects N2-04): apply's CLI takes --answers <file> --project <p> (flags, since the 5th positional is the rules base); the answers drop runs after the gate and dedupe, before the tier-3 proposal
+- **Discovery** (affects N2-04): An answer's item is <run>/<n> plus its key (upsert, latestAnswers, proposalsView): a continue renumbers from 1, so an old n can name another item (review finding, fixed)
+- **Discovery** (affects N2-04): The ledger's <run>/memory-result.json goes stale when a later segment writes none: curator() rm's the record's copy, but ledger()'s cp -r deletes nothing (review, not fixed)
+- **Discovery** (affects project): curator.mjs apply's CLI pulls --answers <file> --project <p> out of its args before the 4/5/7 arity check; memory_pr passes both from $LEDGER/memory-answers.jsonl (agent-harness-2026-11-08 2026-11-09)
+- **Question for Michael:** The answers match by lineKey, which is factKey's first 40 normalized characters: declining 'Never merge a PR before its verify passes and the suite is green' also drops a later 'Never merge a PR before its verify passes; a docs PR may skip it'. The spec asked for lineKey, so it stands (*default*). Should the gate match the whole normalized text instead? That is narrower, and a reworded rule could get through. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-1/lib/curator.mjs:40, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-08/slot-1/journal/decisions/2026-11-08-memory-session-and-answers.md
+- **Proposed change:** N2-03 step 2 expects mp's proposal as mp/2, but stub-three-ops has no tier-3 op (N1's 0 proposals). The check lists mp/1 alone, accept mp/9 is the error case, and the verify should read that step with this reason.
+- **Proposed change:** N2-04 could look at the review's two Minor findings left open: a declined delete is matched only by a delete (a replace of that line still gets through), and apply's --answers takes the next word blindly (CLI only; memory_pr passes both flags in order).
+- *04-N2-03 · claude-opus-5-5*
+
 ### 2026-11-08 23:54 · N2-02 · passes
 
 Under MEMORY_POLICY=auto a reused facts PR whose gh pr edit failed is no longer merged: memory_edit returns gh's status, memory_pass returns 1 for that case, memory_pr merges only on 0 and gives one note `memory PR: its body was not updated (see run.log); not merged (MEMORY_POLICY=auto), left open · <url>`. The next segment refreshes and merges. Docs, templates, decisions updated.
