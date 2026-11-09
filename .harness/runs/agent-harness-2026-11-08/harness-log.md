@@ -34,3 +34,4 @@
 - 2026-11-08 22:09 · merged main into harness-lane/agent-harness-2026-11-08/N1
 - 2026-11-08 22:09 · verify N1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-08 22:20 · context.md for N1: 14567 bytes
+- 2026-11-08 22:42 · verify N1: N1-04 failed the re-check, back in the queue (one more attempt)
