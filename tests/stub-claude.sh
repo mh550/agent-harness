@@ -38,6 +38,16 @@
 # STUB_CURATOR_PUSH=1: the curator commits a Gotchas line and pushes it to harness-memory/<run> (`pushed <run>` in
 # $STUB_DIR/curator-push.log), unless its argv carries --disallowedTools with Bash(git push:*): then it writes `denied
 # <run>` and pushes nothing. No denial event is printed: none has been captured from the real CLI (N2-01).
+# STUB_MEMORY_REVIEW=hold|evict-fails|thin|declined|none|bad|limit (unset: hold): the memory reviewer writes memory-review.json from
+# the run's memory-review-input.json: four holding rows per id (hold); as hold, but q 2 of every add with an anchor and
+# every delete fails, ran the `git grep -nF -e '<the anchor's first backticked span, else its first 40 characters>' --
+# . ':!.harness/runs'` line, saw `7 files: …` (evict-fails, PR #137's shape); three rows for the first id (thin); no file
+# (none); `{not json` (bad); the real usage-limit refusal, nothing written (limit); as hold, but q 4 of every item whose
+# text (its (<run> <date>) suffix aside) is a declined row's text in the answers file its prompt names fails, saw
+# `declined by Michael (<run>/<n>)` (declined). STUB_MEMORY_REVIEW_EDITS=1: it also
+# edits CLAUDE.md and writes lib/review-hack.sh (restrict reverts both, R1-01); =ops: it rewrites the first op's text in
+# the driver's $HARNESS_SCRATCH/memory-ops.json (still a valid op), outside the tree (the landing's check refuses it);
+# =answers: it appends a row for another project to the answers file its prompt names (only the input sums see it).
 # Every headless session records its argv in $STUB_DIR/argv/<n>-<kind>.args (one per line, the prompt as <prompt>,
 # then PWD= and HARNESS_RUN_ID=; <kind> from the prompt's first line: coding, verify, retro, curator, entry-resume, …).
 # STUB_FACTS=<id>[,<id>…]: each one's first coding entry has its own project fact, naming <id> (M2-04).
@@ -475,6 +485,31 @@ JSON
           sed -i "s/{{LINE:$id}}/$(jq -s --arg i "$id" 'map(.feature == $i and .kind == "coding") | (index(true) // -1) + 1' "$HARNESS_RUN_DIR/entries.jsonl")/g" "$o"
         done ;; esac
     ok 0.1 "Stub curator: $(jq length "$o" 2> /dev/null || echo 0) ops." ;;
+  "# Memory review session")
+    echo "memory-review" >> "$RS/sessions.log"
+    [[ ${STUB_MEMORY_REVIEW:-hold} == limit ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before it reads a file
+    [[ ${STUB_MEMORY_REVIEW_EDITS:-} == 1 ]] && { echo "reviewer was here" >> CLAUDE.md; mkdir -p lib && echo "# reviewer was here" > lib/review-hack.sh; }
+    [[ ${STUB_MEMORY_REVIEW_EDITS:-} == ops ]] && ( set +e; m=$HARNESS_SCRATCH/memory-ops.json; jq '.[0].text |= sub("A work"; "A reviewed work")' "$m" > "$m.t" && mv "$m.t" "$m" )
+    # hook: a pre-commit hook in the shared git dir that plants a line in the driver's landing worktree ($SCRATCH/memory)
+    [[ ${STUB_MEMORY_REVIEW_EDITS:-} == hook ]] && ( set +e; h=$(cd "$(git rev-parse --git-common-dir)" && pwd)/hooks; mkdir -p "$h"
+      printf '#!/bin/sh\ncase $(basename "$(pwd -P)") in memory) echo "- planted by a hook (x 2026-11-10)" >> CLAUDE.md; git add CLAUDE.md ;; esac\n' > "$h/pre-commit"; chmod +x "$h/pre-commit" )
+    o=$HARNESS_RUN_DIR/memory-review.json ans=$(grep -o '[^ `]*/memory-answers\.jsonl' <<< "$prompt" | head -1 || true)
+    [[ ${STUB_MEMORY_REVIEW_EDITS:-} == answers && -n $ans ]] && echo '{"run":"x","project":"other","n":1,"verdict":"declined","text":"t","key":"t"}' >> "$ans"
+    [[ -n $ans && -f $ans ]] || ans=/dev/null
+    case ${STUB_MEMORY_REVIEW:-hold} in none) ;; bad) printf '{not json' > "$o" ;;
+      *) jq --arg how "${STUB_MEMORY_REVIEW:-hold}" --slurpfile ans "$ans" --arg ans_path "$ans" '. as $items | {rows: [$items | to_entries[] | .key as $k | .value as $it
+          | range(1; if $how == "thin" and $k == 0 then 4 else 5 end) as $q
+          | if $how == "evict-fails" and $q == 2 and (($it.op == "add" and $it.anchor != null) or $it.op == "delete") then
+              ([$it.anchor | match("`([^`]+)`") | .captures[0].string][0] // $it.anchor[0:40]) as $span
+              | {id: $it.id, q: $q, ran: "git grep -nF -e '"'"'\($span)'"'"' -- . '"'"':!.harness/runs'"'"'",
+                 saw: "7 files: tests/checks/needs-cards.sh, tests/checks/needs-questions.sh, tests/checks/queue-view.sh, tests/checks/show.sh, tests/checks/status-card.sh, tests/checks/status-view.sh, tests/checks/tty-views.sh", holds: false}
+            elif $how == "declined" and $q == 4 and ([$ans[] | select(.verdict == "declined" and .text == ($it.text // "" | sub(" \\([^()]+ [0-9-]+\\)$"; "")))] | length > 0) then
+              ([$ans[] | select(.verdict == "declined" and .text == ($it.text | sub(" \\([^()]+ [0-9-]+\\)$"; "")))][0]) as $d
+              | {id: $it.id, q: 4, ran: "grep -niF '"'"'\($d.text[0:40])'"'"' \($ans_path)", saw: "declined by Michael (\($d.run)/\($d.n))", holds: false}
+            else {id: $it.id, q: $q, ran: "stub: q\($q) of \($it.id)", saw: "stub: it holds", holds: true} end],
+          summary: "Stub memory review (\($how))."}' "$HARNESS_RUN_DIR/memory-review-input.json" > "$o" 2> /dev/null || true ;; esac   # set -e: a missing input ends no stub
+    [[ ${STUB_MEMORY_REVIEW:-} == hold-exit ]] && exit 124   # a valid file, then the driver's timeout (124: no result line)
+    ok 0.1 "Stub memory review: ${STUB_MEMORY_REVIEW:-hold}." ;;
   "# Entry resume")   # resumed.jsonl on the session's figures: cost plus the fixture's increment, modelUsage plus its usage
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')
     kind=$(after_session '/^Kind: `/ { sub(/^Kind: `/, ""); sub(/`.*/, ""); print; exit }')

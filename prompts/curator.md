@@ -45,6 +45,9 @@ Write `{{RUN_DIR}}/memory-ops.json`: a JSON array, `[]` when the run taught noth
   `## On-limits`, `## Hardware facts…`, `## Hardware and Mixxx rules…`, `## This repo runs Michael's harness runs…`.
   A protected change you think is needed is an op with `tier: 3`, which both PR bodies carry as a proposal.
 - Fewer is better: a longer file is followed less. Prefer a `replace` that sharpens a line to an `add` beside it.
+- A reviewer checks every operation against this run's record and the tree before it lands. An eviction, a `replace` or
+  a `delete` of a line the tree still depends on (a check, a script or a prompt names what it says) fails, so a
+  `replace` that keeps the line's subject beats an eviction.
 
 ## What Michael declined and accepted
 

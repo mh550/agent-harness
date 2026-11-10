@@ -225,14 +225,14 @@ deadline_verify() {
   fi
 }
 
-# <start> <file> <role>: a read-only session's one output file, $RUN_DIR/<file>, rescued to $SCRATCH/<file> (restrict
-# deletes it) only when this session wrote it (not a continued run's earlier copy) as a plain file of at most 64 KB (a
+# <start> <file> <role> [<max bytes>]: a read-only session's one output file, $RUN_DIR/<file>, rescued to $SCRATCH/<file> (restrict
+# deletes it) only when this session wrote it (not a continued run's earlier copy) as a plain file of at most <max bytes> (64 KB by default; a
 # symlink would carry another file into the record); then every edit since <start> reverted, the paths in RO_REVERTED
 # (the rescued file left out)
 ro_rescue() {
   local p=$RUN_DIR/$2
   rm -f "$SCRATCH/$2"
-  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= 65536 )) && ! git show "$1:$p" 2> /dev/null | cmp -s - "$p" && cp "$p" "$SCRATCH/$2"
+  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= ${4:-65536} )) && ! git show "$1:$p" 2> /dev/null | cmp -s - "$p" && cp "$p" "$SCRATCH/$2"
   RO_REVERTED=$(restrict "$1" nothing "$3" | { [[ -f $SCRATCH/$2 ]] && grep -vxF "$p" || cat; } | paste -sd' ')
 }
 
@@ -263,11 +263,11 @@ retro() {   # a short read-only session that turns this run's evidence into prop
 # .harness/project.md (memory-ops.json); the driver validates and applies them, never the session (MEMORY_POLICY=pr
 # leaves the memory PR for Michael, auto merges it, off runs none with no note; another value is noted and runs as pr,
 # the safe one). decisions/2026-11-07-memory-tiers, decisions/2026-11-07-memory-policy
+# a floor, not a knob: no push and no gh from the curator or the memory reviewer, whatever the mode or a project's allow
+# says (deny wins); memory_foreign stays the second layer for a push in another form (decisions/2026-11-08-memory-session-and-answers)
+CURATOR_DENY=("Bash(git push:*)" "Bash(gh:*)")
 curator() {
   local clog=$LOGS/zz-curator-$(date +%H%M%S).jsonl cstart reverted x
-  # a floor, not a knob: no push and no gh from the session, whatever the mode or a project's allow says (deny wins);
-  # memory_foreign stays the second layer for a push in another form (decisions/2026-11-08-memory-session-and-answers)
-  local CURATOR_DENY=("Bash(git push:*)" "Bash(gh:*)")
   case $MEMORY_POLICY in off) return 0 ;; pr|auto) ;;
     *) note "memory PR: MEMORY_POLICY=$MEMORY_POLICY is none of pr, auto, off; treated as pr"; MEMORY_POLICY=pr ;; esac
   # the retro's notes, retro.md, its proposals and metrics row are uncommitted here: restrict commits the tree and then
@@ -295,6 +295,29 @@ curator() {
   # the record keeps the ops and the numbered items, not ruleTexts (whole files, the rules commit has them)
   if [[ -f $SCRATCH/memory-result.json ]]; then jq -c 'del(.ruleTexts)' "$SCRATCH/memory-result.json" > "$REC/memory-result.json" 2> /dev/null || cp "$SCRATCH/memory-result.json" "$REC/"
   else rm -f "$REC/memory-result.json"; fi
+}
+
+# One read-only session between memory_pr's dry apply and its landing (decisions/2026-11-09-memory-reviewer): it reads
+# memory-review-input.json (committed before rstart: restrict deletes an uncommitted new file) and writes
+# memory-review.json alone, rescued around the revert and kept in the run record, under the curator's deny list and
+# bound. REVIEW_NONE ← why there is no review ("" when there is a file to validate: memory_verdict's)
+memory_review() {
+  local mlog=$LOGS/zz-memory-review-$(date +%H%M%S).jsonl rstart reverted x model
+  model=$(F model "$MEMORY_REVIEW_MODEL") rstart=$(git rev-parse HEAD) REVIEW_NONE=""
+  HARNESS_STATE=$STATE prompt memory-review
+  log "memory review · $model · deny ${CURATOR_DENY[*]}"
+  local S_DENY=("${CURATOR_DENY[@]}")
+  MAX_TURNS=40 SESSION_BUDGET_USD=3 session memory-review "$model" "$mlog" memory-review
+  ro_rescue "$rstart" memory-review.json memory-review 262144; reverted=$RO_REVERTED   # 50 ops × 4 rows of 200-character cells: ~92 KB
+  for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict, as the curator's
+  x=$(printf '%s, ' "${CURATOR_DENY[@]}"); note "memory review: session denied ${x%, }"
+  [[ -n $reverted ]] && note "memory review: reverted edits (it is read-only): $reverted"
+  record MET append "$mlog" "$REC/metrics.jsonl" "$RUN_ID" memory-review "" "$model" true "$S_WALL" "$S_EXIT" false memory-review "$S_PEAK"
+  # the file is kept whenever rescued; a limit, a failed exit (a timeout's too) or no file is no review (invariant 3)
+  [[ -f $SCRATCH/memory-review.json ]] && cp "$SCRATCH/memory-review.json" "$REC/"   # in the run record, as memory-ops.json
+  if MET limit "$mlog" "$S_WALL" "$S_EXIT" > /dev/null; then REVIEW_NONE="the reviewer hit a limit"
+  elif [[ $S_EXIT != 0 ]]; then REVIEW_NONE="the reviewer failed (exit $S_EXIT)"
+  elif [[ ! -f $SCRATCH/memory-review.json ]]; then REVIEW_NONE="the reviewer wrote no memory-review.json"; fi
 }
 
 ledger() {   # the whole run record into the harness's own record, for `harness trends`, retros and calibration

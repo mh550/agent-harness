@@ -152,9 +152,34 @@ kept under the cap). Each body lists its tier's ops (the rules and the protected
 sequence, for `<run>/<n>`), the proposals and every dropped op with its reason, and links the other PR; `memory.md` in
 the run record is the union. A `harness continue` adds to the open PRs. `harness-log.md` says `memory: <n> ops · <a>
 facts · <r> rules · <d> dropped · <p> proposals` and each PR's fate. `MEMORY_POLICY=auto` has the driver merge the
-facts PR (never the rules PR) itself when the segment pushed a tier-1 commit to it and the PR carries this segment's body (a reused PR whose body refresh failed, or a refused merge, stays open with a note and the next segment merges it; a segment that applies nothing leaves it open),
+facts PR (never the rules PR) itself when the segment pushed a tier-1 commit to it and the PR carries this segment's body (a reused PR whose body refresh failed, or a refused merge, stays open with a note and stays yours: the driver merges only a PR whose one commit past main is this segment's; a segment that applies nothing leaves it open),
 `MEMORY_POLICY=off` runs no curator; it is separate from `MERGE_POLICY`, so verified code can merge itself while the
 instruction file waits for you (decisions/2026-11-07-memory-tiers, decisions/2026-11-07-memory-policy).
+
+**Memory reviewer.** Between the gate and the commit, the driver applies the curator's operations once more on copies of
+the base (`$SCRATCH/memory-after-facts/`, `memory-after-rules/`) and writes `memory-review-input.json` to the run record:
+one item per operation that would land, `facts/1`, `facts/2`, … in the gate's order and `rules/<n>` with its `<run>/<n>`
+number, each with its base and after files and the gate's reading of the cap (tier-3 proposals and dropped ops are not
+items). One read-only session (`MEMORY_REVIEW_MODEL`, opus; `prompts/memory-review.md`; 40 turns, $3) answers four
+questions per item with one row each (stated and recorded, no live referents, the cap and the anchor, no duplicate,
+including a line you declined) and writes `memory-review.json` and nothing else: its other edits are reverted
+(`memory review: reverted edits (it is read-only): …`) and it runs under the curator's deny list (`memory review: session
+denied …`). With nothing that would land, no session runs (`memory review: nothing to review`; `memory.json`'s
+`reviewed: 0`). The session is one `memory-review` row of the run's `metrics.jsonl` (decisions/2026-11-09-memory-reviewer).
+The four questions: **Q1** the `from` entry states the whole line and the incident is in the record; **Q2** the line
+that goes (a `replace`, a `delete`, an eviction) has no live referent in the tree (`git grep -nF` of its spans, the
+record, journal, ledger and plans aside); **Q3** an eviction is due only at the cap counted on the base, and a replaced
+or deleted line is on it; **Q4** the line duplicates nothing in its file, in `~/.claude/CLAUDE.md` or among your
+declined answers. An op holds when its four rows hold; fewer than four fails it as thin. Every memory PR body and
+`memory.md` carry `## Review` after their first line: one line per op (`- facts/1 holds`, `- facts/2 **fails**: <reason> (q2)`) and the
+evidence table, `none: <why>` when no review happened. Under `MEMORY_POLICY=pr` every op lands and the PR is yours with
+the verdict in front of you; under `auto` the failed facts are dropped from the commit (`review: <reason> (<id>)`) and
+the facts PR merges only when the review ran and every committed op held: a reviewer with no file, an invalid one, a
+limit or a failed exit leaves it open (`memory PR: no review (<why>); not merged …`), and so does a reused PR carrying any
+commit but this segment's own (`memory PR: <sha12> on harness-memory/<run> is not this segment's commit; …`). A commit a
+git hook or filter changed after the landing wrote its text is never pushed (`… the commit differs from the text the landing
+wrote (a git hook or filter?); not pushed …`). The rules PR carries every op with
+its verdict and stays yours under every policy. `harness report`'s `Memory` row ends `· review <h> held · <f> failed`.
 
 Everything else is detected or defaulted: the suite (`npm run check`/`npm test`/pytest/…, run by `lib/check.sh` in
 its own scope capped at 3G under a 15m timeout: `CHECK_MEMORY_MAX`, `CHECK_TIMEOUT`; a red full run rerun once, never after a timeout or a cap kill, by `CHECK_RERUN`: `auto` (the `HARNESS_FAILED=` files, else the whole suite) · `failed` (the named files only) · `suite` (the whole suite) · `off`, a rerun that goes green counted as a flake in `harness-log.md`, `summary.json` and report.md's `Flakes` row; cached per code tree, whose key

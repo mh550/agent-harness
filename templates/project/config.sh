@@ -2,7 +2,8 @@
 # the suite (.harness/check.sh, npm run check/test, pytest…), the smoke check (.harness/smoke.*), the init (.harness/init.sh).
 POLICY=build-only          # build-only | live-staged (live-staged needs a "## Live system" section in CLAUDE.md)
 # MERGE_POLICY=auto        # opt in to self-merge: the driver merges each verified milestone PR itself. Default pr: PRs wait for you. Only for a repo whose main has no production
-# MEMORY_POLICY=pr         # the curator's memory: <run> PR (CLAUDE.md's Gotchas): pr = left for you · auto = the driver merges it, only with its body on it (facts only: the memory rules: <run> PR is always yours) · off = no curator. Separate from MERGE_POLICY
+# MEMORY_POLICY=pr         # the curator's memory: <run> PR (CLAUDE.md's Gotchas): pr = left for you · auto = the driver merges it only when the memory review ran and every committed op held (failed ones dropped), with its body on it (facts only: the memory rules: <run> PR is always yours) · off = no curator. Separate from MERGE_POLICY
+# MEMORY_REVIEW_MODEL=opus  # the memory reviewer session's model, which checks the curator's ops before they land (40 turns, $3)
 # DECISIONS=docs/decisions.md   # the decisions store: a file (numbered D<n> entries) or a directory (one file per decision, never numbered). Default docs/decisions.md if it exists
 # CHECK_KEY_IGNORE=".harness/runs docs/plans"   # path prefixes the suite never reads, left out of its cache key: a change there alone doesn't rerun it
 # CHECK_FAST_CMD="<suite> --tier fast"   # the fast tier, what a feature's `passes` stands on (check.sh --fast); verify and merge still run the whole suite; empty: the whole suite is the fast tier

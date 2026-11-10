@@ -386,6 +386,7 @@ memory_base() {
   MEM_URL="" MEM_NOPR="" RULES_BASE="" RULES_URL="" RULES_NOPR="" RULES_STOP="" RULES_NOTE=""
   origin_t git -C "$RWT" fetch -q origin "$MAIN_BRANCH" 2> /dev/null
   main=$(git -C "$RWT" rev-parse -q --verify "origin/$MAIN_BRANCH^{commit}") || { note "curator: none (no origin/$MAIN_BRANCH to curate against)"; return 1; }
+  MEM_MAIN=$main   # the main the merge guard counts commits from: a sha, never the ref a session could move
   memory_tip facts "$main" || { note "$TIP_NOTE"; return 1; }
   MEM_BASE=$TIP_BASE MEM_URL=$TIP_URL MEM_NOPR=$TIP_NOPR
   # the rules half's note waits for curator() to give it after the session's restrict, which reverts harness-log.md
@@ -403,7 +404,7 @@ memory_base() {
 # commit subject's), NONE (the no-change reason)
 memory_tier() {
   if [[ $1 == rules ]]; then B=harness-rules/$RUN_ID LBL="memory rules PR" TITLE="memory rules: $RUN_ID" WORD=rules NONE="no tier-2 change"
-  else B=harness-memory/$RUN_ID LBL="memory PR" TITLE="memory: $RUN_ID" WORD=facts NONE="no tier-1 change"; fi
+  else B=harness-memory/$RUN_ID LBL="memory PR" TITLE="memory: $RUN_ID" WORD=facts NONE="no tier-1 change${AFTER_REVIEW:+ after the review}"; fi
 }
 # <facts|rules> <main> → TIP_BASE, the tier's branch tip when origin has it with its open PR (TIP_URL ← its URL: a
 # continue's curator restates nothing already there) or with no PR at all (TIP_NOPR: a push whose pr create failed; the
@@ -442,14 +443,19 @@ memory_foreign() {
 }
 
 # <ops> <applied> <rules> <dropped> <proposed> <pr url|""> <rules pr url|""> [<invalid why>] → $STATE/memory.json, for
-# the summary (M3, N1-01), with the `##` sections each tier's ops touched (from memory-result.json, when this segment has one)
+# the summary (M3, N1-01), with the `##` sections each tier's ops touched (from memory-result.json, when this segment has
+# one), and once memory_pr reached the review, `reviewed` (its input's items), `held`, `failed` (REVIEW_HELD, REVIEW_FAILED),
+# `review` ("ok", or why none: REVIEW_NONE) and `merged_by` ("driver" when memory_merge merged the facts PR, else null)
 memory_json() {
   local r=$SCRATCH/memory-result.json sec='{"facts":[],"rules":[]}'
   [[ -s $r ]] && sec=$(jq -c 'def seen: reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end);
     {facts: ([.applied[]?.section | sub("\\s+$"; "")] | seen), rules: ([.rules[]?.section | sub("\\s+$"; "")] | seen)}' "$r" 2> /dev/null || echo '{"facts":[],"rules":[]}')
-  jq -nc --argjson o "$1" --argjson a "$2" --argjson rl "$3" --argjson d "$4" --argjson p "$5" --arg u "$6" --arg ru "$7" --arg w "${8:-}" --argjson s "$sec" \
+  jq -nc --argjson o "$1" --argjson a "$2" --argjson rl "$3" --argjson d "$4" --argjson p "$5" --arg u "$6" --arg ru "$7" --arg w "${8:-}" --argjson s "$sec" --arg rv "${REVIEWED:-}" --arg rn "${REVIEW_NONE:-}" \
+    --argjson h "${REVIEW_HELD:-0}" --argjson f "${REVIEW_FAILED:-0}" --arg mb "${MERGED_BY:-}" \
     '{ops: $o, applied: $a, dropped: $d, proposed: $p, pr: (if $u == "" then null else $u end), rules: $rl, rules_pr: (if $ru == "" then null else $ru end), sections: $s}
-     + (if $w == "" then {} else {invalid: $w} end)' > "$STATE/memory.json"
+     + (if $w == "" then {} else {invalid: $w} end)
+     + (if $rv == "" then {} else {reviewed: ($rv | tonumber), held: $h, failed: $f, review: (if $rn == "" then "ok" else $rn end),
+        merged_by: (if $mb == "" then null else $mb end)} end)' > "$STATE/memory.json"
 }
 
 # The curator's memory-ops.json (rescued to $SCRATCH) → applied by curator.mjs in a detached scratch worktree at
@@ -460,38 +466,92 @@ memory_json() {
 # are in both bodies, each body naming the other PR; the union is memory.md in the run record. MEMORY_POLICY=auto
 # merges the facts PR alone, at the head pushed and after both bodies are written, and only with this segment's body on
 # it: a reused PR whose refresh failed stays open, the next segment with a new tier-1 commit the retry (never --delete-branch, as
-# record_pr); the rules PR is Michael's under every policy: memory_merge never sees its URL (invariant 3). The record
+# record_pr); the rules PR is Michael's under every policy: memory_merge never sees its URL (invariant 3). Between the dry
+# apply and the landing one read-only reviewer holds or fails each op that would land (decisions/2026-11-09-memory-reviewer):
+# its `## Review` heads both bodies and memory.md; under pr every op lands, under auto the landing drops the failed facts
+# by verdict, and no review (none, invalid, a limit, a failed session) is never a merge. The record
 # branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
 memory_pr() {
   local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" fbody=0 o a rl d p rd x f files=() rfiles=() rb=()
-  rm -f "$r"; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
+  rm -f "$r" "$REC/memory-review.json" "$REC/memory-review-input.json" "$SCRATCH/memory-review.json" "$SCRATCH/memory-verdicts.json" "$SCRATCH/memory-review.md"   # an earlier segment's review never sits beside this one's ops
+  REVIEWED="" REVIEW_NONE="" REVIEW_HELD=0 REVIEW_FAILED=0 MERGED_BY="" AFTER_REVIEW=""; local la vf=() past=() c; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
   [[ -z $RULES_STOP && -d $SCRATCH/memory-rules-mb ]] && rb+=("$SCRATCH/memory-rules-mb" "$SCRATCH/memory-main")
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
     why=$(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)
     note "curator: memory-ops.json invalid: $why"; memory_json 0 0 0 0 0 "$MEM_URL" "$RULES_URL" "$why"; return 0; }
   n=$(jq length "$SCRATCH/memory-ops.json" 2> /dev/null)
   [[ $n == 0 ]] && { note "curator: no operations"; memory_json 0 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0; }
-  memory_wt_gone
-  git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
-    || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
-  # Michael's verdicts close their rules and proposals by line (this project's rows of the ledger's memory-answers.jsonl)
-  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" \
-    --answers "$LEDGER/memory-answers.jsonl" --project "$PROJECT_NAME" > "$r" 2>> "$STATE/run.log"
-  # a stopped rules half commits nothing: its tier-2 ops are dropped (named in both bodies), the proposals renumbered
-  [[ -n $RULES_STOP && -s $r ]] && jq -c '.dropped += [.rules[]? | {op: del(.n), reason: "the rules half stopped; its note says why"}]
-    | .rules = [] | .ruleFiles = [] | .ruleTexts = {} | .proposed |= (to_entries | map(.value + {n: (.key + 1)}))' "$r" > "$r.t" 2> /dev/null && mv "$r.t" "$r"
+  # the dry apply (decisions/2026-11-09-memory-reviewer): tier 1 written into a copy of the base, tier 2's texts into a
+  # copy of the rules base, so the reviewer reads what would land; the gate's counts and drops are noted from it
+  local dry=$SCRATCH/memory-dry.json af=$SCRATCH/memory-after-facts ar=$SCRATCH/memory-after-rules
+  rm -rf "$af" "$ar" "$dry"; cp -r "$SCRATCH/memory-base" "$af"
+  memory_apply "$af" "$dry"
   # an apply that threw prints nothing: no commit and no PR (tests/checks/no-answer.sh's rule)
-  IFS=$'\t' read -r o a rl d p rd < <(jq -r '[.ops, (.applied | length), (.rules | length), (.dropped | length), (.proposed | length), .rederived] | @tsv' "$r" 2> /dev/null)
-  if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; fi
+  IFS=$'\t' read -r o a rl d p rd < <(jq -r '[.ops, (.applied | length), (.rules | length), (.dropped | length), (.proposed | length), .rederived] | @tsv' "$dry" 2> /dev/null)
+  if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0; fi
   note "memory: $o ops · $a facts · $rl rules · $d dropped · $p proposals"
   # a cap breach is a dropped op as any other (N1-03); an anchored add that evicted names the line it cut
   while IFS= read -r x; do note "${x:0:200}"; done < <(jq -r '(.dropped[] | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"),
-    (.applied[], .rules[] | select(.evicted != null) | "memory: evicted \"\(.evicted[0:80])\" for \(.op) \(.section)")' "$r")
+    (.applied[], .rules[] | select(.evicted != null) | "memory: evicted \"\(.evicted[0:80])\" for \(.op) \(.section)")' "$dry")
   (( rd > 0 )) && note "memory: tier re-derived for $rd ops"
+  cp -r "${rb[0]:-$SCRATCH/memory-base}" "$ar"
+  while IFS= read -r f; do jq -j --arg f "$f" '.ruleTexts[$f]' "$dry" > "$ar/$f"; done < <(jq -r '.ruleFiles[]?' "$dry")
+  # the review's input is the ops that would land, gate first (an op it dropped keeps its reason); tier 3 is not reviewed
+  REVIEWED=0 REVIEW_NONE="nothing to review"
+  node "$HARNESS_HOME/lib/memreview.mjs" input "$dry" "$SCRATCH/memory-base" "$af" "$ar" "${rb[0]:-$SCRATCH/memory-base}" > "$SCRATCH/memory-review-input.json" 2>> "$STATE/run.log"
+  REVIEWED=$(jq length "$SCRATCH/memory-review-input.json" 2> /dev/null)
+  if [[ $REVIEWED == 0 ]]; then note "memory review: nothing to review"
+  elif [[ ! $REVIEWED =~ ^[1-9][0-9]*$ ]]; then REVIEWED=0 REVIEW_NONE="the review input failed (see run.log)"; note "memory review: none ($REVIEW_NONE)"
+  else
+    cp "$SCRATCH/memory-review-input.json" "$REC/"
+    rec_commit "HARNESS: memory review input"   # restrict reverts every uncommitted file since its start, notes included
+    # fail closed: the session can reach the apply's inputs and the dry result outside the tree its revert covers
+    x=$(memory_sums "$dry" "$af" "$ar")
+    memory_review
+    if [[ $(memory_sums "$dry" "$af" "$ar") != "$x" ]]; then
+      echo "memory: a file the landing reads changed during the memory review" >> "$STATE/run.log"
+      note "memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)"
+      REVIEW_NONE="the landing differs from the dry apply"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0
+    fi
+    memory_verdict
+  fi
+  # the section both bodies and memory.md carry: the verdict, or why there is none
+  [[ -s $SCRATCH/memory-review.md ]] || node "$HARNESS_HOME/lib/memreview.mjs" render --none "$REVIEW_NONE" > "$SCRATCH/memory-review.md" 2>> "$STATE/run.log"
+  # under auto the landing drops the failed facts by verdict (pr: every op lands, the PR marks them)
+  [[ $MEMORY_POLICY == auto && -z $REVIEW_NONE && -s $SCRATCH/memory-verdicts.json ]] && vf=(--verdicts "$SCRATCH/memory-verdicts.json")
+  memory_wt_gone
+  git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
+    || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
+  # the landing: the same apply in the scratch worktree (deterministic, so it writes what the reviewer read)
+  memory_apply "$w" "$r"
+  [[ $(jq -r .ops "$r" 2> /dev/null) =~ ^[0-9]+$ ]] || { note "memory: apply failed (see run.log)"; rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
+  # fail closed: the reviewer could reach the apply's inputs outside the tree its revert covers (the ops and bases in
+  # scratch), so a landing that differs from the dry apply it read, in the result or a tier-1 text, commits nothing
+  x=0; cmp -s "$dry" "$r" || x=1
+  while IFS= read -r f; do cmp -s "$w/$f" "$af/$f" || x=1; done < <(jq -r '.files[]?' "$r" 2> /dev/null)
+  if (( x )); then
+    { echo "memory: the landing's result differs from the dry apply's:"; diff "$dry" "$r" | head -c 4000; } >> "$STATE/run.log" 2>&1
+    note "memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)"
+    rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0
+  fi
+  # auto: the same landing again with the verdicts, from the base; it may only lose held-or-failed facts, nothing else
+  if (( ${#vf[@]} )); then
+    git -C "$w" checkout -q -- . 2>> "$STATE/run.log"; memory_apply "$w" "$r" "${vf[@]}"
+    if ! jq -e --slurpfile d "$dry" --slurpfile v "$SCRATCH/memory-verdicts.json" '($v[0].ops | map(select(.holds) | .id)) as $h
+        | ([$d[0].applied | to_entries[] | select(("facts/\(.key + 1)") as $i | $h | index([$i])) | .value]) as $held
+        | (.applied | all(. as $o | $held | index([$o]))) and .rules == $d[0].rules and .proposed == $d[0].proposed and .ruleTexts == $d[0].ruleTexts
+          and ([.dropped[] | select(.reason | test("^(review: |over the cap once the review)") | not)] == $d[0].dropped)' "$r" > /dev/null 2>&1; then
+      note "memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)"
+      rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0
+    fi
+    while IFS= read -r x; do note "${x:0:300}"; done < <(jq -r '.dropped[] | select(.reason | test("^(review: |over the cap once the review)")) | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"' "$r")
+    AFTER_REVIEW=1
+  fi
+  la=$(jq '.applied | length' "$r")
   # the facts: tier 1 as apply wrote it into the worktree; its body names the rules PR this run already has
   mapfile -t files < <(jq -r '.files[]?' "$r")
   memory_body "$r" facts "$RULES_URL"
-  memory_pass facts "$a" "${files[@]}"; fbody=$?; url=$PASS_URL fhead=$PASS_HEAD
+  memory_pass facts "$la" "${files[@]}"; fbody=$?; url=$PASS_URL fhead=$PASS_HEAD
   # the rules: the worktree made again at their own base, tier 2's texts written into it
   if [[ -z $RULES_STOP ]]; then
     memory_wt_gone
@@ -510,20 +570,64 @@ memory_pr() {
     else note "memory PR: its body could not name the rules PR (see run.log) · ${url:-$MEM_URL}"; fi
   fi
   # the facts PR alone, and only with this segment's body on it (N2-02): no retry of a failed edit here
+  # no review, no merge (invariant 3): the commit holds only held ops only when the review ran, and only the commit this
+  # segment made is merged: anything else past main (an earlier segment's, or one a session pushed with the driver's
+  # subject) no review of this segment read, and nothing written into a commit can vouch for it (R1-03 review, I1)
   if [[ $MEMORY_POLICY == auto && -n $fhead && $url == http* ]]; then
-    if (( fbody == 0 )); then memory_merge "$url" "$fhead"
-    else note "memory PR: its body was not updated (see run.log); not merged (MEMORY_POLICY=auto), left open · $url"; fi
+    mapfile -t past < <(git -C "$RWT" rev-list "$MEM_MAIN..$fhead" 2> /dev/null); c="(unreadable)"; (( ${#past[@]} )) && c=${past[-1]}
+    if [[ -n $REVIEW_NONE ]]; then note "memory PR: no review ($REVIEW_NONE); not merged (MEMORY_POLICY=auto), left open · $url"
+    elif [[ -z $AFTER_REVIEW ]]; then note "memory PR: the landing had no verdicts; not merged (MEMORY_POLICY=auto), left open · $url"
+    elif (( fbody != 0 )); then note "memory PR: its body was not updated (see run.log); not merged (MEMORY_POLICY=auto), left open · $url"
+    elif [[ ${#past[@]} != 1 || $c != "$fhead" ]]; then note "memory PR: ${c:0:12} on harness-memory/$RUN_ID is not this segment's commit; not merged (MEMORY_POLICY=auto), left open · $url"
+    else memory_merge "$url" "$fhead"; fi
   fi
   memory_record "$r"
   memory_wt_gone
   memory_json "$o" "$a" "$rl" "$d" "$p" "${url:-$MEM_URL}" "${rurl:-$RULES_URL}"
+}
+# <dry result> <after-facts dir> <after-rules dir> → one sum per file the landing reads or compares against: the ops,
+# the dry result and its texts, the bases, the review's input and Michael's answers (each sorted by path)
+memory_sums() {
+  { find "$SCRATCH/memory-ops.json" "$SCRATCH/memory-review-input.json" "$1" "$2" "$3" "$SCRATCH/memory-base" "${rb[@]}" -type f -print0 2> /dev/null \
+      | sort -z | xargs -0 -r sha256sum; [[ -f $LEDGER/memory-answers.jsonl ]] && sha256sum "$LEDGER/memory-answers.jsonl"; } 2> /dev/null
+  return 0
+}
+# <dir> <result.json> [--verdicts <file>]: curator.mjs apply of memory-ops.json at <dir> (tier 1 written there), Michael's verdicts closing
+# their rules and proposals by line (this project's rows of the ledger's memory-answers.jsonl); a stopped rules half
+# commits nothing: its tier-2 ops are dropped (named in both bodies), the proposals renumbered
+memory_apply() {
+  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$1" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" \
+    --answers "$LEDGER/memory-answers.jsonl" --project "$PROJECT_NAME" "${@:3}" > "$2" 2>> "$STATE/run.log"
+  [[ -n $RULES_STOP && -s $2 ]] && jq -c '.dropped += [.rules[]? | {op: del(.n), reason: "the rules half stopped; its note says why"}]
+    | .rules = [] | .ruleFiles = [] | .ruleTexts = {} | .proposed |= (to_entries | map(.value + {n: (.key + 1)}))' "$2" > "$2.t" 2> /dev/null && mv "$2.t" "$2"
+  return 0
+}
+# after the review session: memory-review.json validated against its input (an invalid one refused whole, its first
+# reason the why none), its verdicts to $SCRATCH/memory-verdicts.json and the `## Review` section to memory-review.md;
+# one count note and one per failed op, or one `none (<why>)` note. REVIEW_HELD, REVIEW_FAILED ← the counts
+memory_verdict() {
+  local i=$SCRATCH/memory-review-input.json f=$SCRATCH/memory-review.json why x
+  # verdicts validates first: a refused file exits 1 with its reason as the output
+  if [[ -z $REVIEW_NONE ]] && ! why=$(node "$HARNESS_HOME/lib/memreview.mjs" verdicts "$f" "$i" 2>> "$STATE/run.log"); then
+    REVIEW_NONE="memory-review.json invalid: $(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)"
+  fi
+  if [[ -z $REVIEW_NONE ]] && printf '%s\n' "$why" > "$SCRATCH/memory-verdicts.json" \
+    && node "$HARNESS_HOME/lib/memreview.mjs" render "$SCRATCH/memory-verdicts.json" "$f" > "$SCRATCH/memory-review.md" 2>> "$STATE/run.log"; then
+    IFS=$'\t' read -r REVIEWED REVIEW_HELD REVIEW_FAILED < <(jq -r '[.reviewed, .held, .failed] | @tsv' "$SCRATCH/memory-verdicts.json")
+    note "memory review: $REVIEWED reviewed · $REVIEW_HELD held · $REVIEW_FAILED failed"
+    while IFS= read -r x; do note "${x:0:300}"; done < <(jq -r '.ops[] | select(.holds | not) | "memory review: \(.id) fails: \(.reason)"' "$SCRATCH/memory-verdicts.json")
+    return 0
+  fi
+  [[ -n $REVIEW_NONE ]] || REVIEW_NONE="the verdict failed (see run.log)"
+  rm -f "$SCRATCH/memory-verdicts.json" "$SCRATCH/memory-review.md"; REVIEW_HELD=0 REVIEW_FAILED=0
+  note "memory review: none ($REVIEW_NONE)"
 }
 # <facts|rules> <count> <files…> → that tier's change committed in $SCRATCH/memory (`memory: <run>: <n> <tier>`), pushed
 # to its branch (never forced: a reused head moves forward) and its PR opened or its body refreshed; with no change, a
 # PR this run already has gets this segment's body and a pushed branch without one gets its PR. PASS_URL ← the PR's
 # URL, PASS_HEAD ← the commit pushed (auto merges the facts PR only at it); 1 when that commit's PR kept an older body
 memory_pass() {
-  local t=$1 k=$2 prior nopr B LBL TITLE WORD NONE; shift 2
+  local t=$1 k=$2 prior nopr B LBL TITLE WORD NONE want; shift 2
   memory_tier "$t"; PASS_URL="" PASS_HEAD=""
   if [[ $t == rules ]]; then prior=$RULES_URL nopr=$RULES_NOPR; else prior=$MEM_URL nopr=$MEM_NOPR; fi
   if (( k == 0 || $# == 0 )); then
@@ -532,8 +636,14 @@ memory_pass() {
     elif [[ $t == rules ]]; then note "$LBL: none ($NONE)"
     else note "$LBL: none ($NONE); the body is in memory.md"; fi
   elif [[ $MERGE_POLICY == off ]]; then note "$LBL: none (MERGE_POLICY=off); the body is in memory.md"
-  elif ! git -C "$SCRATCH/memory" add -- "$@" 2>> "$STATE/run.log" || ! git -C "$SCRATCH/memory" commit -q -m "memory: $RUN_ID: $k $WORD" -- "$@" 2>> "$STATE/run.log"; then
+  elif ! want=$(cd "$SCRATCH/memory" && git hash-object --no-filters -- "$@" 2>> "$STATE/run.log") \
+    || ! git -C "$SCRATCH/memory" add -- "$@" 2>> "$STATE/run.log" || ! git -C "$SCRATCH/memory" commit -q -m "memory: $RUN_ID: $k $WORD" -- "$@" 2>> "$STATE/run.log"; then
     note "$LBL: could not commit the tier-$([[ $t == rules ]] && echo 2 || echo 1) change (see run.log)"
+  # a git hook, filter or attribute in the shared git dir (a session's reach: no filesystem sandbox) can change what is
+  # committed after the landing's text was compared with what the reviewer read: the commit must be that text, byte for byte
+  elif [[ $(for f in "$@"; do git -C "$SCRATCH/memory" rev-parse -q --verify "HEAD:$f" || echo "-"; done 2> /dev/null) != "$want" ]]; then
+    { echo "$LBL: the commit's blobs differ from the landing's texts: $*"; git -C "$SCRATCH/memory" show --stat HEAD | head -c 2000; } >> "$STATE/run.log" 2>&1
+    note "$LBL: the commit differs from the text the landing wrote (a git hook or filter?); not pushed (see run.log)"
   elif ! origin_t git -C "$SCRATCH/memory" push -q origin "HEAD:refs/heads/$B" 2>> "$STATE/run.log"; then
     note "$LBL: could not push $B (see run.log)"
   else
@@ -548,9 +658,10 @@ memory_pass() {
 # segment's body over the earlier ones (memory.md: the PR's first commit is explained there), while that fits GitHub's
 # limit; a body that fails is one line saying so
 memory_body() {
-  local m=$SCRATCH/memory-body-$2.md prior=$MEM_URL
+  local m=$SCRATCH/memory-body-$2.md prior=$MEM_URL rv=()
+  [[ -s $SCRATCH/memory-review.md ]] && rv=(--review "$SCRATCH/memory-review.md")
   [[ $2 == rules ]] && prior=$RULES_URL
-  node "$HARNESS_HOME/lib/curator.mjs" body "$1" "$RUN_ID" "$2" "$3" > "$m" 2>> "$STATE/run.log" \
+  node "$HARNESS_HOME/lib/curator.mjs" body "$1" "$RUN_ID" "$2" "$3" "${rv[@]}" > "$m" 2>> "$STATE/run.log" \
     || { note "memory: the $([[ $2 == rules ]] && echo "rules ")PR body failed (see run.log)"; echo "Project memory curated by run \`$RUN_ID\`: the body failed; memory-result.json in the run record has the ops." > "$m"; }
   memory_earlier "$m" "$prior"
 }
@@ -563,8 +674,9 @@ memory_earlier() {
 # <result.json> → the run record's memory.md: the union of both bodies (decisions/2026-11-08-memory-rules-pr), over the
 # earlier segments' when either PR is reused
 memory_record() {
-  local m=$SCRATCH/memory-union.md u=$MEM_URL
-  node "$HARNESS_HOME/lib/curator.mjs" body "$1" "$RUN_ID" union > "$m" 2>> "$STATE/run.log" \
+  local m=$SCRATCH/memory-union.md u=$MEM_URL rv=()
+  [[ -s $SCRATCH/memory-review.md ]] && rv=(--review "$SCRATCH/memory-review.md")
+  node "$HARNESS_HOME/lib/curator.mjs" body "$1" "$RUN_ID" union "${rv[@]}" > "$m" 2>> "$STATE/run.log" \
     || echo "Project memory curated by run \`$RUN_ID\`: the body failed; memory-result.json in the run record has the ops." > "$m"
   [[ $u == http* ]] || u=$RULES_URL
   memory_earlier "$m" "$u"
@@ -581,7 +693,7 @@ memory_open() {   # <facts|rules> [merge]: that tier's PR opened and noted, unle
   elif [[ ${2:-} != merge ]]; then note "memory PR opened; left open (MEMORY_POLICY=auto: no new tier-1 commit to merge) · $u"; fi
 }
 memory_merge() {   # <url> <head> (MEMORY_POLICY=auto, the facts PR alone): merged only at the commit pushed, else left open, as record_pr
-  if origin_t $GH pr merge "$1" --merge --match-head-commit "$2" > /dev/null 2>> "$STATE/run.log"; then note "memory PR merged into $MAIN_BRANCH · $1"
+  if origin_t $GH pr merge "$1" --merge --match-head-commit "$2" > /dev/null 2>> "$STATE/run.log"; then MERGED_BY=driver; note "memory PR merged into $MAIN_BRANCH · $1"
   else note "memory PR: the merge was refused; left open · $1"; fi
 }
 memory_edit() {   # <url> <why suffix> <facts|rules> [quiet]: that open PR's body refreshed, noted; PASS_URL ← <url>; gh's status (quiet: a failure's note is the caller's)
@@ -761,7 +873,7 @@ clock() {
 
 # kind model log who → runs claude headless on $LS/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);
 # sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
-# read-only retro and curator, whose callers note them after restrict, which would revert them). The caller's S_RESUME (a session id:
+# read-only retro, curator and memory review, whose callers note them after restrict, which would revert them). The caller's S_RESUME (a session id:
 # --resume, and its entry.json kept), S_TURNS, S_TIMEOUT and S_BUDGET override the defaults (entry_resume's); an S_DENY
 # array is the session's deny rules, --disallowedTools last on the line (the curator's: decisions/2026-11-08-memory-session-and-answers)
 session() {
@@ -790,7 +902,7 @@ session() {
   [[ -n ${SCOPE_BARE:-} ]] && S_NOTES+=("$1 session ran uncapped: $SCOPE_BARE")   # its error is in the transcript
   # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
   (( S_EXIT == 137 )) && scope_capped "$unit" "$SESSION_MEMORY_MAX" && S_NOTES+=("${4:-$1}: the session hit its memory cap ($SESSION_MEMORY_MAX)")
-  [[ $1 == retro || $1 == curator ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
+  [[ $1 == retro || $1 == curator || $1 == memory-review ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
   # the box-wide 7-day and 5-hour windows (admit reads the second); a temporary file per process: two lanes' sessions
   # may end in the same second
   MET usage "$3" > "$USAGE.$$.tmp" 2> /dev/null && mv "$USAGE.$$.tmp" "$USAGE" || rm -f "$USAGE.$$.tmp"

@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { answerRow } from "../../lib/memory.mjs";
 import { sameAsCli, mainOf } from "./cli-same.mjs";
-import { parseRunLog, redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine, memoryState, memoryView, memoryShown } from "../../lib/summary.mjs";
+import { parseRunLog, redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine, memoryState, memoryView, memoryShown, memoryLine } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
@@ -560,3 +560,19 @@ test("summary.mjs memoryView: an answers: tally line after the tiers' and `· n 
   assert.equal(memoryView([], {}, 10, "", a).join("\n"), "(none)");
 });
 
+
+test("summary.mjs memory: build reads the review's keys and memoryLine ends with the review's counts; nothing for a memory.json without reviewed", () => {
+  const d = mkdtempSync(join(tmpdir(), "mem-"));
+  try {
+    const base = '"ops":3,"applied":2,"dropped":0,"proposed":1,"pr":"https://example.test/pr/4","rules":1,"rules_pr":null';
+    writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":2,"failed":1,"review":"ok","merged_by":"driver"}\n`);
+    const m = build("/nonexistent/p/w", "r", d).memory;
+    assert.equal(JSON.stringify([m.reviewed, m.held, m.failed, m.review, m.merged_by]), '[3,2,1,"ok","driver"]');
+    assert.equal(memoryLine(m), "2 applied · 1 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR none · review 2 held · 1 failed");
+    writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":0,"failed":0,"review":"the reviewer hit a limit","merged_by":null}\n`);
+    assert.equal(memoryLine(build("/nonexistent/p/w", "r", d).memory).endsWith(" · review none (the reviewer hit a limit)"), true);
+    writeFileSync(join(d, "memory.json"), `{${base}}\n`);
+    const old = build("/nonexistent/p/w", "r", d).memory;
+    assert.equal(`${"reviewed" in old} ${memoryLine(old)}`, "false 2 applied · 1 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR none");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});

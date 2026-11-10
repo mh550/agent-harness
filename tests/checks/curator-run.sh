@@ -20,8 +20,9 @@ sed -e "s/{{RUN}}/cu/g" -e "s/{{DATE}}/$cday/g" -e "s/{{LINE:A}}/$la/g" -e "s/{{
 check "curator: a run under MEMORY_POLICY=pr ends done with one zz-curator transcript and a curator metrics row" \
   'grep -q "^done" "$(st cu)/ended" && [[ $(ls "$(st cu)"/logs/zz-curator-*.jsonl 2> /dev/null | wc -l) == 1 ]] \
   && [[ $(jq -s "map(select(.role == \"curator\" and .kind == \"curator\")) | length" "$(rec cu)/metrics.jsonl") == 1 ]]'
-check "curator: its run.log line comes after the retro's, its notes before the record PR's" \
-  'r=$(rline cu "[0-9] retro · ") c=$(rline cu "[0-9] curator · ") n=$(ats cu " · curator: ") p=$(ats cu " · record PR "); [[ -n $r && -n $c && -n $n && -n $p ]] && (( r < c && n < p ))'
+check "curator: its run.log line comes after the retro's, its notes and then the memory review's before the record PR's" \
+  'r=$(rline cu "[0-9] retro · ") c=$(rline cu "[0-9] curator · ") n=$(ats cu " · curator: ") p=$(ats cu " · record PR ") \
+  v=$(ats cu " · memory review: ") m=$(hlog cu | grep -n " · memory review: " | tail -1 | cut -d: -f1); [[ -n $r && -n $c && -n $n && -n $p && -n $v && -n $m ]] && (( r < c && n < v && m < p ))'
 check "curator: memory-ops.json is kept in the run record" \
   '[[ $la =~ ^[0-9]+$ && $lb =~ ^[0-9]+$ ]] && (( la > 1 && lb > 1 )) && git -C "$T/origin.git" show harness/cu:.harness/runs/cu/memory-ops.json > "$T/cu-kept.json" && cmp -s "$T/cu-ops.json" "$T/cu-kept.json"'
 check "curator: a curator's edits to CLAUDE.md and lib/ are reverted with one note, its memory-ops.json kept and the record PR opened" \

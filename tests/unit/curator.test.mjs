@@ -619,3 +619,77 @@ test("curator.mjs: the Gotchas comment line is no entry: at 15 facts and the com
   const only = apply([op()], T(withC(0)), ENTRIES, RUN);
   assert.equal(only.texts["CLAUDE.md"].split("\n").slice(2, 6).join("|"), `## Gotchas|${COMMENT}|- ${FACT}|`);
 });
+
+// the reviewer's verdicts (decisions/2026-11-09-memory-reviewer): facts/<i> in apply's order, rules/<n> by number
+const V = (...fails) => ({ ops: fails.map(([id, reason]) => ({ id, holds: !reason, reason: reason ?? null })) });
+const F2 = "A second fact the stub's B entry states for itself (r1 2026-11-07)", F2E = E({ feature: "B", discoveries: [{ text: F2, affects: ["project"] }] });
+
+test("curator.mjs apply: --verdicts drops a failed fact at its write with review: <reason> (<id>), after every other step; without verdicts nothing is dropped by verdict; the rules keep every op", () => {
+  const es = [...ENTRIES, F2E], ops = [op(), op({ text: F2, from: "entries.jsonl:3" }), op({ section: "## Code rules", text: PROPOSAL, tier: 2 })];
+  const dry = apply(ops, T(MD), es, RUN);
+  assert.equal(`${dry.applied.length} ${dry.rules.length} ${reasons(dry)}`, "2 1 ");
+  const v = V(["facts/1", "7 files (q2)"], ["facts/2"], [`rules/${dry.rules[0].n}`, "a duplicate (q4)"]);
+  const r = apply(ops, T(MD), es, RUN, { verdicts: v });
+  assert.equal(reasons(r), "review: 7 files (q2) (facts/1)");
+  assert.equal(`${r.applied.map(o => o.text).join()} | ${r.rules.length}`, `${F2} | 1`);
+  assert.equal(r.texts["CLAUDE.md"].includes(FACT), false);
+  assert.equal(r.ruleTexts["CLAUDE.md"], dry.ruleTexts["CLAUDE.md"], "the rules PR carries every op under every policy");
+  assert.equal(apply(ops, T(MD), es, RUN, { verdicts: V(["facts/1"], ["facts/2"]) }).texts["CLAUDE.md"], dry.texts["CLAUDE.md"]);
+  assert.equal(reasons(apply(ops, T(MD), es, RUN, { verdicts: V(["facts/2"]) })), "review: not reviewed (facts/1)", "a fact with no verdict never lands");
+  // the duplicate-key choice stays as the full list made it: the later entry's op kept, failed; the earlier one never lands
+  const dup = [op({ text: "A third fact said twice by its two entries, the later one (r1 2026-11-07)", from: "entries.jsonl:3" }), op({ text: "A third fact said twice by its two entries (r1 2026-11-07)" })];
+  const des = [ENTRIES[0], E({ discoveries: [{ text: "A third fact said twice by its two entries (r1 2026-11-07)", affects: ["project"] }] }), E({ feature: "B", discoveries: [{ text: "A third fact said twice by its two entries, the later one (r1 2026-11-07)", affects: ["project"] }] })];
+  const dd = apply(dup, T(MD), des, RUN), dv = apply(dup, T(MD), des, RUN, { verdicts: V(["facts/1", "no incident (q1)"]) });
+  assert.equal(`${dd.applied.length} ${dd.dropped.length}`, "1 1");
+  assert.equal(`${dv.applied.length} ${reasons(dv)}`, "0 review: no incident (q1) (facts/1) | duplicate key; entries.jsonl:3 kept");
+  assert.equal(dv.texts["CLAUDE.md"], MD);
+});
+
+test("curator.mjs apply: the landing with --verdicts is the dry run's texts minus the failed ops' writes; a held op the failed one made room for is dropped over the cap", () => {
+  const es = [...ENTRIES, F2E], md = gotchas(13), ops = [op({ anchor: G(3) }), op({ text: F2, from: "entries.jsonl:3" }), op({ op: "replace", anchor: G(5), text: FACT.replace("needs", "wants") })];
+  const xs = [E({ discoveries: [{ text: FACT, affects: ["project"] }, { text: FACT.replace("needs", "wants"), affects: ["project"] }] }), F2E];
+  const dry = apply(ops, T(md), [ENTRIES[0], ...xs], RUN), ids = dry.applied.map((o, i) => [`facts/${i + 1}`, o.text]);
+  assert.equal(ids.length, 3, reasons(dry));
+  const fail = ids.find(([, t]) => t === F2)[0], r = apply(ops, T(md), [ENTRIES[0], ...xs], RUN, { verdicts: V(...ids.map(([id]) => [id, id === fail ? "a duplicate (q4)" : undefined])) });
+  assert.equal(r.texts["CLAUDE.md"], dry.texts["CLAUDE.md"].replace(`- ${F2}\n`, ""));
+  assert.equal(JSON.stringify(r.applied), JSON.stringify(dry.applied.filter(o => o.text !== F2)));
+  // at 15: the delete makes room for the add; with the delete failed the add would be the 16th, so it goes too
+  const full = gotchas(15), two = [op(), op({ op: "delete", text: undefined, anchor: G(4) })], d2 = apply(two, T(full), ENTRIES, RUN);
+  assert.equal(d2.applied.map(o => o.op).join(), "delete,add");
+  const r2 = apply(two, T(full), ENTRIES, RUN, { verdicts: V(["facts/1", "a check reads it (q2)"], ["facts/2"]) });
+  assert.equal(reasons(r2), "review: a check reads it (q2) (facts/1) | over the cap once the review's failed ops were dropped: ## Gotchas: 16 entries, over 15");
+  assert.equal(r2.texts["CLAUDE.md"], full);
+});
+
+test("curator.mjs body: --review puts ## Review after the head and before Applied; over BODY_MAX the review's table goes first and its one-line verdicts never", () => {
+  const r = apply([op()], T(MD), ENTRIES, RUN), rv = "## Review\n\n1 reviewed · 0 held · 1 failed\n\n- facts/1 **fails**: 7 files (q2)\n\n| Op | Q | What you ran or read | What you saw | Holds |\n|---|---|---|---|---|\n| facts/1 | 2 | git grep | 7 files | no |\n";
+  const b = body(r, RUN, "facts", "", rv), at = s => b.indexOf(s);
+  assert.ok(at("Project memory curated") === 0 && at("Project memory curated") < at("## Review") && at("## Review") < at("- facts/1 **fails**: 7 files (q2)")
+    && at("- facts/1 **fails**") < at("| facts/1 | 2 |") && at("| facts/1 | 2 |") < at("## Applied (tier 1)"), b);
+  assert.equal(body(r, RUN, "facts", ""), body(r, RUN, "facts", "", ""), "no review, the body as before");
+  const many = Array.from({ length: 50 }, (_, i) => op({ text: `${FACT.slice(0, -14)} number ${i} (r1 2026-11-07)`, why: "w".repeat(290) }));
+  const big = { ...r, applied: many }, table = Array.from({ length: 200 }, (_, i) => `| facts/${i} | 1 | ${"r".repeat(150)} | ${"s".repeat(150)} | yes |`).join("\n");
+  const huge = body(big, RUN, "facts", "", `## Review\n\n- facts/1 holds\n- facts/2 **fails**: x (q1)\n\n| Op | Q | What you ran or read | What you saw | Holds |\n|---|---|---|---|---|\n${table}\n`);
+  assert.ok(Buffer.byteLength(huge) <= 60000);
+  assert.equal(`${huge.includes("| facts/7 | 1 |")} ${huge.includes("- facts/2 **fails**: x (q1)")} ${huge.includes("number 49")}`, "false true true", "the table goes before any applied op");
+  assert.ok(huge.includes("_The review's table was cut"), "a line says the table was cut");
+});
+
+test("curator.mjs body: a fact the review dropped is a failed one, named in ## Review alone: never in the head's dropped count or ## Dropped", () => {
+  const es = [...ENTRIES, F2E], ops = [op(), op({ text: F2, from: "entries.jsonl:3" })];
+  const r = apply(ops, T(MD), es, RUN, { verdicts: V(["facts/1", "7 files (q2)"], ["facts/2"]) });
+  assert.equal(reasons(r), "review: 7 files (q2) (facts/1)");
+  const b = body(r, RUN, "facts", "");
+  assert.equal(`${b.includes(" · 0 dropped · ")} ${b.includes("## Dropped")} ${b.includes("7 files (q2)")}`, "true false false", b.split("\n")[0]);
+  const g = apply([op(), op({ section: "## Nowhere" })], T(MD), ENTRIES, RUN, { verdicts: V(["facts/1"]) });
+  assert.equal(`${g.dropped.length} ${body(g, RUN, "facts", "").includes(" · 1 dropped · ")}`, "1 true", "the gate's drops still count");
+});
+
+test("curator.mjs apply: in the --verdicts landing a held add that a failed replace leaves a duplicate of is dropped, never written twice", () => {
+  const md = gotchas(3), es = [ENTRIES[0], E({ discoveries: [{ text: FACT, affects: ["project"] }, { text: G(2), affects: ["project"] }] })];
+  const ops = [op({ op: "replace", anchor: G(2), text: FACT }), op({ text: G(2) })], dry = apply(ops, T(md), es, RUN);
+  assert.equal(`${dry.applied.length} ${reasons(dry)}`, "2 ");
+  const r = apply(ops, T(md), es, RUN, { verdicts: V(["facts/1", "a check reads it (q2)"], ["facts/2"]) });
+  assert.equal(reasons(r), "review: a check reads it (q2) (facts/1) | review: already in ## Gotchas once the review's failed ops were dropped (facts/2)");
+  assert.equal(r.texts["CLAUDE.md"], md);
+});

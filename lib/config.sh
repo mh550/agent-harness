@@ -40,6 +40,7 @@ harness_config() {
   MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m   # mem_gate before each session: under this much MemAvailable, wait up to this long, then start anyway
   INIT_MODEL=fable WORKER_MODEL=opus VERIFY_MODEL=sonnet VERIFY_ESCALATE_MODEL=opus RETRO_MODEL=sonnet SUPERVISOR_MODEL=opus
   CURATOR_MODEL=opus   # the curator: one read-only session at finish that writes memory-ops.json (40 turns, $3 cap, like the retro)
+  MEMORY_REVIEW_MODEL=opus   # the memory reviewer: one read-only session after the curator that writes memory-review.json (40 turns, $3 cap, like the curator)
   REVIEW_OPUS_LINES=400 REVIEW_ESCALATE_MODEL=opus   # a review feature: sonnet under this many changed lines, opus at or over (M6)
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)
   POLICY=build-only MERGE_POLICY=pr MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1   # MERGE_POLICY=pr: a project self-merges only by setting auto
@@ -55,7 +56,7 @@ harness_config() {
   # a conflict with main in a lane: resolve = a resolve session, verified, merged; michael = needs Michael (decisions/2026-10-29-conflict-resolution)
   CONFLICTS=resolve RESOLVE_MODEL=opus RESOLVE_MAX_TURNS=60 RESOLVE_BUDGET_USD=5 RESOLVE_TIMEOUT=30m MAX_RESOLVES=3
   RECORD_PR=end   # the run record's own PR, opened at finish (off = none: the record stays on harness/<run>)
-  MEMORY_POLICY=pr   # the curator at finish: pr = tier 1 on harness-memory/<run>, its PR left for Michael; auto = that PR merged by the driver; off = no curator (separate from MERGE_POLICY: decisions/2026-11-07-memory-policy)
+  MEMORY_POLICY=pr   # the curator at finish: pr = tier 1 on harness-memory/<run>, its PR left for Michael; auto = that PR merged by the driver when the memory review ran and every committed op held; off = no curator (separate from MERGE_POLICY: decisions/2026-11-07-memory-policy)
   LIVE_SYNC=1   # the queue runner keeps the live checkout level with origin while no run is alive (lib/sync.sh; 0 = off)
   CONTEXT_PACK_BYTES=8192   # context.md's cap (E4): the pack of the journal a coding session reads first
   CONTEXT_PACK_BYTES_VERIFY=16384   # a verify session's pack: its failed rows first (decisions/2026-10-26-pack-current-rules)

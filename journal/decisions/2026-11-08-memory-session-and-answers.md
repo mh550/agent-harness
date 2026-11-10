@@ -64,8 +64,9 @@ decisions/2026-11-07-memory-tiers (the known limit this closes).)*
     merged (MEMORY_POLICY=auto), left open · <url>`. The edit's own failure note is held back for this one case (its
     `quiet` argument), so the segment says it once.
   - *Default*: no retry of the edit inside the segment (one `gh` call per step is the harness's origin rule); the
-    branch is pushed and the PR open, so the next segment reuses both, refreshes the body and merges then at the head
-    it pushed.
+    branch is pushed and the PR open, so the next segment reuses both and refreshes the body; since R1-03 of
+    agent-harness-2026-11-09 it no longer merges then (the driver merges only a PR whose one commit past main is the
+    segment's own), so the PR waits for Michael.
   - *Default*: the second facts edit, the one that names a rules PR opened after the facts body was written, does not
     decide the merge: a failed first edit stays unmerged even when the second succeeds (one rule, and the first
     failure keeps its note), and a failed second edit after a good first one still merges, since this segment's body is
@@ -74,7 +75,8 @@ decisions/2026-11-07-memory-tiers (the known limit this closes).)*
     (invariant 3), so this concerns the facts PR alone.
   - Checks (tests/checks/memory-branch.sh, slow): `memory PR: under MEMORY_POLICY=auto a reused PR whose body refresh
     failed gets its commit but no merge, with one note` and `memory PR: the next segment refreshes the reused PR's body
-    and merges it at the commit it pushed`, on two continues of the `mw` run (`STUB_GH_DOWN=1 STUB_GH_DOWN_ONLY=edit`,
+    and merges it at the commit it pushed` (now `memory PR: under auto the next segment refreshes the reused PR's body
+    and leaves it open: …`), on two continues of the `mw` run (`STUB_GH_DOWN=1 STUB_GH_DOWN_ONLY=edit`,
     then gh up), each adding one fact (`tests/fixtures/memory/stub-fact-b.json`, `stub-fact-c.json`). Both red before
     the change (the first continue merged). No unit test: no pure function changed.
 - **Rejected (N2-02):** a retry of the edit inside the segment (a second `gh` call for one step, and the next segment
@@ -144,3 +146,9 @@ decisions/2026-11-07-memory-tiers (the known limit this closes).)*
   30: N2-01 3 (curator-run), N2-02 2 (memory-branch), N2-03 14 (8 unit, 6 stub), N2-04 none new (two of N2-03's unit
   names reworded in place for the asserts the review added: a sentence sharing the 40-character key, a torn answers
   line).
+Updated in place 2026-11-09: `CURATOR_DENY` is one top-level array of `lib/driver.sh`, and the memory reviewer is its
+second reader (`S_DENY` in `memory_review()`): decisions/2026-11-09-memory-reviewer.
+Updated in place 2026-11-10: under `auto` a reused facts PR is merged only when its one commit past main is this
+segment's own; the N2-02 continue that refreshed a failed body and merged the earlier commit with its own now leaves the
+PR open (decisions/2026-11-09-memory-reviewer, R1-03's review, I1: a `Memory-review: held` trailer any session could
+write was the only thing vouching for the earlier commit).

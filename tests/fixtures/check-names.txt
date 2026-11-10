@@ -407,7 +407,12 @@ coverage: shScan leaves out comments, closing words, a case's bare pattern, a fu
 coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
 coverage: two processes' V8 documents add up: a character ran when it did in either
 curator.mjs answers: declined then accepted, newest first, (none yet) for none, cut at --max-bytes naming how many were left out
+curator.mjs apply: --verdicts drops a failed fact at its write with review: <reason> (<id>), after every other step; without verdicts nothing is dropped by verdict; the rules keep every op
 curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; a tier-1 op and a different sentence never match, not even one sharing its 40-character key
+curator.mjs apply: in the --verdicts landing a held add that a failed replace leaves a duplicate of is dropped, never written twice
+curator.mjs apply: the landing with --verdicts is the dry run's texts minus the failed ops' writes; a held op the failed one made room for is dropped over the cap
+curator.mjs body: --review puts ## Review after the head and before Applied; over BODY_MAX the review's table goes first and its one-line verdicts never
+curator.mjs body: a fact the review dropped is a failed one, named in ## Review alone: never in the head's dropped count or ## Dropped
 curator.mjs main: apply --answers <file> --project <p> drops the project's answered rule; answers <file> <project> renders the prompt's block
 curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/
 curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands
@@ -449,7 +454,7 @@ curator: an empty memory-ops.json counts zeros and PR none (summary.json, the Me
 curator: an empty memory-ops.json notes no operations; no memory branch, no memory PR
 curator: an invalid memory-ops.json is one note; the run ends done and its record PR opens
 curator: an unknown MEMORY_POLICY is one note and the curator runs as under pr
-curator: its run.log line comes after the retro's, its notes before the record PR's
+curator: its run.log line comes after the retro's, its notes and then the memory review's before the record PR's
 curator: its run.log line names the deny list and harness-log.md has one note saying so
 curator: memory-ops.json is kept in the run record
 curator: the curator session alone runs under --disallowedTools, with Bash(git push:*) and Bash(gh:*) and nothing else
@@ -505,6 +510,7 @@ entries.mjs: a coding entry's checks field (the over-budget reason) is a string,
 entries.mjs: a damaged journal line is skipped, never fused or fatal
 entries.mjs: a milestone pack lists failed verify rows before dead ends
 entries.mjs: a summary can't open a code fence or an HTML block, and a 2000-character id keeps the pack within its cap
+entries.mjs: evidenceTable renders the verify's five-column table; renderEntry's verify output is byte-identical to before it
 entries.mjs: main gives the CLI's bytes for validate (missing 1, invalid 1, valid 0), pack, session-files, questions and findings
 entries.mjs: main's ingest and render leave the files the CLI leaves, with its lines and rc
 entries.mjs: progress renders 15 in full and the rest as archive lines
@@ -1050,18 +1056,39 @@ memory PR: no run leaves a local harness-memory or harness-rules branch or a reg
 memory PR: summary.json's memory holds the counts and both URLs, harness report prints the Memory row, and memory-result.json is in the run record
 memory PR: the PR is opened and left for Michael under MEMORY_POLICY=pr
 memory PR: the commit changes CLAUDE.md alone
-memory PR: the next segment refreshes the reused PR's body and merges it at the commit it pushed
 memory PR: the notes count the ops, re-derived tiers and each dropped op; memory.json holds the counts
 memory PR: the run's record PR opens too
 memory PR: the same add with an anchor lands as one edit
 memory PR: the two project facts land under Gotchas in one commit on harness-memory/<run>, with their suffix
 memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note
 memory PR: under MEMORY_POLICY=auto a reused PR whose body refresh failed gets its commit but no merge, with one note
+memory PR: under auto the next segment refreshes the reused PR's body and leaves it open: the earlier segments' commits on it are not its own, a held trailer on one included
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+memory review: a commit a git hook changed after the landing wrote its text is never pushed: one note per tier, no memory branch or PR
+memory review: a continue after no review reviews its new fact and leaves the reused PR open under auto, its earlier commit unreviewed
+memory review: a fact restating a rule Michael declined fails q4 naming declined by Michael (<run>/<n>), marked **fails** in the PR body under pr
+memory review: a file the landing reads that changes during the review (the answers file) lands nothing: one note, no memory branch or PR
+memory review: a review with three rows for an op fails it as review too thin (3 of 4 rows); the rest hold
+memory review: a reviewer that changes the ops in scratch lands nothing: the landing differs from what it read, one note, no memory branch or PR
+memory review: a reviewer's edits to CLAUDE.md and lib/ are reverted with one note, its memory-review.json kept and the record PR opened
+memory review: a run under MEMORY_POLICY=pr ends done with one zz-memory-review transcript and a memory-review metrics row after the curator's
+memory review: its run.log line follows the curator's; its denied note follows the curator's notes and precedes the first memory PR note
+memory review: memory-review-input.json lists facts/1, facts/2 and rules/<n> (memory-result.json's number), each op with its base (the rules base for rules/*) and after paths and the cap read on that base
+memory review: memory-review.json is kept in the run record and memory.json reads reviewed 3, held 3, failed 0, review ok, merged_by null
+memory review: prompts/memory-review.md renders through lib/prompt.sh as a command: the files, the four questions, the thin rule, read-only, no {{ left
+memory review: the review session runs under --disallowedTools with exactly Bash(git push:*) and Bash(gh:*); no role but the curator's carries it
+memory review: the rules PR carries the verdict and is never merged by the driver
+memory review: under auto the failed eviction is dropped from the facts commit by verdict, the held replace lands, the PR merges; memory.json failed 1, merged_by driver, dropped as under pr
+memory review: under auto the rules PR carries every op with its verdict and is never merged
+memory review: under pr a failed eviction reads **fails** with its grep in the table, stays in the facts commit, is named in one note, and its PR is left open
+memory review: under pr both PR bodies and memory.md carry ## Review, one holds line per op and the five-column table; one note counts 3 reviewed · 3 held · 0 failed
+memory review: what lands on harness-memory/<run> and harness-rules/<run> is the dry apply's after texts the reviewer read
+memory review: with every op proposed no reviewer runs, one note says nothing to review, memory.json reviewed 0, and no facts PR opens
+memory review: with no review (no file, an invalid file, a limit, a timeout after a valid file) under auto the PR opens with none: <why>, one note, every op committed and no merge
 memory rules PR: MEMORY_POLICY=auto merges the facts PR alone and leaves the rules PR for Michael
 memory rules PR: a continue after main gained lines outside Gotchas drops the tier-2 add the merge would take past the cap
 memory rules PR: a rule Michael declined is dropped by a later run with his why and opens no rules PR; its curator prompt carries the line
@@ -1079,6 +1106,14 @@ memory: a session that leaves CLAUDE.md and .harness/project.md alone gets no re
 memory: the initializer's Gotchas write stays reverted with its outside-the-record note
 memory: the same session's lib, tests and journal/decisions edits stay on the branch and merge
 memory_guard: after a session's own merge of main, main's CLAUDE.md lines stay; only the session's own edit goes
+memreview.mjs: capReading Gotchas entries and lines as the gate counts them; no file is null
+memreview.mjs: input an apply result with empty applied and rules is an empty list (nothing to review)
+memreview.mjs: input as a command prints the list as one JSON document and exits 0
+memreview.mjs: input facts/<i> in apply's order then rules/<n> with the result's numbers, each with its paths and the cap reading
+memreview.mjs: render the ## Review section, one line per op and the verify's five-column table; none: <why> without a review
+memreview.mjs: validate passes four rows per item and refuses, naming the row, an unknown id, a q of 5, a doubled (id, q), a non-boolean holds and too many rows
+memreview.mjs: validate, verdicts and render as commands
+memreview.mjs: verdicts holds an op with four holding rows and fails one on its first failing row's saw (q named), one with three rows as thin and one with none as not reviewed
 merge-sorted: a base line one side removed stays removed
 merge-sorted: a line both sides added is one line
 merge-sorted: a side not in LC_ALL=C order falls back to git's text merge: clean is 0, a conflict exits 1 with markers in A
@@ -1689,6 +1724,7 @@ summary end reason is how the run ended
 summary, report and retro written
 summary.mjs memory: a summary built before this run has no Memory row
 summary.mjs memory: build reads memory.json's keys, the rules PR's among them, none with no file
+summary.mjs memory: build reads the review's keys and memoryLine ends with the review's counts; nothing for a memory.json without reviewed
 summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
 summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row

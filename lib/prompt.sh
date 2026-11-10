@@ -100,18 +100,19 @@ prompt_render() {   # template name → stdout: the static template, the policy,
   [[ $1 == coding ]] && gap=${HARNESS_GAP:-}   # a claim gap's told retry: the lane's words for {{GAP}} (decisions/2026-11-09-claim-gap); no other template has the block
   local answers=${HARNESS_MEMORY_ANSWERS:-}   # curator() renders it; lib/prompt.sh's own use outside a driver, here
   [[ $1 == curator && -z $answers ]] && answers=$(memory_answers)
+  local afile=${LEDGER:-${HARNESS_LEDGER:-$HARNESS_HOME/ledger}}/memory-answers.jsonl   # the reviewer's Q4 reads its declined rows, read-only
   # Claude Code loads CLAUDE.md in the worktree itself: one line names it, the file isn't pasted (decisions/2026-10-21-no-double-claude-md)
   [[ -f CLAUDE.md ]] && rules=("$HARNESS_HOME/prompts/parts/rules.md")
-  # the `## Where things go` block, unless CLAUDE.md has its own; verify, retro and curator edit nothing, so theirs routes facts to
-  # discoveries, and with the project's own block they still get that one rule, without the heading (decisions/2026-10-26-where-things-go)
-  [[ $1 == verify || $1 == retro || $1 == curator ]] && where=where-things-go-readonly
+  # the `## Where things go` block, unless CLAUDE.md has its own; verify, retro, curator and memory review edit nothing, so theirs
+  # routes facts to discoveries, and with the project's own block they still get that one rule, without the heading (decisions/2026-10-26-where-things-go)
+  [[ $1 == verify || $1 == retro || $1 == curator || $1 == memory-review ]] && where=where-things-go-readonly
   if ! grep -qE '^## Where things go[[:space:]]*$' CLAUDE.md 2> /dev/null; then
     if (( ${#rules[@]} )); then rules+=("$HARNESS_HOME/prompts/parts/$where.md")
     else rules=("Project rules (this project has no CLAUDE.md)=$HARNESS_HOME/prompts/parts/$where.md"); fi
   elif [[ $where == where-things-go-readonly ]]; then rules+=("$HARNESS_HOME/prompts/parts/where-things-go-override.md")
   fi
   if [[ $1 == entry-resume ]]; then extra=()   # a resumed session has the policy, the run and the rules in its context
-  elif [[ $1 == retro || $1 == curator ]]; then extra=("${rules[@]}")   # the rules and the read-only part: no policy, run or brief
+  elif [[ $1 == retro || $1 == curator || $1 == memory-review ]]; then extra=("${rules[@]}")   # the rules and the read-only part: no policy, run or brief
   else   # these go at the template's {{SECTIONS}} line: nothing run-specific before the policy (decisions/2026-10-21-static-first-prompts)
     extra=("Harness policy for this project=$HARNESS_HOME/prompts/policy/$POLICY.md" "$HARNESS_HOME/prompts/parts/run.md")
     # the brief as written: a "{{X}}" in it would put session values into the shared prefix (E3 review F7)
@@ -122,7 +123,7 @@ prompt_render() {   # template name → stdout: the static template, the policy,
   fi
   # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
   HARNESS_DECISIONS=$(ask memlint.mjs store-line .) HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
-    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix HARNESS_GAP=$gap HARNESS_MEMORY_ANSWERS=$answers ask render.mjs "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
+    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix HARNESS_GAP=$gap HARNESS_MEMORY_ANSWERS=$answers HARNESS_ANSWERS_FILE=$afile ask render.mjs "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
