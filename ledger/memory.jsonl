@@ -1,1 +1,2 @@
 {"run":"agent-harness-2026-11-07-3","project":"agent-harness","url":"https://github.com/mh550/agent-harness/pull/137","ops":2,"applied":1,"dropped":1,"proposed":0,"at":"2026-11-08T01:58:17.933Z"}
+{"run":"agent-harness-2026-11-09","project":"agent-harness","tier":"facts","url":"https://github.com/mh550/agent-harness/pull/169","ops":1,"applied":1,"dropped":0,"proposed":0,"sections":["## Gotchas"],"at":"2026-11-10T07:54:20.828Z"}

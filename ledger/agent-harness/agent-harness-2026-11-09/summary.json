@@ -1,0 +1,306 @@
+{
+  "run": "agent-harness-2026-11-09",
+  "project": "agent-harness",
+  "branch": "harness/agent-harness-2026-11-09",
+  "started": "2026-11-10T03:45:35.000Z",
+  "ended_at": "2026-11-10T07:54:09.000Z",
+  "end_reason": "done",
+  "continuations": 0,
+  "features": {
+    "total": 6,
+    "passing": 6,
+    "verified": 6,
+    "merged": 6
+  },
+  "milestones": [
+    {
+      "id": "R1",
+      "features": 3,
+      "passing": 3,
+      "verified": true,
+      "merged": true
+    },
+    {
+      "id": "R2",
+      "features": 3,
+      "passing": 3,
+      "verified": true,
+      "merged": true
+    }
+  ],
+  "tests": {
+    "start": 1950,
+    "end": 2000
+  },
+  "flakes": {
+    "count": 0,
+    "names": {}
+  },
+  "fix_rounds": {
+    "opened": 0,
+    "fixed": 0,
+    "by_milestone": {}
+  },
+  "suite_runs": {
+    "sessions": 6,
+    "full": 0,
+    "fast": 7,
+    "runs": 7,
+    "full_per_session": 0,
+    "fast_per_session": 1.2
+  },
+  "memory": {
+    "ops": 1,
+    "applied": 1,
+    "dropped": 0,
+    "proposed": 0,
+    "pr": "https://github.com/mh550/agent-harness/pull/169",
+    "rules": 0,
+    "rules_pr": null,
+    "sections": {
+      "facts": [
+        "## Gotchas"
+      ],
+      "rules": []
+    }
+  },
+  "checks": {
+    "added": 51,
+    "replaced": 3,
+    "removed": 1,
+    "source": "fixture",
+    "by_milestone": {
+      "R1": {
+        "added": 37,
+        "replaced": 1,
+        "removed": 1,
+        "budget": 35
+      },
+      "R2": {
+        "added": 14,
+        "replaced": 2,
+        "removed": 0,
+        "budget": 25
+      }
+    }
+  },
+  "conflicts": {
+    "resolved": 0,
+    "escalated": 0,
+    "sessions": 0
+  },
+  "resolutions": [],
+  "cost": {
+    "total": 49.37,
+    "per_passing_feature": 8.23,
+    "by_role": {
+      "init": 4.06,
+      "build": 28.28,
+      "review": 12.99,
+      "verify": 3.67,
+      "retro": 0.13,
+      "curator": 0.24
+    },
+    "by_model": {
+      "claude-fable-5-1": 4.06,
+      "claude-opus-5-5": 45.18,
+      "claude-sonnet-5-5": 0.13
+    },
+    "manager": 0
+  },
+  "time": {
+    "wall_h": 4.14,
+    "sessions_h": 3.49,
+    "driver_h": 0.66,
+    "by_role_h": {
+      "init": 0.13,
+      "build": 2.18,
+      "review": 0.93,
+      "verify": 0.23,
+      "retro": 0.01,
+      "curator": 0.01
+    }
+  },
+  "lanes": {
+    "max_open": 2,
+    "lane_hours": 3.79,
+    "wall_hours": 4.14
+  },
+  "helper": {
+    "restarts": 0,
+    "off": 0,
+    "whys": {}
+  },
+  "tokens": {
+    "in": 1936,
+    "cache_read": 91502757,
+    "cache_write": 2332546,
+    "out": 622202,
+    "cache_hit_rate": 0.975,
+    "context_peak": 286592,
+    "by_role": {
+      "init": {
+        "in": 610,
+        "cache_read": 1545365,
+        "cache_write": 115806,
+        "out": 27052
+      },
+      "build": {
+        "in": 772,
+        "cache_read": 59808166,
+        "cache_write": 1238506,
+        "out": 374019
+      },
+      "review": {
+        "in": 420,
+        "cache_read": 24501331,
+        "cache_write": 682301,
+        "out": 187450
+      },
+      "verify": {
+        "in": 116,
+        "cache_read": 5390462,
+        "cache_write": 248853,
+        "out": 30085
+      },
+      "retro": {
+        "in": 8,
+        "cache_read": 115323,
+        "cache_write": 24897,
+        "out": 1893
+      },
+      "curator": {
+        "in": 10,
+        "cache_read": 142110,
+        "cache_write": 22183,
+        "out": 1703
+      }
+    }
+  },
+  "per_verified_feature": {
+    "cost": 8.23,
+    "tokens": 15743240
+  },
+  "orientation": {
+    "tokens": 5029866,
+    "turns": 50,
+    "seconds": 766.32
+  },
+  "rework": [],
+  "first_attempt_pass_rate": 1,
+  "verify_fail_rate": 0,
+  "review": {
+    "cost_pct": 26.3,
+    "found_nothing": 0,
+    "reviews": 2
+  },
+  "harness": {
+    "version": "f1c50eb",
+    "dirty": false
+  },
+  "sessions": {
+    "total": 11,
+    "real": 11,
+    "environmental": 0
+  },
+  "guards": {
+    "repairs": 0,
+    "red_unpass": 0,
+    "verify_failed": 0,
+    "limit_waits": 0,
+    "verify_escalations": 0,
+    "merges": 2
+  },
+  "features_detail": [
+    {
+      "id": "R1-01",
+      "milestone": "R1",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 35,
+      "cost": 8.21,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "R1-02",
+      "milestone": "R1",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 50,
+      "cost": 10.24,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "R1-03",
+      "milestone": "R1",
+      "kind": "review",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 36,
+      "cost": 7.59,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "R2-01",
+      "milestone": "R2",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 22,
+      "cost": 3.3,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "R2-02",
+      "milestone": "R2",
+      "kind": "build",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 25,
+      "cost": 6.53,
+      "cause": null,
+      "detail": null
+    },
+    {
+      "id": "R2-03",
+      "milestone": "R2",
+      "kind": "review",
+      "model": "opus",
+      "passes": true,
+      "verified": true,
+      "merged": true,
+      "sessions": 1,
+      "refused": 0,
+      "minutes": 20,
+      "cost": 5.4,
+      "cause": null,
+      "detail": null
+    }
+  ]
+}
