@@ -27,50 +27,56 @@ dd{margin:0;font-variant-numeric:tabular-nums;font-size:14px}.open{margin:12px 0
 code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:color-mix(in srgb,var(--line) 60%,transparent);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
 pre{font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto}</style></head>
 <body><main>
-<h1>Debrief · 2026-11-08 05:41</h1>
-<p class="sub">1 run · page built 2026-11-08 10:41 UTC from each run's summary.json and the debrief note</p>
-<section class="headline"><p>Nothing verified or merged: agent-harness-2026-11-08 built N1 (4/4 features pass) but stopped on a verify evidence gap, and N2 (0/4) was never started.</p></section>
+<h1>Debrief · 2026-11-10 02:55</h1>
+<p class="sub">2 runs · page built 2026-11-10 07:55 UTC from each run's summary.json and the debrief note</p>
+<section class="headline"><p>Both runs finished, 14/14 features passing and verified. They landed N1/N2 (PRs #151, #152) and R1/R2 (PRs #167, #168) on main, and nothing is blocked. Spend was $103.98 (run 11-08 $54.61, run 11-09 $49.37). The usage window is open, with seven_day at 8% and resetting Sun 17:00.</p></section>
 <section class="cards"><article class="card">
-  <header><h3>agent-harness-2026-11-08</h3><span class="proj">agent-harness</span><span class="pill warn">waiting on Michael: N1</span></header>
-  <div class="big"><b>4/8 passing</b><span>0 verified · 0 merged</span></div>
-  <ul class="milestones"><li class="ms built" title="N1: 4/4 passing, built">N1</li><li class="ms todo" title="N2: 0/4 passing, todo">N2</li></ul>
-  <dl><div><dt>Spend</dt><dd>$32.22</dd></div><div><dt>Per feature</dt><dd>$8.06</dd></div>
-  <div><dt>Wall</dt><dd>2.87 h</dd></div><div><dt>Tests</dt><dd>1898 → 1911</dd></div></dl>
-  <ul class="open"><li><span class="cause">not reached</span> <code>N2-01</code> <code>N2-02</code> <code>N2-03</code> <code>N2-04</code><div class="detail">run ended: waiting on Michael: N1</div></li></ul>
+  <header><h3>agent-harness-2026-11-08</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>8/8 passing</b><span>8 verified · 8 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="N1: 4/4 passing, merged">N1</li><li class="ms merged" title="N2: 4/4 passing, merged">N2</li></ul>
+  <dl><div><dt>Spend</dt><dd>$54.61</dd></div><div><dt>Per feature</dt><dd>$6.83</dd></div>
+  <div><dt>Wall</dt><dd>6.06 h</dd></div><div><dt>Tests</dt><dd>1898 → 1930</dd></div></dl>
+  
+</article>
+<article class="card">
+  <header><h3>agent-harness-2026-11-09</h3><span class="proj">agent-harness</span><span class="pill good">done</span></header>
+  <div class="big"><b>6/6 passing</b><span>6 verified · 6 merged</span></div>
+  <ul class="milestones"><li class="ms merged" title="R1: 3/3 passing, merged">R1</li><li class="ms merged" title="R2: 3/3 passing, merged">R2</li></ul>
+  <dl><div><dt>Spend</dt><dd>$49.37</dd></div><div><dt>Per feature</dt><dd>$8.23</dd></div>
+  <div><dt>Wall</dt><dd>4.14 h</dd></div><div><dt>Tests</dt><dd>1950 → 2000</dd></div></dl>
+  
 </article></section>
-<section class="note"><p><em>runs since 2026-11-07 20:58:47: agent-harness-2026-11-08 · claude-sonnet-5-5, $0.14063399999999998 · context: /home/mh550/.local/state/harness/debrief/2026-11-08-054121/context.md</em></p>
-<p>The run branch was deleted by gc (<code>branch -D</code>, was 14f11a0), so check that the N1 code is on main (see &quot;For the next interactive session&quot;).<br>Spend $32.22 against a usage window that is open (seven_day 48%, resets Sun 17:00).</p>
+<section class="note"><p><em>runs since 2026-11-08 05:41:21: agent-harness-2026-11-08 agent-harness-2026-11-09 · claude-sonnet-5-5, $0.16757 · context: /home/mh550/.local/state/harness/debrief/2026-11-10-025454/context.md</em></p>
 <h3>Runs</h3>
-<h4>agent-harness-2026-11-08 (agent-harness) · waiting on Michael: N1</h4>
+<h4>agent-harness-2026-11-08 (agent-harness) · done</h4>
 <ul>
-<li>Features 4/8 passing, 0 verified, 0 merged. N1 is 4/4 built and N2 is 0/4 (not reached).</li>
-<li>Tests went 1898 → 1911 (+13), with 0 flakes, 0 fix rounds and a first-attempt pass rate of 1.0.</li>
-<li>Cost was $32.22 ($8.06 per passing feature) over 2.87 h. Build was $17.56, review $5.79, verify $2.50 and init $5.98 (Fable).</li>
-<li>The stop: verify N1 ran the full suite, but its evidence rows fell short of the steps (N1-03 6/7, N1-02 6/7, N1-01 7/8). It was retried on Opus and still fell short, so the lane closed as &quot;needs Michael&quot;. The remaining features wait on N1, so N2 never started.</li>
-<li>The N1-04 review ran once and found issues, so it wasn&#39;t wasted. The retro also says N1-03, N1-02 and N1-04 left design questions in <code>needs.md</code>. gc has since resolved those needs, and <code>progress.md</code> shows no open questions.</li>
-<li>Memory curator: 1 op, dropped (&quot;not stated by entries.jsonl:4&quot;). No memory PR.</li>
-<li>Record PR #146 was merged into main.</li>
+<li>8/8 passing, N1 and N2 verified and merged. Tests went 1898 → 1930. Cost was $54.61 ($6.83 per feature) over 6.1 h wall.</li>
+<li>It stopped once, at 05:39 on 11-08. N1 verify found the evidence short of the steps (N1-03 6/7, N1-02 6/7, N1-01 7/8), and the run waited on Michael. It resumed at 22:09 after about 16 h idle.</li>
+<li>The second verify failed N1-04. A 15 min redo passed it. First-attempt pass rate was 0.88.</li>
+<li>The memory curator dropped its one op (add ## Gotchas, &quot;not stated by entries.jsonl:4&quot;). No memory PR was opened.</li>
+</ul>
+<h4>agent-harness-2026-11-09 (agent-harness) · done</h4>
+<ul>
+<li>6/6 passing, R1 (the memory reviewer) and R2 verified and merged. Tests went 1950 → 2000. Cost was $49.37 ($8.23 per feature) over 4.1 h wall. First-attempt pass rate was 1.00, with no rework and no verify failures.</li>
+<li>R1 went over its check budget: +37 against 35. The retro names the review&#39;s I2 hook check and M4&#39;s body unit test as the overrun.</li>
+<li>Reviews took 26% of the cost, because every review runs on opus.</li>
+<li>Memory PR #169 is open and waiting for Michael (MEMORY_POLICY=pr). The curator&#39;s push and gh were denied, as designed. Record PR #170 is merged.</li>
 </ul>
 <h3>Needs Michael</h3>
 <ul>
-<li>Decide how to handle the N1 verify gap (run agent-harness-2026-11-08, <code>harness-log.md</code> 05:39). Choose between re-running verify and accepting N1 as built. The retro can&#39;t say whether steps were skipped or just not logged, because <code>entries.jsonl</code> has no per-step rows.</li>
-<li>Check what happened to the N1-01..04 design questions that gc marked &quot;resolved (run removed)&quot; (<code>needs.md</code>). They may have been lost with the run.</li>
+<li>Memory PR #169 (run 11-09): review it and merge or close it. It holds one fact for <code>## Gotchas</code>, and it evicted the &quot;INBOX.md: cut at lib/inbox.mjs answersLine&quot; line.</li>
+<li>Confirm that reviews are meant to run on opus every time. The run 11-09 log shows &quot;at or over 0&quot; for the size threshold on both reviews (R1-03, R2-03), which looks like a threshold of 0.</li>
 </ul>
 <h3>For the next interactive session</h3>
-<ul>
-<li>Branch and merge state: <code>harness/agent-harness-2026-11-08</code> was deleted locally and on origin with 0 milestones merged. Confirm whether N1 reached main (via PR #146 or otherwise) before re-running. If it didn&#39;t, the work is only in the ledger record and the reflog. No merge conflicts were reported.</li>
-<li>Open <code>proposed</code> retro items, most <code>runs_seen</code> first (all re-raised by this run):</li>
-</ul>
+<p>No merge conflicts, and no held or refused merges. These are the open <code>proposed</code> Retro backlog items, most <code>runs_seen</code> first:</p>
 <ol>
-<li><code>verify-evidence-rows</code>, seen 11: record per-step evidence rows from verify sessions in <code>entries.jsonl</code>. This is the direct cause of this stop.</li>
-<li><code>suite-time-budget</code>, seen 10: cap or warn on repeated full-suite runs. N1-04 spent 1491 s on 2 runs and N1-02 ran the suite 5 times.</li>
-<li><code>suite-flake-retry</code>, seen 5: re-run failed test files serially before declaring the suite red.</li>
-<li><code>verify-failed-recheck</code>, seen 2: after thin verify evidence, re-verify only the short steps instead of closing the lane.</li>
-<li><code>memlint-before-session-end</code>, seen 1: init logged a <code>CLAUDE.md:98</code> Gotchas overflow (16 lines, cap 15).</li>
-<li>Seen once each: <code>session-entry-write-guard</code>, <code>step-contradiction-lint</code>, <code>record-push-retry-noise</code>.</li>
-<li>Seen 0 times: <code>no-retry-on-denial</code>, <code>base-branch-runs-reverted</code>, <code>restrict-merge-tree-base</code>, <code>slot-copy-overwritten-on-merge</code>, <code>cli-verbiage-and-syntax</code>, <code>git-provider-migration</code>.</li>
+<li><code>suite-time-budget</code>: seen 11 times. The 11-09 retro suggests downgrading it, because fast runs took about 130 s.</li>
+<li><code>verify-question-noise</code>: seen once (new in 11-09). Recorded questions for Michael should be classed as info or blocking.</li>
+<li><code>memlint-before-session-end</code>: seen once.</li>
+<li><code>session-entry-write-guard</code>: seen once.</li>
+<li><code>step-contradiction-lint</code>: seen once.</li>
+<li><code>record-push-retry-noise</code>: seen once.</li>
 </ol>
-<ul>
-<li>None of these is <code>specced</code> or <code>queued</code>.</li>
-</ul></section>
+<p>There are also items with no runs seen, such as <code>rebase-pending-card</code>, which Michael accepted as a fix on 11-07.</p>
+<p>Also from the 11-08 retro: <code>verify-evidence-rows</code> (seen 11) and <code>verify-failed-recheck</code> (seen 2) were proposed. Neither is in the backlog excerpt I was given, and the excerpt is cut off (&quot;more&quot;: 11). Check whether they are filed.</p></section>
 </main></body></html>

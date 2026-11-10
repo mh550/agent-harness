@@ -1,34 +1,37 @@
-# Debrief · 2026-11-08 05:41
+# Debrief · 2026-11-10 02:55
 
-_runs since 2026-11-07 20:58:47: agent-harness-2026-11-08 · claude-sonnet-5-5, $0.14063399999999998 · context: /home/mh550/.local/state/harness/debrief/2026-11-08-054121/context.md_
+_runs since 2026-11-08 05:41:21: agent-harness-2026-11-08 agent-harness-2026-11-09 · claude-sonnet-5-5, $0.16757 · context: /home/mh550/.local/state/harness/debrief/2026-11-10-025454/context.md_
 
 ## Headline
-Nothing verified or merged: agent-harness-2026-11-08 built N1 (4/4 features pass) but stopped on a verify evidence gap, and N2 (0/4) was never started.
-The run branch was deleted by gc (`branch -D`, was 14f11a0), so check that the N1 code is on main (see "For the next interactive session").
-Spend $32.22 against a usage window that is open (seven_day 48%, resets Sun 17:00).
+Both runs finished, 14/14 features passing and verified. They landed N1/N2 (PRs #151, #152) and R1/R2 (PRs #167, #168) on main, and nothing is blocked. Spend was $103.98 (run 11-08 $54.61, run 11-09 $49.37). The usage window is open, with seven_day at 8% and resetting Sun 17:00.
 
 ## Runs
-### agent-harness-2026-11-08 (agent-harness) · waiting on Michael: N1
-- Features 4/8 passing, 0 verified, 0 merged. N1 is 4/4 built and N2 is 0/4 (not reached).
-- Tests went 1898 → 1911 (+13), with 0 flakes, 0 fix rounds and a first-attempt pass rate of 1.0.
-- Cost was $32.22 ($8.06 per passing feature) over 2.87 h. Build was $17.56, review $5.79, verify $2.50 and init $5.98 (Fable).
-- The stop: verify N1 ran the full suite, but its evidence rows fell short of the steps (N1-03 6/7, N1-02 6/7, N1-01 7/8). It was retried on Opus and still fell short, so the lane closed as "needs Michael". The remaining features wait on N1, so N2 never started.
-- The N1-04 review ran once and found issues, so it wasn't wasted. The retro also says N1-03, N1-02 and N1-04 left design questions in `needs.md`. gc has since resolved those needs, and `progress.md` shows no open questions.
-- Memory curator: 1 op, dropped ("not stated by entries.jsonl:4"). No memory PR.
-- Record PR #146 was merged into main.
+
+### agent-harness-2026-11-08 (agent-harness) · done
+- 8/8 passing, N1 and N2 verified and merged. Tests went 1898 → 1930. Cost was $54.61 ($6.83 per feature) over 6.1 h wall.
+- It stopped once, at 05:39 on 11-08. N1 verify found the evidence short of the steps (N1-03 6/7, N1-02 6/7, N1-01 7/8), and the run waited on Michael. It resumed at 22:09 after about 16 h idle.
+- The second verify failed N1-04. A 15 min redo passed it. First-attempt pass rate was 0.88.
+- The memory curator dropped its one op (add ## Gotchas, "not stated by entries.jsonl:4"). No memory PR was opened.
+
+### agent-harness-2026-11-09 (agent-harness) · done
+- 6/6 passing, R1 (the memory reviewer) and R2 verified and merged. Tests went 1950 → 2000. Cost was $49.37 ($8.23 per feature) over 4.1 h wall. First-attempt pass rate was 1.00, with no rework and no verify failures.
+- R1 went over its check budget: +37 against 35. The retro names the review's I2 hook check and M4's body unit test as the overrun.
+- Reviews took 26% of the cost, because every review runs on opus.
+- Memory PR #169 is open and waiting for Michael (MEMORY_POLICY=pr). The curator's push and gh were denied, as designed. Record PR #170 is merged.
 
 ## Needs Michael
-- Decide how to handle the N1 verify gap (run agent-harness-2026-11-08, `harness-log.md` 05:39). Choose between re-running verify and accepting N1 as built. The retro can't say whether steps were skipped or just not logged, because `entries.jsonl` has no per-step rows.
-- Check what happened to the N1-01..04 design questions that gc marked "resolved (run removed)" (`needs.md`). They may have been lost with the run.
+- Memory PR #169 (run 11-09): review it and merge or close it. It holds one fact for `## Gotchas`, and it evicted the "INBOX.md: cut at lib/inbox.mjs answersLine" line.
+- Confirm that reviews are meant to run on opus every time. The run 11-09 log shows "at or over 0" for the size threshold on both reviews (R1-03, R2-03), which looks like a threshold of 0.
 
 ## For the next interactive session
-- Branch and merge state: `harness/agent-harness-2026-11-08` was deleted locally and on origin with 0 milestones merged. Confirm whether N1 reached main (via PR #146 or otherwise) before re-running. If it didn't, the work is only in the ledger record and the reflog. No merge conflicts were reported.
-- Open `proposed` retro items, most `runs_seen` first (all re-raised by this run):
-  1. `verify-evidence-rows`, seen 11: record per-step evidence rows from verify sessions in `entries.jsonl`. This is the direct cause of this stop.
-  2. `suite-time-budget`, seen 10: cap or warn on repeated full-suite runs. N1-04 spent 1491 s on 2 runs and N1-02 ran the suite 5 times.
-  3. `suite-flake-retry`, seen 5: re-run failed test files serially before declaring the suite red.
-  4. `verify-failed-recheck`, seen 2: after thin verify evidence, re-verify only the short steps instead of closing the lane.
-  5. `memlint-before-session-end`, seen 1: init logged a `CLAUDE.md:98` Gotchas overflow (16 lines, cap 15).
-  6. Seen once each: `session-entry-write-guard`, `step-contradiction-lint`, `record-push-retry-noise`.
-  7. Seen 0 times: `no-retry-on-denial`, `base-branch-runs-reverted`, `restrict-merge-tree-base`, `slot-copy-overwritten-on-merge`, `cli-verbiage-and-syntax`, `git-provider-migration`.
-- None of these is `specced` or `queued`.
+No merge conflicts, and no held or refused merges. These are the open `proposed` Retro backlog items, most `runs_seen` first:
+1. `suite-time-budget`: seen 11 times. The 11-09 retro suggests downgrading it, because fast runs took about 130 s.
+2. `verify-question-noise`: seen once (new in 11-09). Recorded questions for Michael should be classed as info or blocking.
+3. `memlint-before-session-end`: seen once.
+4. `session-entry-write-guard`: seen once.
+5. `step-contradiction-lint`: seen once.
+6. `record-push-retry-noise`: seen once.
+
+There are also items with no runs seen, such as `rebase-pending-card`, which Michael accepted as a fix on 11-07.
+
+Also from the 11-08 retro: `verify-evidence-rows` (seen 11) and `verify-failed-recheck` (seen 2) were proposed. Neither is in the backlog excerpt I was given, and the excerpt is cut off ("more": 11). Check whether they are filed.
