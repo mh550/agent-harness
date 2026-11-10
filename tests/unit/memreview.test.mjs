@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { capReading, input, main, render, renderNone, validate, verdicts } from "../../lib/memreview.mjs";
+import { capReading, heldFailed, input, line, main, render, renderNone, validate, verdicts } from "../../lib/memreview.mjs";
 
 const F = (text, o) => ({ op: "add", file: "CLAUDE.md", section: "## Gotchas", text, tier: 1, why: "w", from: "entries.jsonl:2", ...o });
 const RESULT = {
@@ -80,6 +80,7 @@ test("memreview.mjs: verdicts holds an op with four holding rows and fails one o
   assert.equal(JSON.stringify([v.reviewed, v.held, v.failed]), "[4,1,3]");
   assert.equal(JSON.stringify(v.ops.map(o => [o.id, o.holds, o.reason])),
     JSON.stringify([["facts/1", true, null], ["facts/2", false, "7 files (q2 saw) (q2)"], ["rules/3", false, "review too thin (3 of 4 rows)"], ["rules/4", false, "not reviewed"]]));
+  assert.equal(JSON.stringify(v.ops.map(o => o.q)), "[null,2,null,null]", "the failing row's question, for the ledger's failed_ids");
 });
 
 test("memreview.mjs: render the ## Review section, one line per op and the verify's five-column table; none: <why> without a review", () => {
@@ -108,5 +109,31 @@ test("memreview.mjs: validate, verdicts and render as commands", () => {
     const out = main(["render", f("v.json", v.out), r], { env: {} });
     assert.equal(out.rc, 0); assert.ok(out.out.startsWith("## Review\n"));
     assert.equal(main(["render", "--none", "nothing to review"], { env: {} }).out, "## Review\n\nnone: nothing to review\n");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("memreview.mjs: line is the one memory: line of the note and the card, facts held and failed with each fail's id, reason and question, rules held, both PRs; none: its why; nothing unreviewed", () => {
+  const rows = [...four("facts/1"), ...four("facts/2").map(r => (r.q === 2 ? { ...r, holds: false, saw: "7 files match `(─)`" } : r)), ...four("rules/3")];
+  const v = verdicts({ rows }, ITEMS), m = { reviewed: 3, held: 2, failed: 1, review: "ok", pr: "https://example.test/pr/1", rules_pr: "https://example.test/pr/2" };
+  assert.equal(line(v, m), "memory: facts 1 held · 1 failed (facts/2: 7 files match `(─)`, q2) · rules 1 held · PR https://example.test/pr/1 · rules PR https://example.test/pr/2");
+  const all = verdicts({ rows: [...four("facts/1"), ...four("facts/2"), ...four("rules/3")] }, ITEMS);
+  assert.equal(line(all, { ...m, rules_pr: null }), "memory: facts 2 held · 0 failed · rules 1 held · PR https://example.test/pr/1 · rules PR none");
+  // a rule that fails names its fail; a thin op has no question
+  const thin = verdicts({ rows: [...four("facts/1"), ...four("facts/2").slice(0, 2), ...four("rules/3").map(r => (r.q === 4 ? { ...r, holds: false, saw: "declined by Michael (old/1)" } : r))] }, ITEMS);
+  assert.equal(line(thin, m), "memory: facts 1 held · 1 failed (facts/2: review too thin (2 of 4 rows)) · rules 0 held · 1 failed (rules/3: declined by Michael (old/1), q4) · PR https://example.test/pr/1 · rules PR https://example.test/pr/2");
+  assert.equal(line(null, { ...m, review: "the reviewer hit a limit" }), "memory: review none (the reviewer hit a limit) · PR https://example.test/pr/1 · rules PR https://example.test/pr/2");
+  assert.equal(line(null, { reviewed: 0, review: "nothing to review", pr: null }), "", "nothing to review (memory_json's shape)");
+  assert.equal(line(null, { reviewed: 0, review: "the review input failed (see run.log)", pr: "u" }), "memory: review none (the review input failed (see run.log)) · PR u · rules PR none", "every op landed unreviewed (R2's review, M5)");
+  assert.equal(line(null, { applied: 2, pr: "u" }), "", "a memory.json before the review");
+  assert.equal(heldFailed(3, 0), "3 held · 0 failed");
+  const d = mkdtempSync(join(tmpdir(), "memline-"));
+  try {
+    writeFileSync(join(d, "v.json"), JSON.stringify(v)); writeFileSync(join(d, "m.json"), JSON.stringify(m));
+    const out = main(["line", join(d, "v.json"), join(d, "m.json")], { env: {} });
+    assert.equal(`${out.rc} ${out.out}`, `0 ${line(v, m)}\n`);
+    writeFileSync(join(d, "n.json"), JSON.stringify({ ...m, review: "the reviewer failed (exit 124)" }));
+    assert.equal(main(["line", join(d, "none.json"), join(d, "n.json")], { env: {} }).out, `${line(null, { ...m, review: "the reviewer failed (exit 124)" })}\n`, "no verdicts file");
+    writeFileSync(join(d, "o.json"), JSON.stringify({ applied: 1 }));
+    assert.deepEqual(main(["line", join(d, "none.json"), join(d, "o.json")], { env: {} }), { rc: 0, out: "" });
   } finally { rmSync(d, { recursive: true, force: true }); }
 });

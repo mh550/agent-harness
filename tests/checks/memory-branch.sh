@@ -70,7 +70,7 @@ HARNESS_TTY=0 "$H" report mp > "$T/mp-report.out" 2>&1; HARNESS_TTY=0 "$H" memor
 check "memory PR: summary.json's memory holds the counts and both URLs, harness report prints the Memory row, and memory-result.json is in the run record" \
   'p=$(mpr mp) && u=$(url "$p") && ru=$(url "$(rpr mp)") && [[ $(jq .memory.applied "$(rec mp)/summary.json") == 2 && $(jq -r .memory.pr "$(rec mp)/summary.json") == "$u" ]] \
   && [[ $(jq .memory.rules "$(rec mp)/summary.json") == 1 && $(jq -r .memory.rules_pr "$(rec mp)/summary.json") == "$ru" ]] \
-  && grep -xF "| Memory | 2 applied · 1 rules · 0 dropped · 0 proposals · PR $u · rules PR $ru · review 3 held · 0 failed |" "$T/mp-report.out" > /dev/null \
+  && grep -F "| Memory | 2 applied · 1 rules · 0 dropped · 0 proposals · PR $u · rules PR $ru · review 3 held · 0 failed · \$0.10 · " "$T/mp-report.out" | grep -E " [0-9]+ min \|$" > /dev/null \
   && [[ -s $(rec mp)/memory-ops.json ]] && jq -e "(.rules | map(.n)) == [1] and (.ruleFiles == [\"CLAUDE.md\"]) and (has(\"ruleTexts\") | not)" "$(rec mp)/memory-result.json" > /dev/null'
 
 # Michael's verdict on mp's rule (N2-03): proposals lists the numbered items (three-ops has no tier-3 op: mp/1 alone),
@@ -86,7 +86,7 @@ check "harness memory decline: one memory-answers.jsonl row and one ledger commi
   '[[ $pd == 0 && $(cat "$T/mp-decline.out") == "memory: mp/1 declined · ## Code rules · stub proposal: run the stub suite before each commit" ]] \
   && jq -e -s "length == 1 and (.[0] | keys_unsorted == [\"run\",\"project\",\"n\",\"tier\",\"verdict\",\"why\",\"file\",\"section\",\"text\",\"key\",\"at\"] and .run == \"mp\" and .project == \"proj\" and .n == 1 and .tier == 2 and .verdict == \"declined\" and .why == \"the suite runs itself\")" "$T/ledger/memory-answers.jsonl" > /dev/null \
   && [[ $(git -C "$T/ledger" log --format=%s -- memory-answers.jsonl) == "ledger: memory decline mp/1" && -z $(git -C "$T/ledger" status --porcelain -- memory-answers.jsonl) ]] \
-  && [[ $(tail -1 "$T/mp-memory-ans.out") == "answers: accepted 0 · declined 1" ]] && grep -E "^mp · proj · rules · .* · open · 1 answered$" "$T/mp-memory-ans.out" > /dev/null'
+  && [[ $(tail -2 "$T/mp-memory-ans.out") == "answers: accepted 0 · declined 1"$'"'"'\n'"'"'"review: "* ]] && grep -E "^mp · proj · rules · .* · open · 1 answered$" "$T/mp-memory-ans.out" > /dev/null'
 "$H" memory accept mp/9 --why x > "$T/mp-acc9.out" 2>&1; e9=$?
 "$H" memory decline mp/1 > "$T/mp-nowhy.out" 2>&1; ew=$?
 "$H" memory proposals nosuchrun > "$T/mp-norun.out" 2>&1; er=$?
@@ -114,11 +114,11 @@ check "memory PR: a continued run reuses its open memory PR and its open rules P
 HARNESS_TTY=0 "$H" memory > "$T/mp-memory2.out" 2>&1
 p=$(mpr mp); (cd "$T/proj" && "$HARNESS_GH" pr merge "https://example.test/pr/${p##*-}" --merge --match-head-commit "$(git -C "$O" rev-parse harness-memory/mp)") > /dev/null 2>&1
 HARNESS_TTY=0 "$H" memory --last 5 proj > "$T/mp-memory3.out" 2>&1; mv "$T/gh.log" "$T/gh-mp-merge.log" 2> /dev/null
-check "harness memory: the run's facts and rules PRs are a line each with its tier, then one tally line per tier; the facts PR merged unchanged after its merge" \
+check "harness memory: the run's facts and rules PRs are a line each with its tier and its review's held and failed, then one tally line per tier and the review: tally; the facts PR merged unchanged after its merge, and with a project the auto: line" \
   'p=$(mpr mp) && u=$(url "$p") && ru=$(url "$(rpr mp)") && [[ -f $p.merged ]] && nl=$'"'"'\n'"'"' \
-  && [[ $(cat "$T/mp-memory.out") == "mp · proj · rules · 1 · ## Code rules · $ru · open${nl}mp · proj · facts · 2/0/0 · $u · open${nl}facts: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 0" ]] \
-  && [[ $(cat "$T/mp-memory2.out") == "mp · proj · rules · 0 · — · $ru · open · 1 answered${nl}mp · proj · facts · 1/3/0 · $u · open${nl}facts: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 1" ]] \
-  && [[ $(cat "$T/mp-memory3.out") == "mp · proj · rules · 0 · — · $ru · open · 1 answered${nl}mp · proj · facts · 1/3/0 · $u · merged unchanged${nl}facts: merged unchanged 1 · edited 0 · closed 0 · open 0${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 1" ]] \
+  && [[ $(cat "$T/mp-memory.out") == "mp · proj · rules · 1 · ## Code rules · held 1 · failed 0 · $ru · open${nl}mp · proj · facts · 2/0/0 · held 2 · failed 0 · $u · open${nl}facts: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 0${nl}review: held 3 · failed 0 · overrides 0 (merged against a fail 0 · edited or closed against a hold 0) · unreviewed 0" ]] \
+  && [[ $(cat "$T/mp-memory2.out") == "mp · proj · rules · 0 · — · held 1 · failed 0 · $ru · open · 1 answered${nl}mp · proj · facts · 1/3/0 · held 3 · failed 0 · $u · open${nl}facts: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 1${nl}review: held 4 · failed 0 · overrides 0 (merged against a fail 0 · edited or closed against a hold 0) · unreviewed 0" ]] \
+  && [[ $(cat "$T/mp-memory3.out") == "mp · proj · rules · 0 · — · held 1 · failed 0 · $ru · open · 1 answered${nl}mp · proj · facts · 1/3/0 · held 3 · failed 0 · $u · merged unchanged${nl}facts: merged unchanged 1 · edited 0 · closed 0 · open 0${nl}rules: merged unchanged 0 · edited 0 · closed 0 · open 1${nl}answers: accepted 0 · declined 1${nl}review: held 4 · failed 0 · overrides 0 (merged against a fail 0 · edited or closed against a hold 0) · unreviewed 0${nl}auto: not yet (held 3 of 3 · 100 % · overrides 0 of 1 reviewed PRs · window 8)" ]] \
   && grep -x "gh pr view $u --json state,mergedAt,commits" "$T/gh-mp-merge.log" > /dev/null'
 check "ledger: each memory PR is one row of memory.jsonl with its tier and sections, committed with the ledger's paths" \
   'p=$(mpr mp) && ru=$(url "$(rpr mp)") && [[ $(jq -sc "map(select(.run == \"mp\")) | map({project, tier, url, ops, applied, rules, dropped, proposed, sections})" "$T/ledger/memory.jsonl") == "[{\"project\":\"proj\",\"tier\":\"facts\",\"url\":\"https://example.test/pr/${p##*-}\",\"ops\":4,\"applied\":1,\"rules\":null,\"dropped\":3,\"proposed\":0,\"sections\":[\"## Gotchas\"]},{\"project\":\"proj\",\"tier\":\"rules\",\"url\":\"$ru\",\"ops\":4,\"applied\":null,\"rules\":0,\"dropped\":3,\"proposed\":0,\"sections\":[]}]" ]] \

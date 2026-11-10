@@ -720,7 +720,9 @@ harness memlint: a project (or a directory in it) prints the same three findings
 harness memory accept|decline: an <n> the run has not, no --why or an unknown run is one error line, exit 1, and no row
 harness memory decline: one memory-answers.jsonl row and one ledger commit, its line printed; harness memory tallies it and marks the run
 harness memory proposals: a run's numbered rules and proposals, each <run>/<n> with its tier, file, section and text, then its verdict
-harness memory: the run's facts and rules PRs are a line each with its tier, then one tally line per tier; the facts PR merged unchanged after its merge
+harness memory: a facts PR merged unchanged over a failed op is merged against a fail, in its line, the review: tally and the auto: line; the driver's auto merge over one is none
+harness memory: each PR's line carries its review's held and failed (unreviewed for a review none), the review: tally counts the failed eviction, and with a project the auto: line last
+harness memory: the run's facts and rules PRs are a line each with its tier and its review's held and failed, then one tally line per tier and the review: tally; the facts PR merged unchanged after its merge, and with a project the auto: line
 harness merge keeps the harness version of the run (E1 review)
 harness merge leaves a legacy record as it was; its PR quotes the legacy verify entry
 harness merge merges v2 tags, closes the v2 PR
@@ -1073,13 +1075,18 @@ memory review: a continue after no review reviews its new fact and leaves the re
 memory review: a fact restating a rule Michael declined fails q4 naming declined by Michael (<run>/<n>), marked **fails** in the PR body under pr
 memory review: a file the landing reads that changes during the review (the answers file) lands nothing: one note, no memory branch or PR
 memory review: a review with three rows for an op fails it as review too thin (3 of 4 rows); the rest hold
+memory review: a reviewer at the curator's cost gets no cost note
+memory review: a reviewer dearer than its curator gets one note after the review's counts, its cost and wall in memory.json
 memory review: a reviewer that changes the ops in scratch lands nothing: the landing differs from what it read, one note, no memory branch or PR
 memory review: a reviewer's edits to CLAUDE.md and lib/ are reverted with one note, its memory-review.json kept and the record PR opened
 memory review: a run under MEMORY_POLICY=pr ends done with one zz-memory-review transcript and a memory-review metrics row after the curator's
+memory review: harness report prints the Memory row ending with the review's held, failed, cost and minutes, and Spend by role a memory-review line after the curator's
 memory review: its run.log line follows the curator's; its denied note follows the curator's notes and precedes the first memory PR note
 memory review: memory-review-input.json lists facts/1, facts/2 and rules/<n> (memory-result.json's number), each op with its base (the rules base for rules/*) and after paths and the cap read on that base
 memory review: memory-review.json is kept in the run record and memory.json reads reviewed 3, held 3, failed 0, review ok, merged_by null
+memory review: memory.jsonl's facts row and rules row of one run carry the review's fields, each tier's counts its own
 memory review: prompts/memory-review.md renders through lib/prompt.sh as a command: the files, the four questions, the thin rule, read-only, no {{ left
+memory review: the memory: facts note, after both PR notes, is memreview.mjs line on the run record's review and its memory.json
 memory review: the review session runs under --disallowedTools with exactly Bash(git push:*) and Bash(gh:*); no role but the curator's carries it
 memory review: the rules PR carries the verdict and is never merged by the driver
 memory review: under auto the failed eviction is dropped from the facts commit by verdict, the held replace lands, the PR merges; memory.json failed 1, merged_by driver, dropped as under pr
@@ -1110,6 +1117,7 @@ memreview.mjs: capReading Gotchas entries and lines as the gate counts them; no 
 memreview.mjs: input an apply result with empty applied and rules is an empty list (nothing to review)
 memreview.mjs: input as a command prints the list as one JSON document and exits 0
 memreview.mjs: input facts/<i> in apply's order then rules/<n> with the result's numbers, each with its paths and the cap reading
+memreview.mjs: line is the one memory: line of the note and the card, facts held and failed with each fail's id, reason and question, rules held, both PRs; none: its why; nothing unreviewed
 memreview.mjs: render the ## Review section, one line per op and the verify's five-column table; none: <why> without a review
 memreview.mjs: validate passes four rows per item and refuses, naming the row, an unknown id, a q of 5, a doubled (id, q), a non-boolean holds and too many rows
 memreview.mjs: validate, verdicts and render as commands
@@ -1722,14 +1730,20 @@ suite tools: wait_for refuses a limit that isn't whole seconds with one line, ex
 suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary end reason is how the run ended
 summary, report and retro written
+summary.mjs graduation: earned over the last 8 reviewed facts PRs at 10 ops, 90 % held and one override; not yet short of any; revisit for a project on auto under 80 %
 summary.mjs memory: a summary built before this run has no Memory row
 summary.mjs memory: build reads memory.json's keys, the rules PR's among them, none with no file
-summary.mjs memory: build reads the review's keys and memoryLine ends with the review's counts; nothing for a memory.json without reviewed
+summary.mjs memory: build reads the review's keys, cost, wall and model; memoryLine ends with held, failed, dollars and minutes, none (<why>) without a review, nothing for a memory.json without reviewed
 summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
+summary.mjs memory: memory with a project and a policy ends with the auto: line, memory-urls also lists the window's PRs past --last
+summary.mjs memory: memory-line on a continue's reused PR sums each landed segment's review, a rerun of one replacing its own; one unreviewed segment makes the row unreviewed
+summary.mjs memory: memory-line writes the review's fields into the facts row and the rules row, each tier's counts from its own ids; an unreviewed summary's rows have none
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
 summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
+summary.mjs memory: run.log's memory review line is its session; Spend by role and Time list memory-review after curator
 summary.mjs memoryView: an answers: tally line after the tiers' and `· n answered` on a listed run's first line; none or no answers file still lists
+summary.mjs memoryView: held and failed columns, unreviewed for an old row or a review none, the two overrides from the row and gh's state, and the review: tally line
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
 summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary

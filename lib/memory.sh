@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # `harness memory [--last <n>] [<project>]`: the ledger's memory PRs (<ledger>/memory.jsonl, one row per PR: a run's
 # facts PR and its rules PR, each with its tier), newest first, each one's state asked of gh now and never written back;
-# lib/summary.mjs renders them with one tally line per tier and one of Michael's verdicts. `proposals <run>` lists a
+# lib/summary.mjs renders them with the review's held and failed and Michael's overrides, one tally line per tier, one of
+# Michael's verdicts and one of the review, and for a project the `auto:` line last (decisions/2026-11-09-memory-graduation). `proposals <run>` lists a
 # run's numbered rules and proposals (<ledger>/<project>/<run>/memory-result.json); `accept|decline <run>/<n> --why`
 # is Michael's verdict on one, a row of <ledger>/memory-answers.jsonl written under the ledger lock and, with
 # LEDGER_COMMIT=1, one ledger commit of that file (as `harness backlog set`); lib/memory.mjs does the work.
@@ -55,14 +56,22 @@ case ${1:-} in
     exit ;;
 esac
 
-n=10 p=""
+n=10 p="" pdir="" pol=pr
 while (( $# )); do
   case $1 in
     --last) [[ ${2:-} =~ ^[1-9][0-9]*$ ]] || die "$USAGE"; n=$2; shift 2 ;;
     -*) die "$USAGE" ;;
-    *) [[ -z $p ]] || die "$USAGE"; p=$(basename "$(realpath -m -- "$1")"); shift ;;   # a path's last part is the ledger's project name
+    *) [[ -z $p ]] || die "$USAGE"; p=$(basename "$(realpath -m -- "$1")") pdir=$1; shift ;;   # a path's last part is the ledger's project name
   esac
 done
+# a project's MEMORY_POLICY, for the auto: line's revisit (decisions/2026-11-09-memory-graduation): a path (one with a
+# /) reads the user's config and the project's .harness/config.sh, a bare name the user's alone (*default*); in a
+# subshell, so a config's names never reach this script's
+if [[ -n $p ]]; then
+  pol=$(set +u; source "$HARNESS_HOME/lib/config.sh"
+    if [[ $pdir == */* && -d $pdir ]]; then harness_config "$pdir"; else harness_config /nonexistent; fi > /dev/null 2>&1; echo "${MEMORY_POLICY:-pr}")
+  [[ $pol =~ ^[a-z]+$ ]] || pol=pr
+fi
 # one copy, read by both steps: a run's ledger() may rewrite memory.jsonl between them
 rows=$(mktemp) ans=$(mktemp); trap 'rm -f "$rows" "$ans"' EXIT
 cp "$LEDGER/memory.jsonl" "$rows" 2> /dev/null
@@ -70,4 +79,4 @@ cp "$LEDGER/memory.jsonl" "$rows" 2> /dev/null
 while read -r url; do
   j=$("$GH" pr view "$url" --json state,mergedAt,commits 2> /dev/null < /dev/null) && jq -c --arg u "$url" '{url: $u, pr: .}' <<< "$j" >> "$ans" 2> /dev/null
 done < <(node "$S" memory-urls "$rows" "$n" "$p")
-node "$S" memory "$rows" "$ans" "$n" "$p" "$ANS"   # a missing memory-answers.jsonl is no verdicts
+node "$S" memory "$rows" "$ans" "$n" "$p" "$ANS" "$pol"   # a missing memory-answers.jsonl is no verdicts

@@ -80,6 +80,16 @@ check "memory review: under pr both PR bodies and memory.md carry ## Review, one
   && [[ $(hlog mr | grep -c " · memory review: 3 reviewed · 3 held · 0 failed$") == 1 ]] && ! hlog mr | grep -F " fails: " > /dev/null'
 check "memory review: the rules PR carries the verdict and is never merged by the driver" \
   'q=$(rpr mr) && review "$q.body" | grep -xF -- "- rules/1 holds" > /dev/null && ! merged mr "$q"'
+"$H" report --md mr > "$T/mr-report.md" 2>&1
+check "memory review: harness report prints the Memory row ending with the review's held, failed, cost and minutes, and Spend by role a memory-review line after the curator's" \
+  'grep -E "^\| Memory \| 2 applied · 1 rules · .* · rules PR https://example\.test/pr/[0-9]+ · review 3 held · 0 failed · \\\$0\.10 · [0-9]+ min \|$" "$T/mr-report.md" > /dev/null \
+  && grep -E "^\| Spend by role \| .*curator \\\$0\.10 · memory-review \\\$0\.10 · manager \(the bash driver\) \\\$0\.00 \|$" "$T/mr-report.md" > /dev/null'
+check "memory review: memory.jsonl's facts row and rules row of one run carry the review's fields, each tier's counts its own" \
+  'jq -se "map(select(.run == \"mr\")) | map(.tier) == [\"facts\", \"rules\"]
+     and (.[0] | .reviewed == 2 and .held == 2 and .failed == 0 and .review == \"ok\" and .failed_ids == [] and .merged_by == null and .review_cost_usd == 0.1)
+     and (.[1] | .reviewed == 1 and .held == 1 and .failed == 0 and .review == \"ok\" and .failed_ids == [] and .merged_by == null and .review_cost_usd == 0.1)" "$T/ledger/memory.jsonl" > /dev/null'
+check "memory review: a reviewer at the curator's cost gets no cost note" \
+  '! hlog mr | grep -F " · memory review: cost " > /dev/null'
 
 # mp: every op proposed: nothing would land, so no reviewer
 run mp STUB_CURATOR_OPS=proposal STUB_MEMORY_REVIEW=hold
@@ -107,12 +117,17 @@ check "memory review: a commit a git hook changed after the landing wrote its te
   && [[ -z $(git -C "$T/origin.git" ls-remote --heads . "harness-memory/mk" "harness-rules/mk") ]] && ! titles | grep -E "^memory( rules)?: mk$" > /dev/null \
   && ! git -C "$T/origin.git" log --all -p | grep -F "planted by a hook" > /dev/null && titles | grep -x "mk: run record" > /dev/null'
 
-# mt: a thin review (three rows for the first op)
-run mt STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=thin
+# mt: a thin review (three rows for the first op), its stub reviewer dearer than the curator
+run mt STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=thin STUB_MEMORY_REVIEW_COST=2.5
 check "memory review: a review with three rows for an op fails it as review too thin (3 of 4 rows); the rest hold" \
   'p=$(mpr mt) && review "$p.body" | grep -xF -- "- facts/1 **fails**: review too thin (3 of 4 rows)" > /dev/null && review "$p.body" | grep -xF -- "- facts/2 holds" > /dev/null \
   && [[ $(hlog mt | grep -c " · memory review: facts/1 fails: review too thin (3 of 4 rows)$") == 1 ]] && hlog mt | grep -E " · memory review: 3 reviewed · 2 held · 1 failed$" > /dev/null \
   && jq -e ".held == 2 and .failed == 1" "$(st mt)/memory.json" > /dev/null'
+check "memory review: a reviewer dearer than its curator gets one note after the review's counts, its cost and wall in memory.json" \
+  'c=$(ats mt " · memory review: 3 reviewed · 2 held · 1 failed$") n=$(ats mt " · memory review: cost \\\$2\.50 over the curator'"'"'s \\\$0\.10$") \
+  && [[ -n $c && -n $n ]] && (( c < n )) && [[ $(hlog mt | grep -c " · memory review: cost ") == 1 ]] \
+  && jq -e --slurpfile m "$(rec mt)/metrics.jsonl" "(\$m | map(select(.role == \"memory-review\")) | .[0]) as \$r
+     | .review_cost_usd == 2.5 and .review_s == \$r.wall_s and .review_model == \$r.model and (.review_model | startswith(\"claude-\"))" "$(st mt)/memory.json" > /dev/null'
 
 # ep / ea: at 15 Gotchas a replace (facts/1), an eviction (facts/2) and a rule; the reviewer fails the eviction's q2
 base=$seed15
@@ -123,7 +138,8 @@ check "memory review: under pr a failed eviction reads **fails** with its grep i
   && review "$p.body" | grep -F "| facts/2 | 2 | git grep -nF -e '"'"'- seeded gotcha 03: the seeded project k'"'"' -- . '"'"':!.harness/runs'"'"' | 7 files: " | grep -F "| no |" > /dev/null \
   && ! grep -F "seeded gotcha 03" "$T/ep-claude.md" > /dev/null && grep -F "work-B.txt" "$T/ep-claude.md" > /dev/null \
   && [[ $(hlog ep | grep -c " · memory review: facts/2 fails: 7 files: ") == 1 ]] && [[ ! -f $p.merged ]] && ! merged ep "$p" \
-  && jq -e ".failed == 1 and .held == 2 and .merged_by == null" "$(st ep)/memory.json" > /dev/null'
+  && jq -e ".failed == 1 and .held == 2 and .merged_by == null" "$(st ep)/memory.json" > /dev/null \
+  && jq -se "map(select(.run == \"ep\" and .tier == \"facts\"))[0] | .reviewed == 2 and .failed == 1 and .failed_ids == [\"facts/2:q2\"]" "$T/ledger/memory.jsonl" > /dev/null'
 pol auto
 run ea STUB_CURATOR_OPS=evict-two STUB_MEMORY_REVIEW=evict-fails
 git -C "$T/origin.git" show harness-memory/ea:CLAUDE.md > "$T/ea-claude.md" 2> /dev/null
@@ -160,7 +176,8 @@ check "memory review: a continue after no review reviews its new fact and leaves
   && hlog mn | grep -E " · memory review: 1 reviewed · 1 held · 0 failed$" > /dev/null && ! merged mn2 "$p" && [[ ! -f $p.merged ]] \
   && c=$(git -C "$T/origin.git" rev-list --reverse "$mnmain..harness-memory/mn" | head -1) && [[ -n $c ]] \
   && hlog mn | grep -xF -- "$(hlog mn | grep -F " · memory PR: ${c:0:12} on harness-memory/mn is not this segment'"'"'s commit; not merged (MEMORY_POLICY=auto), left open · $(url "$p")" | head -1)" > /dev/null \
-  && [[ $(hlog mn | grep -c " is not this segment'"'"'s commit; ") == 1 ]] && review "$p.body" | grep -xF -- "- facts/1 holds" > /dev/null && jq -e ".merged_by == null" "$(st mn)/memory.json" > /dev/null'
+  && [[ $(hlog mn | grep -c " is not this segment'"'"'s commit; ") == 1 ]] && review "$p.body" | grep -xF -- "- facts/1 holds" > /dev/null && jq -e ".merged_by == null" "$(st mn)/memory.json" > /dev/null \
+  && jq -se "map(select(.run == \"mn\" and .tier == \"facts\")) | length == 1 and .[0].review == \"the reviewer wrote no memory-review.json\" and .[0].held == 1" "$T/ledger/memory.jsonl" > /dev/null'
 
 # md under pr: a fact restating a rule Michael declined (a memory-answers.jsonl row): the reviewer fails its q4
 pol pr
@@ -179,5 +196,35 @@ check "memory review: a file the landing reads that changes during the review (t
   'grep -x memory-review "$T/scratch/proj/mq/sessions.log" > /dev/null && grep -F "memory: a file the landing reads changed during the memory review" "$(st mq)/run.log" > /dev/null \
   && [[ $(hlog mq | grep -c " · memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)$") == 1 ]] \
   && [[ -z $(git -C "$T/origin.git" ls-remote --heads . "harness-memory/mq" "harness-rules/mq") ]] && titles | grep -x "mq: run record" > /dev/null'
+
+# harness memory over this file's runs (R2-02): the review's columns, the auto: line; then ep's facts PR merged by hand
+# (the stub gh's pr-N.merged) over its failed eviction: Michael's override, the driver's merge of ea's none
+HARNESS_TTY=0 "$H" memory --last 40 "$T/proj" > "$T/mem-view.out" 2>&1; HARNESS_TTY=0 "$H" memory --last 40 > "$T/mem-all.out" 2>&1
+p=$(mpr ep); [[ -n $p ]] && touch "$p.merged"
+HARNESS_TTY=0 "$H" memory --last 40 "$T/proj" > "$T/mem-view2.out" 2>&1; mv "$T/gh.log" "$T/gh-memory.log" 2> /dev/null
+check "harness memory: each PR's line carries its review's held and failed (unreviewed for a review none), the review: tally counts the failed eviction, and with a project the auto: line last" \
+  'u=$(url "$(mpr ep)") && ru=$(url "$(rpr ep)") && v=$T/mem-view.out \
+  && grep -E "^ep · proj · facts · [0-9]+/[0-9]+/[0-9]+ · held 1 · failed 1 · $u · open$" "$v" > /dev/null \
+  && grep -xF "ep · proj · rules · 1 · ## Code rules · held 1 · failed 0 · $ru · open" "$v" > /dev/null \
+  && grep -E "^mb · proj · facts · [0-9]+/[0-9]+/[0-9]+ · unreviewed · $(url "$(mpr mb)") · open$" "$v" > /dev/null \
+  && jq -se "[.[] | select(.project == \"proj\" and .review == \"ok\") | .failed] | add >= 3" "$T/ledger/memory.jsonl" > /dev/null \
+  && f=$(jq -s "[.[] | select(.project == \"proj\" and .review == \"ok\") | .failed] | add" "$T/ledger/memory.jsonl") \
+  && grep -E "^review: held [0-9]+ · failed $f · overrides 0 \(merged against a fail 0 · edited or closed against a hold 0\) · unreviewed [1-9][0-9]*$" "$v" > /dev/null \
+  && tail -1 "$v" | grep -E "^auto: not yet \(held [0-9]+ of [0-9]+ · [0-9]+ % · overrides 0 of [0-9]+ reviewed PRs · window 8\)$" > /dev/null \
+  && ! grep "^auto:" "$T/mem-all.out" > /dev/null && tail -1 "$T/mem-all.out" | grep "^review: " > /dev/null'
+check "harness memory: a facts PR merged unchanged over a failed op is merged against a fail, in its line, the review: tally and the auto: line; the driver's auto merge over one is none" \
+  'u=$(url "$(mpr ep)") && v=$T/mem-view2.out && grep -E "^ep · proj · facts · .* · held 1 · failed 1 · $u · merged unchanged · override: merged against a fail$" "$v" > /dev/null \
+  && grep -E "^ea · proj · facts · .* · held 1 · failed 1 · $(url "$(mpr ea)") · merged unchanged$" "$v" > /dev/null \
+  && jq -se "map(select(.tier == \"facts\") | select(.run == \"ea\" or .run == \"ep\") | [.run, .fails_dropped]) == [[\"ep\", false], [\"ea\", true]]" "$T/ledger/memory.jsonl" > /dev/null \
+  && [[ $(grep -c "override: " "$v") == 1 ]] && grep -E "^review: .* · overrides 1 \(merged against a fail 1 · edited or closed against a hold 0\) · " "$v" > /dev/null \
+  && tail -1 "$v" | grep -E "^auto: not yet \(.* · overrides 1 of [0-9]+ reviewed PRs · window 8\)$" > /dev/null'
+check "memory review: the memory: facts note, after both PR notes, is memreview.mjs line on the run record's review and its memory.json" \
+  'kept ep memory-review.json > "$T/ep-review.json" && kept ep memory-review-input.json > "$T/ep-input.json" \
+  && node "$HH/lib/memreview.mjs" verdicts "$T/ep-review.json" "$T/ep-input.json" > "$T/ep-verdicts.json" \
+  && x=$(node "$HH/lib/memreview.mjs" line "$T/ep-verdicts.json" "$(st ep)/memory.json") \
+  && [[ $x == "memory: facts 1 held · 1 failed (facts/2: 7 files: "*", q2) · rules 1 held · PR $(url "$(mpr ep)") · rules PR $(url "$(rpr ep)")" ]] \
+  && [[ $(hlog ep | grep -c " · memory: facts ") == 1 ]] && [[ $(hlog ep | sed -n "s/^- [0-9-]* [0-9:]* · \(memory: facts .*\)$/\1/p") == "$x" ]] \
+  && hlog ep > "$T/ep-hlog.md" && a=$(grep -n -m1 " · memory: facts " "$T/ep-hlog.md" | cut -d: -f1) && b=$(grep -n -m1 " · memory rules PR opened" "$T/ep-hlog.md" | cut -d: -f1) \
+  && [[ -n $a && -n $b ]] && (( a > b )) && ! hlog mp | grep -E " · memory: (facts|review none)" > /dev/null'
 
 suite_end

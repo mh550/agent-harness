@@ -445,17 +445,27 @@ memory_foreign() {
 # <ops> <applied> <rules> <dropped> <proposed> <pr url|""> <rules pr url|""> [<invalid why>] → $STATE/memory.json, for
 # the summary (M3, N1-01), with the `##` sections each tier's ops touched (from memory-result.json, when this segment has
 # one), and once memory_pr reached the review, `reviewed` (its input's items), `held`, `failed` (REVIEW_HELD, REVIEW_FAILED),
-# `review` ("ok", or why none: REVIEW_NONE) and `merged_by` ("driver" when memory_merge merged the facts PR, else null)
+# `review` ("ok", or why none: REVIEW_NONE), `merged_by` ("driver" when memory_merge merged the facts PR, else null), the
+# session's `review_cost_usd`, `review_s` and `review_model` (0, 0, null when none ran: REVIEW_COST, REVIEW_S,
+# REVIEW_MODEL), `fails_dropped` (true when auto's landing dropped the failed facts by verdict: FAILS_DROPPED; a merge
+# of that commit is no merge over a fail) and the ids the ledger splits by tier: `reviewed_ids` (the input's) and `failed_ids` (`facts/2:q2`)
 memory_json() {
-  local r=$SCRATCH/memory-result.json sec='{"facts":[],"rules":[]}'
+  local r=$SCRATCH/memory-result.json sec='{"facts":[],"rules":[]}' ids='[]' fids='[]' c=${REVIEW_COST:-0} ws=${REVIEW_S:-0}
+  [[ $c =~ ^[0-9]+(\.[0-9]+)?$ ]] || c=0; [[ $ws =~ ^[0-9]+$ ]] || ws=0
+  if [[ ${REVIEWED:-0} =~ ^[1-9][0-9]*$ ]]; then
+    ids=$(jq -c '[.[].id]' "$SCRATCH/memory-review-input.json" 2> /dev/null) || ids='[]'
+    [[ -s $SCRATCH/memory-verdicts.json ]] && { fids=$(jq -c '[.ops[] | select(.holds | not) | .id + (if .q then ":q\(.q)" else "" end)]' "$SCRATCH/memory-verdicts.json" 2> /dev/null) || fids='[]'; }
+  fi
   [[ -s $r ]] && sec=$(jq -c 'def seen: reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end);
     {facts: ([.applied[]?.section | sub("\\s+$"; "")] | seen), rules: ([.rules[]?.section | sub("\\s+$"; "")] | seen)}' "$r" 2> /dev/null || echo '{"facts":[],"rules":[]}')
   jq -nc --argjson o "$1" --argjson a "$2" --argjson rl "$3" --argjson d "$4" --argjson p "$5" --arg u "$6" --arg ru "$7" --arg w "${8:-}" --argjson s "$sec" --arg rv "${REVIEWED:-}" --arg rn "${REVIEW_NONE:-}" \
-    --argjson h "${REVIEW_HELD:-0}" --argjson f "${REVIEW_FAILED:-0}" --arg mb "${MERGED_BY:-}" \
+    --argjson h "${REVIEW_HELD:-0}" --argjson f "${REVIEW_FAILED:-0}" --arg mb "${MERGED_BY:-}" --argjson c "$c" --argjson ws "$ws" --arg rm "${REVIEW_MODEL:-}" --arg fd "${FAILS_DROPPED:-}" \
+    --argjson ids "${ids:-[]}" --argjson fids "${fids:-[]}" \
     '{ops: $o, applied: $a, dropped: $d, proposed: $p, pr: (if $u == "" then null else $u end), rules: $rl, rules_pr: (if $ru == "" then null else $ru end), sections: $s}
      + (if $w == "" then {} else {invalid: $w} end)
      + (if $rv == "" then {} else {reviewed: ($rv | tonumber), held: $h, failed: $f, review: (if $rn == "" then "ok" else $rn end),
-        merged_by: (if $mb == "" then null else $mb end)} end)' > "$STATE/memory.json"
+        merged_by: (if $mb == "" then null else $mb end), review_cost_usd: $c, review_s: $ws, review_model: (if $rm == "" then null else $rm end),
+        fails_dropped: ($fd == "1"), reviewed_ids: $ids, failed_ids: $fids} end)' > "$STATE/memory.json"
 }
 
 # The curator's memory-ops.json (rescued to $SCRATCH) → applied by curator.mjs in a detached scratch worktree at
@@ -474,7 +484,7 @@ memory_json() {
 memory_pr() {
   local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" fbody=0 o a rl d p rd x f files=() rfiles=() rb=()
   rm -f "$r" "$REC/memory-review.json" "$REC/memory-review-input.json" "$SCRATCH/memory-review.json" "$SCRATCH/memory-verdicts.json" "$SCRATCH/memory-review.md"   # an earlier segment's review never sits beside this one's ops
-  REVIEWED="" REVIEW_NONE="" REVIEW_HELD=0 REVIEW_FAILED=0 MERGED_BY="" AFTER_REVIEW=""; local la vf=() past=() c; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
+  REVIEWED="" REVIEW_NONE="" REVIEW_HELD=0 REVIEW_FAILED=0 MERGED_BY="" AFTER_REVIEW="" FAILS_DROPPED="" REVIEW_COST=0 REVIEW_S=0 REVIEW_MODEL=""; local la vf=() past=() c; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
   [[ -z $RULES_STOP && -d $SCRATCH/memory-rules-mb ]] && rb+=("$SCRATCH/memory-rules-mb" "$SCRATCH/memory-main")
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
     why=$(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)
@@ -511,9 +521,9 @@ memory_pr() {
     if [[ $(memory_sums "$dry" "$af" "$ar") != "$x" ]]; then
       echo "memory: a file the landing reads changed during the memory review" >> "$STATE/run.log"
       note "memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)"
-      REVIEW_NONE="the landing differs from the dry apply"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0
+      REVIEW_NONE="the landing differs from the dry apply"; memory_cost_note; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0
     fi
-    memory_verdict
+    memory_verdict; memory_cost_note
   fi
   # the section both bodies and memory.md carry: the verdict, or why there is none
   [[ -s $SCRATCH/memory-review.md ]] || node "$HARNESS_HOME/lib/memreview.mjs" render --none "$REVIEW_NONE" > "$SCRATCH/memory-review.md" 2>> "$STATE/run.log"
@@ -545,7 +555,7 @@ memory_pr() {
       rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0
     fi
     while IFS= read -r x; do note "${x:0:300}"; done < <(jq -r '.dropped[] | select(.reason | test("^(review: |over the cap once the review)")) | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"' "$r")
-    AFTER_REVIEW=1
+    AFTER_REVIEW=1 FAILS_DROPPED=1
   fi
   la=$(jq '.applied | length' "$r")
   # the facts: tier 1 as apply wrote it into the worktree; its body names the rules PR this run already has
@@ -584,6 +594,9 @@ memory_pr() {
   memory_record "$r"
   memory_wt_gone
   memory_json "$o" "$a" "$rl" "$d" "$p" "${url:-$MEM_URL}" "${rurl:-$RULES_URL}"
+  # after both PR notes, the one line the F3d card will carry (memreview.mjs line: nothing when nothing was reviewed)
+  x=$(node "$HARNESS_HOME/lib/memreview.mjs" line "$SCRATCH/memory-verdicts.json" "$STATE/memory.json" 2>> "$STATE/run.log") && [[ -n $x ]] && note "$x"
+  return 0
 }
 # <dry result> <after-facts dir> <after-rules dir> → one sum per file the landing reads or compares against: the ops,
 # the dry result and its texts, the bases, the review's input and Michael's answers (each sorted by path)
@@ -621,6 +634,14 @@ memory_verdict() {
   [[ -n $REVIEW_NONE ]] || REVIEW_NONE="the verdict failed (see run.log)"
   rm -f "$SCRATCH/memory-verdicts.json" "$SCRATCH/memory-review.md"; REVIEW_HELD=0 REVIEW_FAILED=0
   note "memory review: none ($REVIEW_NONE)"
+}
+# the bound (decisions/2026-11-09-memory-graduation): a reviewer that cost more than its curator is one note, never a stop
+memory_cost_note() {
+  local c=${CURATOR_COST:-0} x; [[ $c =~ ^[0-9]+(\.[0-9]+)?$ ]] || c=0
+  [[ ${REVIEW_COST:-0} =~ ^[0-9]+(\.[0-9]+)?$ ]] || return 0
+  x=$(awk -v r="$REVIEW_COST" -v c="$c" 'BEGIN { if (r + 0 > c + 0) printf "memory review: cost $%.2f over the curator'"'"'s $%.2f", r, c }')
+  [[ -n $x ]] && note "$x"
+  return 0
 }
 # <facts|rules> <count> <files…> → that tier's change committed in $SCRATCH/memory (`memory: <run>: <n> <tier>`), pushed
 # to its branch (never forced: a reused head moves forward) and its PR opened or its body refreshed; with no change, a
