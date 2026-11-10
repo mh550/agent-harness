@@ -30,6 +30,10 @@ out of `39-memlint-m4`); journal/decisions/2026-11-03-trim.md (the rule a remove
   - *Auto-merge turned on* (`MEMORY_POLICY=auto` the default, or set on this box): M3 ships the counter, not the
     switch (the spec's Not in this run). `auto` is earned by `harness memory`'s `merged unchanged` against `edited` and
     `closed` after about five runs, and that number is Michael's to read.
+    Updated in place 2026-11-09: no longer the rule. A project earns `auto` over its last 8 reviewed facts PRs: at least
+    10 ops reviewed, at least 90 % held, at most one override of the reviewer by Michael (`harness memory <project>`'s
+    `auto:` line); `merged unchanged` stays a column, since Decision 23 showed it can move on a loss
+    (decisions/2026-11-09-memory-graduation).
   - *A judged acceptance* (a session or a model scoring whether a memory PR was good): the number is what Michael did
     with the PR, read from GitHub (`state`, `mergedAt`, `commits`), deterministic and free; a judge's score would be a
     second opinion on the thing the count measures.

@@ -645,6 +645,7 @@ memreview.mjs: capReading Gotchas entries and lines as the gate counts them; no 
 memreview.mjs: input an apply result with empty applied and rules is an empty list (nothing to review)
 memreview.mjs: input as a command prints the list as one JSON document and exits 0
 memreview.mjs: input facts/<i> in apply's order then rules/<n> with the result's numbers, each with its paths and the cap reading
+memreview.mjs: line is the one memory: line of the note and the card, facts held and failed with each fail's id, reason and question, rules held, both PRs; none: its why; nothing unreviewed
 memreview.mjs: render the ## Review section, one line per op and the verify's five-column table; none: <why> without a review
 memreview.mjs: validate passes four rows per item and refuses, naming the row, an unknown id, a q of 5, a doubled (id, q), a non-boolean holds and too many rows
 memreview.mjs: validate, verdicts and render as commands
@@ -966,16 +967,19 @@ suite tools: settle waits for this copy's debrief to end and never for another s
 suite tools: wait_for gives up after its limit with its still-failing line, exit 1
 suite tools: wait_for refuses a limit that isn't whole seconds with one line, exit 2
 suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
+summary.mjs graduation: earned over the last 8 reviewed facts PRs at 10 ops, 90 % held and one override; not yet short of any; revisit for a project on auto under 80 %
 summary.mjs memory: a summary built before this run has no Memory row
 summary.mjs memory: build reads memory.json's keys, the rules PR's among them, none with no file
 summary.mjs memory: build reads the review's keys, cost, wall and model; memoryLine ends with held, failed, dollars and minutes, none (<why>) without a review, nothing for a memory.json without reviewed
 summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
+summary.mjs memory: memory with a project and a policy ends with the auto: line, memory-urls also lists the window's PRs past --last
 summary.mjs memory: memory-line writes the review's fields into the facts row and the rules row, each tier's counts from its own ids; an unreviewed summary's rows have none
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
 summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
 summary.mjs memory: run.log's memory review line is its session; Spend by role and Time list memory-review after curator
 summary.mjs memoryView: an answers: tally line after the tiers' and `· n answered` on a listed run's first line; none or no answers file still lists
+summary.mjs memoryView: held and failed columns, unreviewed for an old row or a review none, the two overrides from the row and gh's state, and the review: tally line
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
 summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary

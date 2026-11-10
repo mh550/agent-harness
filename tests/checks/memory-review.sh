@@ -196,4 +196,34 @@ check "memory review: a file the landing reads that changes during the review (t
   && [[ $(hlog mq | grep -c " · memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)$") == 1 ]] \
   && [[ -z $(git -C "$T/origin.git" ls-remote --heads . "harness-memory/mq" "harness-rules/mq") ]] && titles | grep -x "mq: run record" > /dev/null'
 
+# harness memory over this file's runs (R2-02): the review's columns, the auto: line; then ep's facts PR merged by hand
+# (the stub gh's pr-N.merged) over its failed eviction: Michael's override, the driver's merge of ea's none
+HARNESS_TTY=0 "$H" memory --last 40 "$T/proj" > "$T/mem-view.out" 2>&1; HARNESS_TTY=0 "$H" memory --last 40 > "$T/mem-all.out" 2>&1
+p=$(mpr ep); [[ -n $p ]] && touch "$p.merged"
+HARNESS_TTY=0 "$H" memory --last 40 "$T/proj" > "$T/mem-view2.out" 2>&1; mv "$T/gh.log" "$T/gh-memory.log" 2> /dev/null
+check "harness memory: each PR's line carries its review's held and failed (unreviewed for a review none), the review: tally counts the failed eviction, and with a project the auto: line last" \
+  'u=$(url "$(mpr ep)") && ru=$(url "$(rpr ep)") && v=$T/mem-view.out \
+  && grep -E "^ep · proj · facts · [0-9]+/[0-9]+/[0-9]+ · held 1 · failed 1 · $u · open$" "$v" > /dev/null \
+  && grep -xF "ep · proj · rules · 1 · ## Code rules · held 1 · failed 0 · $ru · open" "$v" > /dev/null \
+  && grep -E "^mb · proj · facts · [0-9]+/[0-9]+/[0-9]+ · unreviewed · $(url "$(mpr mb)") · open$" "$v" > /dev/null \
+  && jq -se "[.[] | select(.project == \"proj\" and .review == \"ok\") | .failed] | add >= 3" "$T/ledger/memory.jsonl" > /dev/null \
+  && f=$(jq -s "[.[] | select(.project == \"proj\" and .review == \"ok\") | .failed] | add" "$T/ledger/memory.jsonl") \
+  && grep -E "^review: held [0-9]+ · failed $f · overrides 0 \(merged against a fail 0 · edited or closed against a hold 0\) · unreviewed [1-9][0-9]*$" "$v" > /dev/null \
+  && tail -1 "$v" | grep -E "^auto: not yet \(held [0-9]+ of [0-9]+ · [0-9]+ % · overrides 0 of [0-9]+ reviewed PRs · window 8\)$" > /dev/null \
+  && ! grep "^auto:" "$T/mem-all.out" > /dev/null && tail -1 "$T/mem-all.out" | grep "^review: " > /dev/null'
+check "harness memory: a facts PR merged unchanged over a failed op is merged against a fail, in its line, the review: tally and the auto: line; the driver's auto merge over one is none" \
+  'u=$(url "$(mpr ep)") && v=$T/mem-view2.out && grep -E "^ep · proj · facts · .* · held 1 · failed 1 · $u · merged unchanged · override: merged against a fail$" "$v" > /dev/null \
+  && grep -E "^ea · proj · facts · .* · held 1 · failed 1 · $(url "$(mpr ea)") · merged unchanged$" "$v" > /dev/null \
+  && jq -se "map(select(.tier == \"facts\") | select(.run == \"ea\" or .run == \"ep\") | [.run, .fails_dropped]) == [[\"ep\", false], [\"ea\", true]]" "$T/ledger/memory.jsonl" > /dev/null \
+  && [[ $(grep -c "override: " "$v") == 1 ]] && grep -E "^review: .* · overrides 1 \(merged against a fail 1 · edited or closed against a hold 0\) · " "$v" > /dev/null \
+  && tail -1 "$v" | grep -E "^auto: not yet \(.* · overrides 1 of [0-9]+ reviewed PRs · window 8\)$" > /dev/null'
+check "memory review: the memory: facts note, after both PR notes, is memreview.mjs line on the run record's review and its memory.json" \
+  'kept ep memory-review.json > "$T/ep-review.json" && kept ep memory-review-input.json > "$T/ep-input.json" \
+  && node "$HH/lib/memreview.mjs" verdicts "$T/ep-review.json" "$T/ep-input.json" > "$T/ep-verdicts.json" \
+  && x=$(node "$HH/lib/memreview.mjs" line "$T/ep-verdicts.json" "$(st ep)/memory.json") \
+  && [[ $x == "memory: facts 1 held · 1 failed (facts/2: 7 files: "*", q2) · rules 1 held · PR $(url "$(mpr ep)") · rules PR $(url "$(rpr ep)")" ]] \
+  && [[ $(hlog ep | grep -c " · memory: facts ") == 1 ]] && [[ $(hlog ep | sed -n "s/^- [0-9-]* [0-9:]* · \(memory: facts .*\)$/\1/p") == "$x" ]] \
+  && hlog ep > "$T/ep-hlog.md" && a=$(grep -n -m1 " · memory: facts " "$T/ep-hlog.md" | cut -d: -f1) && b=$(grep -n -m1 " · memory rules PR opened" "$T/ep-hlog.md" | cut -d: -f1) \
+  && [[ -n $a && -n $b ]] && (( a > b )) && ! hlog mp | grep -E " · memory: (facts|review none)" > /dev/null'
+
 suite_end

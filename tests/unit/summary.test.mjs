@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { answerRow } from "../../lib/memory.mjs";
 import { sameAsCli, mainOf } from "./cli-same.mjs";
-import { parseRunLog, redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine, memoryState, memoryView, memoryShown, memoryLine } from "../../lib/summary.mjs";
+import { parseRunLog, redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine, memoryState, memoryView, memoryShown, memoryLine, graduation } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
@@ -511,25 +511,26 @@ test("summary.mjs memory: memoryState reads unchanged, edited, closed and open f
 });
 
 test("summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row", async () => {
+  const R0 = n => `review: held 0 · failed 0 · overrides 0 (merged against a fail 0 · edited or closed against a hold 0) · unreviewed ${n}`;   // the review: tally of n rows before R2
   const row = (run, n, at) => ({ run, project: "p", url: `https://example.test/pr/${n}`, ops: 3, applied: 2, dropped: 1, proposed: n, at });
   const rows = [row("a", 1, "2026-11-01T10:00:00Z"), row("c", 3, "2026-11-03T10:00:00Z"), row("b", 2, "2026-11-02T10:00:00Z"), row("d", 4, "2026-11-04T10:00:00Z")];
   const gh = { "https://example.test/pr/1": ghPr("MERGED", "memory: a: 2 facts"), "https://example.test/pr/2": ghPr("MERGED", "memory: b: 2 facts", "edit"),
     "https://example.test/pr/3": ghPr("CLOSED"), "https://example.test/pr/4": ghPr("OPEN", "memory: d: 2 facts") };
-  assert.equal(memoryView(rows, gh, 10).join("\n"), ["d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "c · p · facts · 2/1/3 · https://example.test/pr/3 · closed",
-    "b · p · facts · 2/1/2 · https://example.test/pr/2 · merged edited", "a · p · facts · 2/1/1 · https://example.test/pr/1 · merged unchanged",
-    "facts: merged unchanged 1 · edited 1 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0"].join("\n"));
-  assert.equal(memoryView(rows, gh, 2).join("\n"), ["d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "c · p · facts · 2/1/3 · https://example.test/pr/3 · closed",
-    "facts: merged unchanged 0 · edited 0 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0"].join("\n"), "at most n, the line over those shown");
+  assert.equal(memoryView(rows, gh, 10).join("\n"), ["d · p · facts · 2/1/4 · unreviewed · https://example.test/pr/4 · open", "c · p · facts · 2/1/3 · unreviewed · https://example.test/pr/3 · closed",
+    "b · p · facts · 2/1/2 · unreviewed · https://example.test/pr/2 · merged edited", "a · p · facts · 2/1/1 · unreviewed · https://example.test/pr/1 · merged unchanged",
+    "facts: merged unchanged 1 · edited 1 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0", R0(4)].join("\n"));
+  assert.equal(memoryView(rows, gh, 2).join("\n"), ["d · p · facts · 2/1/4 · unreviewed · https://example.test/pr/4 · open", "c · p · facts · 2/1/3 · unreviewed · https://example.test/pr/3 · closed",
+    "facts: merged unchanged 0 · edited 0 · closed 1 · open 1", "rules: merged unchanged 0 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0", R0(2)].join("\n"), "at most n, the line over those shown");
   // gh could not say: unknown, counted on its own
-  assert.equal(memoryView([rows[0]], {}, 10).join("\n"), "a · p · facts · 2/1/1 · https://example.test/pr/1 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\nanswers: accepted 0 · declined 0");
+  assert.equal(memoryView([rows[0]], {}, 10).join("\n"), `a · p · facts · 2/1/1 · unreviewed · https://example.test/pr/1 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\nanswers: accepted 0 · declined 0\n${R0(1)}`);
   assert.equal(memoryView([], {}, 10).join("\n"), "(none)");
   // a rules row: its count and the sections it touched; its state read by the rules subject; counted on the rules line
   const rr = { run: "d", project: "p", tier: "rules", url: "https://example.test/pr/6", ops: 3, rules: 1, dropped: 0, proposed: 0, sections: ["## Code rules"], at: "2026-11-04T10:00:01Z" };
-  assert.equal(memoryView([rows[3], rr], { ...gh, "https://example.test/pr/6": ghPr("MERGED", "memory: d: 1 rules") }, 10).join("\n"), ["d · p · rules · 1 · ## Code rules · https://example.test/pr/6 · merged unchanged",
-    "d · p · facts · 2/1/4 · https://example.test/pr/4 · open", "facts: merged unchanged 0 · edited 0 · closed 0 · open 1", "rules: merged unchanged 1 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0"].join("\n"));
+  assert.equal(memoryView([rows[3], rr], { ...gh, "https://example.test/pr/6": ghPr("MERGED", "memory: d: 1 rules") }, 10).join("\n"), ["d · p · rules · 1 · ## Code rules · unreviewed · https://example.test/pr/6 · merged unchanged",
+    "d · p · facts · 2/1/4 · unreviewed · https://example.test/pr/4 · open", "facts: merged unchanged 0 · edited 0 · closed 0 · open 1", "rules: merged unchanged 1 · edited 0 · closed 0 · open 0", "answers: accepted 0 · declined 0", R0(2)].join("\n"));
   // a project's rows only; none of it is (none); an equal at lists the later row first; memory-urls asks gh about exactly those shown
   const q = { ...row("e", 5, "2026-11-04T10:00:00Z"), project: "q" };
-  assert.equal(memoryView([...rows, q], gh, 10, "q")[0], "e · q · facts · 2/1/5 · https://example.test/pr/5 · unknown");
+  assert.equal(memoryView([...rows, q], gh, 10, "q")[0], "e · q · facts · 2/1/5 · unreviewed · https://example.test/pr/5 · unknown");
   assert.equal(memoryView(rows, gh, 10, "none").join("\n"), "(none)");
   assert.equal(memoryShown([...rows, q], 2).map(r => r.run).join(","), "e,d");
   const d = mkdtempSync(join(tmpdir(), "memv-"));
@@ -537,7 +538,7 @@ test("summary.mjs memory: memoryView prints the tier in each line and one tally 
     writeFileSync(join(d, "m.jsonl"), [...rows, q].map(r => JSON.stringify(r)).join("\n") + "\n{half\n");
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "2"]), { rc: 0, out: "https://example.test/pr/5\nhttps://example.test/pr/4\n" });
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "10", "q"]), { rc: 0, out: "https://example.test/pr/5\n" });
-    assert.equal((await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1"])).out, "e · q · facts · 2/1/5 · https://example.test/pr/5 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\nanswers: accepted 0 · declined 0\n");
+    assert.equal((await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1"])).out, `e · q · facts · 2/1/5 · unreviewed · https://example.test/pr/5 · unknown\nfacts: merged unchanged 0 · edited 0 · closed 0 · open 0 · unknown 1\nrules: merged unchanged 0 · edited 0 · closed 0 · open 0\nanswers: accepted 0 · declined 0\n${R0(1)}\n`);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
 
@@ -551,12 +552,12 @@ test("summary.mjs memoryView: an answers: tally line after the tiers' and `· n 
     { run: "mo", project: "proj", tier: "facts", url: "u3", applied: 1, dropped: 0, proposed: 0, at: "0" }];
   const a = [answerRow(MEM_RESULT, { run: "mp", project: "proj", n: 1, verdict: "declined", why: "x", at: "2026-11-08T12:00:00.000Z" }).row, answerRow(MEM_RESULT, { run: "mp", project: "proj", n: 2, verdict: "accepted", why: "x", at: "2026-11-08T12:00:00.000Z" }).row];
   const out = memoryView(rows, {}, 10, "", a);
-  assert.equal(out[0], "mp · proj · rules · 1 · ## Code rules · u2 · unknown · 2 answered");
-  assert.equal(out[1], "mp · proj · facts · 2/0/1 · u1 · unknown");
-  assert.equal(out.at(-1), "answers: accepted 1 · declined 1");
-  assert.equal(memoryView(rows, {}, 10).at(-1), "answers: accepted 0 · declined 0");
-  assert.equal(memoryView(rows, {}, 1, "", a).at(-1), "answers: accepted 1 · declined 1");
-  assert.equal(memoryView(rows.slice(2), {}, 10, "", a).at(-1), "answers: accepted 0 · declined 0");   // not a shown run's
+  assert.equal(out[0], "mp · proj · rules · 1 · ## Code rules · unreviewed · u2 · unknown · 2 answered");
+  assert.equal(out[1], "mp · proj · facts · 2/0/1 · unreviewed · u1 · unknown");
+  assert.equal(out.at(-2), "answers: accepted 1 · declined 1");
+  assert.equal(memoryView(rows, {}, 10).at(-2), "answers: accepted 0 · declined 0");
+  assert.equal(memoryView(rows, {}, 1, "", a).at(-2), "answers: accepted 1 · declined 1");
+  assert.equal(memoryView(rows.slice(2), {}, 10, "", a).at(-2), "answers: accepted 0 · declined 0");   // not a shown run's
   assert.equal(memoryView([], {}, 10, "", a).join("\n"), "(none)");
 });
 
@@ -613,6 +614,10 @@ test("summary.mjs memory: memory-line writes the review's fields into the facts 
     await sameAsCli("summary.mjs", ["memory-line", join(d, "s.json"), m]);
     const rows = readFileSync(m, "utf8").trim().split("\n").map(l => JSON.parse(l)), pick = r => [r.tier, r.reviewed, r.held, r.failed, r.review, r.failed_ids, r.merged_by, r.review_cost_usd];
     assert.equal(JSON.stringify(rows.map(pick)), JSON.stringify([["facts", 2, 1, 1, "ok", ["facts/2:q2"], "driver", 0.42], ["rules", 2, 1, 1, "ok", ["rules/4:q4"], null, 0.42]]));
+    assert.equal(JSON.stringify(rows.map(r => r.fails_dropped)), "[false,false]", "fails_dropped: the facts row's, false unless the landing dropped them");
+    writeFileSync(join(d, "f.json"), JSON.stringify({ ...fixture(), memory: { ...mem, fails_dropped: true } }));
+    rmSync(m); await sameAsCli("summary.mjs", ["memory-line", join(d, "f.json"), m]);
+    assert.equal(readFileSync(m, "utf8").trim().split("\n").map(l => JSON.parse(l).fails_dropped).join(","), "true,false", "the rules PR carries every op: never dropped");
     // no review: each tier's ids reviewed, none held or failed
     writeFileSync(join(d, "n.json"), JSON.stringify({ ...fixture(), memory: { ...mem, held: 0, failed: 0, review: "the reviewer hit a limit", merged_by: null, failed_ids: [] } }));
     rmSync(m); await sameAsCli("summary.mjs", ["memory-line", join(d, "n.json"), m]);
@@ -624,5 +629,86 @@ test("summary.mjs memory: memory-line writes the review's fields into the facts 
       rmSync(m, { force: true }); await sameAsCli("summary.mjs", ["memory-line", join(d, "o.json"), m]);
       assert.equal(readFileSync(m, "utf8").trim().split("\n").map(l => Object.keys(JSON.parse(l)).filter(k => /review|held|failed|merged_by/.test(k)).length).join(","), old.rules_pr ? "0,0" : "0");
     }
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// R2-02 (decisions/2026-11-09-memory-graduation): the reviewer's columns, Michael's overrides read from the row and gh's
+// state, the review: tally, and the auto: line a project earns
+const rv = (run, o = {}) => ({ run, project: "p", tier: "facts", url: `https://example.test/pr/${run}`, ops: 3, applied: 2, dropped: 0, proposed: 0,
+  reviewed: 2, held: 2, failed: 0, review: "ok", failed_ids: [], merged_by: null, review_cost_usd: 0.1, at: `2026-11-0${o.day ?? 1}T10:00:00Z`, ...o });
+const ghOf = (run, s) => (s === "merged unchanged" ? ghPr("MERGED", `memory: ${run}: 2 facts`) : s === "merged edited" ? ghPr("MERGED", `memory: ${run}: 2 facts`, "edit")
+  : s === "closed" ? ghPr("CLOSED") : ghPr("OPEN"));
+test("summary.mjs memoryView: held and failed columns, unreviewed for an old row or a review none, the two overrides from the row and gh's state, and the review: tally line", () => {
+  const rows = [rv("f1", { held: 1, failed: 1, failed_ids: ["facts/2:q2"], day: 8 }), rv("f2", { held: 1, failed: 1, merged_by: "driver", day: 7 }), rv("f3", { day: 6 }),
+    rv("f4", { reviewed: 1, held: 1, day: 5 }), rv("f5", { reviewed: 1, held: 1, day: 4 }), { ...rv("f6", { day: 3 }), reviewed: undefined, held: undefined, failed: undefined, review: undefined },
+    { ...rv("f7", { day: 2 }), tier: "rules", rules: 1, sections: ["## Code rules"], reviewed: 1, held: 1 }, rv("f8", { held: 0, review: "the reviewer failed (exit 124)", day: 1 })];
+  const st = { f1: "merged unchanged", f2: "merged unchanged", f3: "closed", f4: "closed", f5: "merged edited", f6: "open", f7: "open", f8: "open" };
+  const gh = Object.fromEntries(rows.map(r => [r.url, ghOf(r.run, st[r.run])]));
+  const declined = [{ run: "f4", project: "p", n: 1, tier: 2, verdict: "declined", why: "a duplicate run", key: "k", at: "2026-11-05T11:00:00Z" }];
+  const out = memoryView(rows, gh, 10, "", declined), u = r => `https://example.test/pr/${r}`;
+  assert.equal(out[0], `f1 · p · facts · 2/0/0 · held 1 · failed 1 · ${u("f1")} · merged unchanged · override: merged against a fail`);
+  assert.equal(out[1], `f2 · p · facts · 2/0/0 · held 1 · failed 1 · ${u("f2")} · merged unchanged`, "the driver's auto merge is no override");
+  assert.equal(out[2], `f3 · p · facts · 2/0/0 · held 2 · failed 0 · ${u("f3")} · closed · override: closed against a hold`);
+  assert.equal(out[3], `f4 · p · facts · 2/0/0 · held 1 · failed 0 · ${u("f4")} · closed · 1 answered`, "a closed PR whose run has a declined row is no override");
+  assert.equal(out[4], `f5 · p · facts · 2/0/0 · held 1 · failed 0 · ${u("f5")} · merged edited · override: closed against a hold`);
+  assert.equal(out[5], `f6 · p · facts · 2/0/0 · unreviewed · ${u("f6")} · open`);
+  assert.equal(out[6], `f7 · p · rules · 1 · ## Code rules · held 1 · failed 0 · ${u("f7")} · open`);
+  assert.equal(out[7], `f8 · p · facts · 2/0/0 · unreviewed · ${u("f8")} · open`, "a review none is unreviewed");
+  assert.equal(out.slice(8).join("\n"), ["facts: merged unchanged 2 · edited 1 · closed 2 · open 2", "rules: merged unchanged 0 · edited 0 · closed 0 · open 1", "answers: accepted 0 · declined 1",
+    "review: held 7 · failed 2 · overrides 3 (merged against a fail 1 · edited or closed against a hold 2) · unreviewed 2"].join("\n"));
+  assert.ok(!out.some(l => l.startsWith("auto:")), "no auto: line without a project");
+  // under auto a facts PR the driver left open had its fails dropped from the commit: Michael's merge of it is no override
+  const fd = rv("fd", { held: 1, failed: 1, fails_dropped: true });
+  assert.equal(memoryView([fd], { [fd.url]: ghOf("fd", "merged unchanged") }, 10)[0], `fd · p · facts · 2/0/0 · held 1 · failed 1 · ${u("fd")} · merged unchanged`);
+  assert.equal(memoryView(rows.slice(5, 6), {}, 10).at(-1), "review: held 0 · failed 0 · overrides 0 (merged against a fail 0 · edited or closed against a hold 0) · unreviewed 1");
+  const withP = memoryView(rows, gh, 10, "p", declined);
+  assert.equal(withP.length, out.length + 1); assert.match(withP.at(-1), /^auto: not yet \(.* · window 8\)$/);
+  assert.equal(memoryView(rows, gh, 10, "none").join("\n"), "(none)");
+});
+
+test("summary.mjs graduation: earned over the last 8 reviewed facts PRs at 10 ops, 90 % held and one override; not yet short of any; revisit for a project on auto under 80 %", () => {
+  const prs = (ops, o = {}) => ops.map((n, i) => rv(`g${i}`, { reviewed: n, held: n, day: 1, at: `2026-11-${String(10 + i).padStart(2, "0")}T10:00:00Z`, ...o }));
+  const fail = (rs, i, k = 1, o = {}) => rs.map((r, j) => (j === i ? { ...r, held: r.held - k, failed: r.failed + k, ...o } : r));
+  const states = (rs, s = "open", over = {}) => Object.fromEntries(rs.map(r => [r.url, over[r.run] ?? s]));
+  const earn = fail(prs([3, 3, 3, 3, 2, 2, 2, 2]), 0, 1, { merged_by: "driver" }), es = states(earn, "merged unchanged");
+  const g = graduation(earn, es, [], "p");
+  assert.equal(g.word, "earned");
+  assert.equal(g.line, "auto: earned (held 19 of 20 · 95 % · overrides 0 of 8 reviewed PRs · window 8)");
+  // the window is the newest 8: an older PR with fails and other projects', rules and unreviewed rows take no place in it
+  const old = { ...rv("old", { reviewed: 5, held: 0, failed: 5, at: "2026-10-01T10:00:00Z" }) };
+  const noise = [old, { ...rv("q1"), project: "q", held: 0, failed: 2 }, { ...rv("r1"), tier: "rules", held: 0, failed: 2, at: "2026-11-30T10:00:00Z" },
+    { ...rv("u1"), reviewed: undefined, held: undefined, failed: undefined, review: undefined, at: "2026-11-30T10:00:00Z" }, rv("n1", { review: "the reviewer hit a limit", held: 0, at: "2026-11-30T10:00:00Z" })];
+  assert.equal(graduation([...earn, ...noise], es, [], "p").word, "earned");
+  assert.equal(graduation(fail(prs([3, 3, 3, 3, 3, 3, 3, 3]), 0, 3), states(earn), [], "p").word, "not yet", "88 % (21 of 24)");
+  assert.equal(graduation(fail(prs([3, 3, 3, 3, 3, 3, 3, 3]), 0, 3), states(earn), [], "p").line, "auto: not yet (held 21 of 24 · 88 % · overrides 0 of 8 reviewed PRs · window 8)");
+  assert.equal(graduation(prs([3, 3, 3, 3, 2, 2, 2, 2]), states(earn, "open", { g1: "closed", g2: "merged edited" }), [], "p").word, "not yet", "2 overrides");
+  assert.equal(graduation(prs([3, 3, 3, 3, 2, 2, 2, 2]), states(earn, "open", { g1: "closed" }), [], "p").word, "earned", "1 override");
+  assert.equal(graduation(prs([2, 1, 1, 1, 1, 1, 1, 1]), {}, [], "p").word, "not yet", "9 reviewed ops");
+  assert.equal(graduation(prs([4, 4, 4, 4, 4, 4]), {}, [], "p").word, "not yet", "6 reviewed PRs: the window is not full");
+  // the wording of a not yet: an override is Michael's merge over a fail; the driver's is none
+  const six = fail(prs([2, 2, 1, 1, 1, 1]), 0), ss = states(six, "open", { g0: "merged unchanged" });
+  assert.equal(graduation(six, ss, [], "p").line, "auto: not yet (held 7 of 8 · 88 % · overrides 1 of 6 reviewed PRs · window 8)");
+  assert.equal(graduation(fail(prs([2, 2, 1, 1, 1, 1]), 0, 1, { merged_by: "driver" }), ss, [], "p").line, "auto: not yet (held 7 of 8 · 88 % · overrides 0 of 6 reviewed PRs · window 8)");
+  // a closed PR whose run has a declined row is no override
+  assert.equal(graduation(prs([3, 3, 3, 3, 2, 2, 2, 2]), states(earn, "open", { g1: "closed", g2: "closed" }), [{ run: "g2", project: "p", n: 1, tier: 2, verdict: "declined", why: "x", key: "k", at: "1" }], "p").word, "earned");
+  // on auto: under 80 % held is revisit (a word, never a switch); at 80 % or more the same reading as under pr
+  const low = fail(prs([3, 3, 3, 3, 2, 2, 2, 2]), 0, 3).map((r, j) => (j === 1 ? { ...r, held: 1, failed: 2 } : r));   // 15 of 20: 75 %
+  assert.equal(graduation(low, {}, [], "p", "auto").word, "revisit");
+  assert.equal(graduation(low, {}, [], "p", "auto").line, "auto: revisit (held 15 of 20 · 75 % · overrides 0 of 8 reviewed PRs · window 8)");
+  assert.equal(graduation(low, {}, [], "p", "pr").word, "not yet");
+  assert.equal(graduation(earn, es, [], "p", "auto").word, "earned");
+  assert.equal(graduation([], {}, [], "p").line, "auto: not yet (held 0 of 0 · 0 % · overrides 0 of 0 reviewed PRs · window 8)");
+});
+
+test("summary.mjs memory: memory with a project and a policy ends with the auto: line, memory-urls also lists the window's PRs past --last", async () => {
+  const d = mkdtempSync(join(tmpdir(), "memg-"));
+  try {
+    const rows = [1, 2, 3].map(i => rv(`w${i}`, { day: i }));
+    writeFileSync(join(d, "m.jsonl"), rows.map(r => JSON.stringify(r)).join("\n") + "\n");
+    assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "1", "p"]), { rc: 0, out: ["w3", "w2", "w1"].map(r => `https://example.test/pr/${r}\n`).join("") });
+    assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "1"]), { rc: 0, out: "https://example.test/pr/w3\n" });
+    const out = (await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1", "p", join(d, "none.jsonl"), "auto"])).out.trim().split("\n");
+    assert.equal(out.at(-1), "auto: not yet (held 6 of 6 · 100 % · overrides 0 of 3 reviewed PRs · window 8)");
+    assert.equal(out.length, 6, "one row, four tally lines, the auto: line");
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
