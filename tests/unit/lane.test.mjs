@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sameAsCli } from "./cli-same.mjs";
-import { closedLane, endKind, fixRoundOpens, laneDone, runEnd, suiteVerdict, verifyCard, verifyNeed, verifyRound } from "../../lib/lane.mjs";
+import { claimGap, closedLane, endKind, fixRoundOpens, laneDone, runEnd, suiteVerdict, verifyCard, verifyNeed, verifyRound } from "../../lib/lane.mjs";
 
 const inTmp = fn => async () => { const d = mkdtempSync(join(tmpdir(), "lane-")); try { return await fn(d); } finally { rmSync(d, { recursive: true, force: true }); } };
 
@@ -316,4 +316,20 @@ test("lane.mjs: main: an unknown question is the usage line and exit 2", async (
 test("lane.mjs: main fix-round: a count or cap that isn't a whole number (08, 1e3, empty) is the card, as bash's (( )) refused it", async () => {
   for (const [n, max] of [["0", "08"], ["0", "1e3"], ["0", ""], ["1e0", "2"]]) assert.equal((await sameAsCli("lane.mjs", ["fix-round", "", n, max])).rc, 1, `${n} < ${max}`);
   assert.equal((await sameAsCli("lane.mjs", ["fix-round", "", "0", "10"])).rc, 0);
+});
+
+// ---- claimGap: the session's entry against the list it is judged by (decisions/2026-11-09-claim-gap) ----
+const GAP = "A4-01: its entry says passes but feature_list.json's passes stayed false; the claim never reached the list (the flip is the session's one list edit, prompts/coding.md §3.1)";
+test("a session whose entry says passes with the list at false is a claim gap, named with the id", async () => {
+  assert.equal(claimGap({ id: "A4-01", outcome: "passes", passes: false }), GAP);
+  assert.equal((await sameAsCli("lane.mjs", ["claim-gap", "A4-01", "passes", "0"])).out, GAP + "\n");   // the driver's call: the key as 0|1
+  assert.equal((await sameAsCli("lane.mjs", ["claim-gap", "A4-01", "passes", "1"])).out, "");
+});
+test("no claim gap when the list agrees with the entry (passes/true, not yet/false, parked/false)", () => {
+  for (const [outcome, passes] of [["passes", true], ["not yet", false], ["parked", false]]) assert.equal(claimGap({ id: "A", outcome, passes }), "", `${outcome}/${passes}`);
+  assert.equal(claimGap({ id: "A", outcome: "", passes: false }), "");   // no word kept for the session (an ingest before this note)
+});
+test("no claim gap for an entry that says not yet while the list says true (the gate's case)", () => {
+  assert.equal(claimGap({ id: "A", outcome: "not yet", passes: true }), "");
+  assert.equal(claimGap({ id: "A", outcome: "parked", passes: true }), "");
 });

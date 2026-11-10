@@ -155,6 +155,11 @@ Suite: last full run {{SUITE_LENGTH}}
 {{?CHECK_FAST_CMD}}Suite: last fast run {{SUITE_FAST_LENGTH}}
 {{REVIEW_DIFF}}
 {{?FIX}}{{FIX}}
+{{?GAP}}
+{{?GAP}}## The session before this one
+{{?GAP}}
+{{?GAP}}{{GAP}}. Check every step holds on this tree, run the fast tier once, and set `"passes": true` on your
+{{?GAP}}feature in `feature_list.json`: that key is the one thing the harness reads. Build nothing new.
 
 ## Init output
 
