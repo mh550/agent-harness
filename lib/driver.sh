@@ -225,14 +225,14 @@ deadline_verify() {
   fi
 }
 
-# <start> <file> <role>: a read-only session's one output file, $RUN_DIR/<file>, rescued to $SCRATCH/<file> (restrict
-# deletes it) only when this session wrote it (not a continued run's earlier copy) as a plain file of at most 64 KB (a
+# <start> <file> <role> [<max bytes>]: a read-only session's one output file, $RUN_DIR/<file>, rescued to $SCRATCH/<file> (restrict
+# deletes it) only when this session wrote it (not a continued run's earlier copy) as a plain file of at most <max bytes> (64 KB by default; a
 # symlink would carry another file into the record); then every edit since <start> reverted, the paths in RO_REVERTED
 # (the rescued file left out)
 ro_rescue() {
   local p=$RUN_DIR/$2
   rm -f "$SCRATCH/$2"
-  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= 65536 )) && ! git show "$1:$p" 2> /dev/null | cmp -s - "$p" && cp "$p" "$SCRATCH/$2"
+  [[ -f $p && ! -L $p ]] && (( $(stat -c %s "$p") <= ${4:-65536} )) && ! git show "$1:$p" 2> /dev/null | cmp -s - "$p" && cp "$p" "$SCRATCH/$2"
   RO_REVERTED=$(restrict "$1" nothing "$3" | { [[ -f $SCRATCH/$2 ]] && grep -vxF "$p" || cat; } | paste -sd' ')
 }
 
@@ -308,7 +308,7 @@ memory_review() {
   log "memory review · $model · deny ${CURATOR_DENY[*]}"
   local S_DENY=("${CURATOR_DENY[@]}")
   MAX_TURNS=40 SESSION_BUDGET_USD=3 session memory-review "$model" "$mlog" memory-review
-  ro_rescue "$rstart" memory-review.json memory-review; reverted=$RO_REVERTED
+  ro_rescue "$rstart" memory-review.json memory-review 262144; reverted=$RO_REVERTED   # 50 ops × 4 rows of 200-character cells: ~92 KB
   for x in "${S_NOTES[@]}"; do note "$x"; done   # after restrict, as the curator's
   x=$(printf '%s, ' "${CURATOR_DENY[@]}"); note "memory review: session denied ${x%, }"
   [[ -n $reverted ]] && note "memory review: reverted edits (it is read-only): $reverted"

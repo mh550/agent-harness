@@ -1,6 +1,6 @@
 # The memory reviewer: one read-only session on what would land, four questions per operation, under the curator's deny list
 
-*(2026-11-09, run agent-harness-2026-11-09, R1 (the session and its input by R1-01, the verdict and what lands by R1-02); spec
+*(2026-11-09, run agent-harness-2026-11-09, R1 (the session and its input by R1-01, the verdict and what lands by R1-02, the review's fixes by R1-03); spec
 `docs/specs/2026-11-08-memory-reviewer.md` §R1; Decision 27 (a), Michael, 2026-11-08 (`docs/plans/2026-11-03-test-suite-redesign-dispatch.md`,
 row F3f); journal/learning/2026-11-07-memory-curator.md §11 answer 2 (Opus for reviews); the run's brief (2026-11-09
 22:45: proceed on the defaults, Q4 reads the declined rows of `ledger/memory-answers.jsonl`); the follow-up's names as
@@ -50,7 +50,7 @@ built: decisions/2026-11-08-memory-rules-pr, decisions/2026-11-08-memory-session
     `review: "nothing to review"`; `memory_pr` goes on as before (no ops at all stays the curator's `curator: no
     operations`, upstream, with no review keys).
   - `memory.json` gains `reviewed` (the input's items) and `review` (`ok`, or why none: `the reviewer wrote no
-    memory-review.json`, `the reviewer hit a limit`, `the review input failed (see run.log)`) whenever the curation
+    memory-review.json`, `the reviewer hit a limit`, `the review input failed (see run.log)`, and since R1-03 `the landing differs from the dry apply`) whenever the curation
     reached the review; R1-02 validates the file and counts the verdicts.
   - **Q4 reads the declined rows of `ledger/memory-answers.jsonl`, read-only** (the brief's addition): the prompt names
     the file (`{{ANSWERS_FILE}}`, the ledger the driver uses), so a rule Michael declined that a curator restates under
@@ -67,7 +67,7 @@ built: decisions/2026-11-08-memory-rules-pr, decisions/2026-11-08-memory-session
     rows)` with fewer than four, as `not reviewed` with none. **Thin is a fail, not an escalation** (*default*: Opus is
     already the review model, and under `pr` a fail leaves the op in front of Michael). Cells are cut to
     `entries.mjs` `ROW_MAX` (200) where they are rendered and in the reason; the prompt asks for at most 200
-    characters, so 50 ops × 4 rows stay under `ro_rescue`'s 64 KB.
+    characters, so 50 ops × 4 rows (about 92 KB) stay under the 256 KB `ro_rescue` takes for this role (64 KB at first: found by R1-03's review).
   - **One table renderer**: `entries.mjs` `evidenceTable(rows, [first, second])`, used by `renderEntry` (Feature, Step;
     its output byte-identical, a unit test on its hash) and `render` (Op, Q). `## Review` goes after the body's head in
     both PR bodies and `memory.md`; over `BODY_MAX` its table is cut first, whole, with a line saying so, and its
@@ -88,15 +88,20 @@ built: decisions/2026-11-08-memory-rules-pr, decisions/2026-11-08-memory-session
   - **No review, no merge** (*default*; invariant 3): no file, an invalid file, `MET limit`, a non-zero exit (a timeout's
     too) → `## Review` `none: <why>`, every op lands as under `pr`, and under `auto` `memory_merge` is not called:
     `memory PR: no review (<why>); not merged (MEMORY_POLICY=auto), left open · <url>`. A continue's review runs again
-    on what is new, but **the reused PR merges only when every commit on `harness-memory/<run>` past main is a held
-    one**: the driver writes the trailer `Memory-review: held` into a facts commit whose every op a review held (under
-    `auto` after the verdict drop, under `pr` with no fact failed), and counts from the main sha `memory_base` fetched,
-    never a ref; any commit past it without the trailer leaves the PR
-    open, `memory PR: <sha12> on harness-memory/<run> was not held by a review; not merged …`. *Default*, the brief's
-    rule over the spec's §5, which had the continue merge the earlier segment's unreviewed commit with the new one
-    (found by R1-02's review; asked in the entry). The PR then waits for Michael. Rejected: a list of held heads in the
-    run record (a session can hide a planted line from `restrict` with a `.gitignore`) and `origin/<main>` as the
-    range's start (a session can move a local ref); the trailer lives in a commit only the driver can push.
+    on what is new, but **the reused PR merges only when its one commit past main is this segment's own**: the range
+    counts from the main sha `memory_base` fetched, never a ref, and anything else on `harness-memory/<run>` (an earlier
+    segment's commit, or one a session pushed with the driver's subject and paths) leaves the PR open, `memory PR:
+    <sha12> on harness-memory/<run> is not this segment's commit; not merged …`; a git error reads as not merged.
+    *Default*, the brief's rule over the spec's §5, which had the continue merge the earlier segment's unreviewed
+    commit with the new one (found by R1-02's review; asked in the entry). The PR then waits for Michael. Updated in
+    place 2026-11-10 (R1-03's review, I1): R1-02 had the driver write a `Memory-review: held` trailer into a held facts
+    commit and merge a range whose every commit carried it; any session can push (the deny list is a prefix rule, and
+    coding sessions carry none), so the trailer vouched for nothing, and `memory_foreign` checks only the subject, the
+    paths and one parent. The cost: N2-02's continue that refreshed a failed body no longer merges the earlier commit
+    with its own (decisions/2026-11-08-memory-session-and-answers, updated). Rejected: a list of held heads in the run
+    record (a session can hide a planted line from `restrict` with a `.gitignore`), `origin/<main>` as the range's
+    start (a session can move a local ref), the trailer (above), and an earlier commit's diff put to this segment's
+    reviewer as a `carried/<sha12>` item (a second input shape for a case Michael's merge already settles).
   - **The reviewer cannot move what lands from outside the tree**: it runs with no filesystem sandbox, so the sums of
     every file the landing reads or compares against (the ops, the dry result and its texts, the bases, the input,
     `ledger/memory-answers.jsonl`) are taken before its session and compared after it; a change commits nothing, the
@@ -106,6 +111,33 @@ built: decisions/2026-11-08-memory-rules-pr, decisions/2026-11-08-memory-session
   - `memory.json` gains `held`, `failed` and `merged_by` (`driver` when `memory_merge` merged it); the report's `Memory`
     row ends `· review <h> held · <f> failed` or `· review none (<why>)`, nothing for an older file. `prompts/curator.md`
     says a reviewer checks every op and that a `replace` keeping the subject beats an eviction.
+- **Choice (R1-03, the milestone's review: 0 Critical, 3 Important, 8 Minor; `docs/plans/2026-11-09-R1-review.md`):**
+  - **The commit is the text the landing wrote** (I2): the reviewer, like the curator, runs with no filesystem
+    sandbox and can write a hook, a filter or an attribute into the shared git dir, which acts after the landing's
+    texts were compared with what it read. `memory_pass` takes each file's raw blob (`git hash-object --no-filters`)
+    before `git add` and compares the commit's blobs with them; a difference pushes nothing, `<memory PR|memory rules
+    PR>: the commit differs from the text the landing wrote (a git hook or filter?); not pushed (see run.log)`. A
+    project whose own attributes normalise these files (an `eol` rule on CRLF text) fails closed the same way
+    (*default*). Not closed by any check of the driver's: code a session plants in `$HARNESS_HOME` or a git config's
+    command hooks (`core.fsmonitor`); the boundary there is the deny list, the prompt and `restrict`.
+  - No review counts a timeout: a session cut by the driver's timeout (exit 124) after writing a valid file is
+    `the reviewer failed (exit 124)` (I3, a check of the branch that had none; `STUB_MEMORY_REVIEW=hold-exit`).
+  - The sums guard's refusal reads `review: "the landing differs from the dry apply"` in `memory.json`, not `ok`
+    (M2). `ro_rescue` takes a size: 256 KB for `memory-review.json` (M3). A fact the review dropped is a failed one in
+    the bodies too: never in the head's `dropped` count nor under `## Dropped` (M4). The prompt names
+    `memory-rules-base/` as a `rules/*` item's base (M7).
+  - Not fixed (Minor, in the review file with why): Q3's cap read on the base alone while the gate also evicts for
+    the union of both PRs (M5: fails closed, needs a union reading in the input); a CLI that exits 0 on max turns
+    (M6: unconfirmed, and no captured transcript to copy a fake from).
+  - **Checks.** R1 adds 38 names to `tests/fixtures/check-names.txt` and removes 2 (+36 net) against the budget of 35:
+    the review's two (the hook check, the body's dropped count) are the overrun. Removed, each with its successor
+    (decisions/2026-11-03-trim's rule): `curator: its run.log line comes after the retro's, its notes before the record
+    PR's` → `curator: its run.log line comes after the retro's, its notes and then the memory review's before the
+    record PR's` (R1-01); `memory PR: the next segment refreshes the reused PR's body and merges it at the commit it
+    pushed` → `memory PR: under auto the next segment refreshes the reused PR's body and leaves it open: the earlier
+    segments' commits on it are not its own, a held trailer on one included` (R1-03). R1-02's `memory review: with no
+    review (no file, an invalid file, a limit) …`, never on main, became `… (no file, an invalid file, a limit, a
+    timeout after a valid file) …`.
 - **Rejected:** reviewing `memory-ops.json` raw (spends the reviewer on ops the gate drops anyway, and shows it a tree
   the driver would not write: an under-cap anchored add lands as a plain add since Decision 24); reviewing tier 3; a
   deny list of the reviewer's own (two arrays can drift; the floor is one); running the review on the landing

@@ -490,6 +490,9 @@ JSON
     [[ ${STUB_MEMORY_REVIEW:-hold} == limit ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before it reads a file
     [[ ${STUB_MEMORY_REVIEW_EDITS:-} == 1 ]] && { echo "reviewer was here" >> CLAUDE.md; mkdir -p lib && echo "# reviewer was here" > lib/review-hack.sh; }
     [[ ${STUB_MEMORY_REVIEW_EDITS:-} == ops ]] && ( set +e; m=$HARNESS_SCRATCH/memory-ops.json; jq '.[0].text |= sub("A work"; "A reviewed work")' "$m" > "$m.t" && mv "$m.t" "$m" )
+    # hook: a pre-commit hook in the shared git dir that plants a line in the driver's landing worktree ($SCRATCH/memory)
+    [[ ${STUB_MEMORY_REVIEW_EDITS:-} == hook ]] && ( set +e; h=$(cd "$(git rev-parse --git-common-dir)" && pwd)/hooks; mkdir -p "$h"
+      printf '#!/bin/sh\ncase $(basename "$(pwd -P)") in memory) echo "- planted by a hook (x 2026-11-10)" >> CLAUDE.md; git add CLAUDE.md ;; esac\n' > "$h/pre-commit"; chmod +x "$h/pre-commit" )
     o=$HARNESS_RUN_DIR/memory-review.json ans=$(grep -o '[^ `]*/memory-answers\.jsonl' <<< "$prompt" | head -1 || true)
     [[ ${STUB_MEMORY_REVIEW_EDITS:-} == answers && -n $ans ]] && echo '{"run":"x","project":"other","n":1,"verdict":"declined","text":"t","key":"t"}' >> "$ans"
     [[ -n $ans && -f $ans ]] || ans=/dev/null
@@ -505,6 +508,7 @@ JSON
               | {id: $it.id, q: 4, ran: "grep -niF '"'"'\($d.text[0:40])'"'"' \($ans_path)", saw: "declined by Michael (\($d.run)/\($d.n))", holds: false}
             else {id: $it.id, q: $q, ran: "stub: q\($q) of \($it.id)", saw: "stub: it holds", holds: true} end],
           summary: "Stub memory review (\($how))."}' "$HARNESS_RUN_DIR/memory-review-input.json" > "$o" 2> /dev/null || true ;; esac   # set -e: a missing input ends no stub
+    [[ ${STUB_MEMORY_REVIEW:-} == hold-exit ]] && exit 124   # a valid file, then the driver's timeout (124: no result line)
     ok 0.1 "Stub memory review: ${STUB_MEMORY_REVIEW:-hold}." ;;
   "# Entry resume")   # resumed.jsonl on the session's figures: cost plus the fixture's increment, modelUsage plus its usage
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')

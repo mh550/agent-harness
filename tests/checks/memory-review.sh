@@ -95,7 +95,17 @@ check "memory review: a reviewer that changes the ops in scratch lands nothing: 
   'grep -q "^done" "$(st mo)/ended" && grep -x memory-review "$T/scratch/proj/mo/sessions.log" > /dev/null \
   && [[ $(hlog mo | grep -c " · memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)$") == 1 ]] \
   && [[ -z $(git -C "$T/origin.git" ls-remote --heads . "harness-memory/mo" "harness-rules/mo") ]] && ! titles | grep -E "^memory( rules)?: mo$" > /dev/null \
+  && jq -e ".review == \"the landing differs from the dry apply\" and .held == 0" "$(st mo)/memory.json" > /dev/null \
   && titles | grep -x "mo: run record" > /dev/null'
+
+# mk: a reviewer that plants a pre-commit hook in the shared git dir, which rewrites the landing's commit: nothing is pushed
+run mk STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=hold STUB_MEMORY_REVIEW_EDITS=hook
+rm -f "$(git -C "$T/proj" rev-parse --path-format=absolute --git-common-dir)/hooks/pre-commit"
+check "memory review: a commit a git hook changed after the landing wrote its text is never pushed: one note per tier, no memory branch or PR" \
+  'grep -q "^done" "$(st mk)/ended" && grep -x memory-review "$T/scratch/proj/mk/sessions.log" > /dev/null \
+  && ok=1 && for l in "memory PR" "memory rules PR"; do [[ $(hlog mk | grep -c " · $l: the commit differs from the text the landing wrote (a git hook or filter?); not pushed (see run.log)$") == 1 ]] || ok=0; done && (( ok )) \
+  && [[ -z $(git -C "$T/origin.git" ls-remote --heads . "harness-memory/mk" "harness-rules/mk") ]] && ! titles | grep -E "^memory( rules)?: mk$" > /dev/null \
+  && ! git -C "$T/origin.git" log --all -p | grep -F "planted by a hook" > /dev/null && titles | grep -x "mk: run record" > /dev/null'
 
 # mt: a thin review (three rows for the first op)
 run mt STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=thin
@@ -128,18 +138,19 @@ check "memory review: under auto the rules PR carries every op with its verdict 
   'q=$(rpr ea) && review "$q.body" | grep -xF -- "- rules/1 holds" > /dev/null && ! merged ea "$q" \
   && git -C "$T/origin.git" show harness-rules/ea:CLAUDE.md | grep -F "stub proposal: run the stub suite" > /dev/null'
 
-# mn, mb, ml under auto: no review (no file, an invalid file, a limit) leaves the PR open with every op in it
+# mn, mb, ml, mx under auto: no review (no file, an invalid file, a limit, a valid file and then a timeout) leaves the PR open with every op in it
 base=$main0
 run mn STUB_CURATOR_OPS=fact-a STUB_MEMORY_REVIEW=none
 mnmain=$(git -C "$T/origin.git" rev-parse main)   # its continue curates against the main it ended on
 run mb STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=bad
 run ml STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=limit
-check "memory review: with no review (no file, an invalid file, a limit) under auto the PR opens with none: <why>, one note, every op committed and no merge" \
-  'ok=1; for x in "mn:the reviewer wrote no memory-review.json" "mb:memory-review.json invalid: not JSON" "ml:the reviewer hit a limit"; do r=${x%%:*} why=${x#*:}; p=$(mpr "$r") \
+run mx STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=hold-exit
+check "memory review: with no review (no file, an invalid file, a limit, a timeout after a valid file) under auto the PR opens with none: <why>, one note, every op committed and no merge" \
+  'ok=1; for x in "mn:the reviewer wrote no memory-review.json" "mb:memory-review.json invalid: not JSON" "ml:the reviewer hit a limit" "mx:the reviewer failed"; do r=${x%%:*} why=${x#*:}; p=$(mpr "$r") \
     && review "$p.body" | grep -E "^none: ${why}" > /dev/null && [[ $(hlog "$r" | grep -c " · memory review: none (${why}") == 1 ]] \
     && hlog "$r" | grep -E " · memory PR: no review \(${why}.*\); not merged \(MEMORY_POLICY=auto\), left open · $(url "$p")$" > /dev/null \
     && ! merged "$r" "$p" && git -C "$T/origin.git" show "harness-memory/$r:CLAUDE.md" | grep -F "work-A.txt" > /dev/null \
-    && jq -e ".merged_by == null and (.review | startswith(\"${why}\"))" "$(st "$r")/memory.json" > /dev/null || { echo "$r" >&2; ok=0; }; done; (( ok ))'
+    && jq -e ".merged_by == null and (.review | startswith(\"${why}\"))" "$(st "$r")/memory.json" > /dev/null || { echo "$r" >&2; ok=0; }; done; (( ok )) && jq -e ".review == \"the reviewer failed (exit 124)\"" "$(st mx)/memory.json" > /dev/null && [[ -s $(rec mx)/memory-review.json ]]'
 # mn's continue: a new fact, a reviewer that holds it; the reused PR still carries mn's unreviewed commit, so no merge
 git -C "$T/origin.git" update-ref refs/heads/main "$mnmain"
 STUB_CURATOR_OPS=fact-b STUB_MEMORY_REVIEW=hold STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" continue mn --foreground > "$T/mn2.out" 2>&1
@@ -148,8 +159,8 @@ check "memory review: a continue after no review reviews its new fact and leaves
   'p=$(mpr mn) && grep -x memory-review "$T/scratch/proj/mn/sessions.log" > /dev/null && [[ $(grep -cx memory-review "$T/scratch/proj/mn/sessions.log") == 2 ]] \
   && hlog mn | grep -E " · memory review: 1 reviewed · 1 held · 0 failed$" > /dev/null && ! merged mn2 "$p" && [[ ! -f $p.merged ]] \
   && c=$(git -C "$T/origin.git" rev-list --reverse "$mnmain..harness-memory/mn" | head -1) && [[ -n $c ]] \
-  && hlog mn | grep -xF -- "$(hlog mn | grep -F " · memory PR: ${c:0:12} on harness-memory/mn was not held by a review; not merged (MEMORY_POLICY=auto), left open · $(url "$p")" | head -1)" > /dev/null \
-  && [[ $(hlog mn | grep -c " was not held by a review; ") == 1 ]] && review "$p.body" | grep -xF -- "- facts/1 holds" > /dev/null && jq -e ".merged_by == null" "$(st mn)/memory.json" > /dev/null'
+  && hlog mn | grep -xF -- "$(hlog mn | grep -F " · memory PR: ${c:0:12} on harness-memory/mn is not this segment'"'"'s commit; not merged (MEMORY_POLICY=auto), left open · $(url "$p")" | head -1)" > /dev/null \
+  && [[ $(hlog mn | grep -c " is not this segment'"'"'s commit; ") == 1 ]] && review "$p.body" | grep -xF -- "- facts/1 holds" > /dev/null && jq -e ".merged_by == null" "$(st mn)/memory.json" > /dev/null'
 
 # md under pr: a fact restating a rule Michael declined (a memory-answers.jsonl row): the reviewer fails its q4
 pol pr

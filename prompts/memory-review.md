@@ -18,7 +18,7 @@ Read:
   "evicted": <the line an anchored add would cut, or null>, "base": "<the file before>", "after": "<the file as it
   would land>", "cap": {"gotchas": <entries under ## Gotchas>, "lines": <lines>}}`. `facts/*` are tier 1 (`## Gotchas`,
   the `harness-memory/{{RUN_ID}}` PR); `rules/*` are tier 2 (every other section, the `harness-rules/{{RUN_ID}}` PR).
-  The `base` and `after` files are under `{{SCRATCH}}` (`memory-base/`, `memory-after-facts/`, `memory-after-rules/`).
+  The `base` and `after` files are under `{{SCRATCH}}` (`memory-base/` and `memory-after-facts/` for `facts/*`, `memory-rules-base/` and `memory-after-rules/` for `rules/*`).
 - `{{RUN_DIR}}/entries.jsonl` with `jq`, by line number (an item's `from`), and `{{RUN_DIR}}/progress.md` and
   `{{RUN_DIR}}/progress-archive.md` for the incident.
 - The tree in this checkout with `git grep`, never under `.harness/runs/` (the record quotes every line it curates).

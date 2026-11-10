@@ -675,6 +675,16 @@ test("curator.mjs body: --review puts ## Review after the head and before Applie
   assert.ok(huge.includes("_The review's table was cut"), "a line says the table was cut");
 });
 
+test("curator.mjs body: a fact the review dropped is a failed one, named in ## Review alone: never in the head's dropped count or ## Dropped", () => {
+  const es = [...ENTRIES, F2E], ops = [op(), op({ text: F2, from: "entries.jsonl:3" })];
+  const r = apply(ops, T(MD), es, RUN, { verdicts: V(["facts/1", "7 files (q2)"], ["facts/2"]) });
+  assert.equal(reasons(r), "review: 7 files (q2) (facts/1)");
+  const b = body(r, RUN, "facts", "");
+  assert.equal(`${b.includes(" · 0 dropped · ")} ${b.includes("## Dropped")} ${b.includes("7 files (q2)")}`, "true false false", b.split("\n")[0]);
+  const g = apply([op(), op({ section: "## Nowhere" })], T(MD), ENTRIES, RUN, { verdicts: V(["facts/1"]) });
+  assert.equal(`${g.dropped.length} ${body(g, RUN, "facts", "").includes(" · 1 dropped · ")}`, "1 true", "the gate's drops still count");
+});
+
 test("curator.mjs apply: in the --verdicts landing a held add that a failed replace leaves a duplicate of is dropped, never written twice", () => {
   const md = gotchas(3), es = [ENTRIES[0], E({ discoveries: [{ text: FACT, affects: ["project"] }, { text: G(2), affects: ["project"] }] })];
   const ops = [op({ op: "replace", anchor: G(2), text: FACT }), op({ text: G(2) })], dry = apply(ops, T(md), es, RUN);

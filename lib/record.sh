@@ -474,7 +474,7 @@ memory_json() {
 memory_pr() {
   local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" fbody=0 o a rl d p rd x f files=() rfiles=() rb=()
   rm -f "$r" "$REC/memory-review.json" "$REC/memory-review-input.json" "$SCRATCH/memory-review.json" "$SCRATCH/memory-verdicts.json" "$SCRATCH/memory-review.md"   # an earlier segment's review never sits beside this one's ops
-  REVIEWED="" REVIEW_NONE="" REVIEW_HELD=0 REVIEW_FAILED=0 MERGED_BY="" AFTER_REVIEW="" HELD=(); local la vf=(); [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
+  REVIEWED="" REVIEW_NONE="" REVIEW_HELD=0 REVIEW_FAILED=0 MERGED_BY="" AFTER_REVIEW=""; local la vf=() past=() c; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
   [[ -z $RULES_STOP && -d $SCRATCH/memory-rules-mb ]] && rb+=("$SCRATCH/memory-rules-mb" "$SCRATCH/memory-main")
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
     why=$(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)
@@ -511,7 +511,7 @@ memory_pr() {
     if [[ $(memory_sums "$dry" "$af" "$ar") != "$x" ]]; then
       echo "memory: a file the landing reads changed during the memory review" >> "$STATE/run.log"
       note "memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)"
-      memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0
+      REVIEW_NONE="the landing differs from the dry apply"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0
     fi
     memory_verdict
   fi
@@ -550,10 +550,6 @@ memory_pr() {
   la=$(jq '.applied | length' "$r")
   # the facts: tier 1 as apply wrote it into the worktree; its body names the rules PR this run already has
   mapfile -t files < <(jq -r '.files[]?' "$r")
-  # a commit whose every op a review held (auto's landing, or pr's with no fact failed) carries the trailer
-  # `Memory-review: held` in the commit the driver pushes (no session can push): auto merges only such commits, so an
-  # earlier segment's unreviewed commit on a reused PR never merges with a later held one (invariant 3)
-  HELD=(); [[ -z $REVIEW_NONE ]] && { [[ -n $AFTER_REVIEW ]] || jq -e '[.ops[] | select(.id | startswith("facts/")) | .holds] | all' "$SCRATCH/memory-verdicts.json" > /dev/null 2>&1; } && HELD=(-m "Memory-review: held")
   memory_body "$r" facts "$RULES_URL"
   memory_pass facts "$la" "${files[@]}"; fbody=$?; url=$PASS_URL fhead=$PASS_HEAD
   # the rules: the worktree made again at their own base, tier 2's texts written into it
@@ -574,13 +570,15 @@ memory_pr() {
     else note "memory PR: its body could not name the rules PR (see run.log) · ${url:-$MEM_URL}"; fi
   fi
   # the facts PR alone, and only with this segment's body on it (N2-02): no retry of a failed edit here
-  # no review, no merge (invariant 3): the commit holds only held ops only when the review ran
+  # no review, no merge (invariant 3): the commit holds only held ops only when the review ran, and only the commit this
+  # segment made is merged: anything else past main (an earlier segment's, or one a session pushed with the driver's
+  # subject) no review of this segment read, and nothing written into a commit can vouch for it (R1-03 review, I1)
   if [[ $MEMORY_POLICY == auto && -n $fhead && $url == http* ]]; then
-    x=$(git -C "$RWT" log --format=%H --invert-grep --grep='^Memory-review: held$' "$MEM_MAIN..$fhead" 2> /dev/null | tail -1)
+    mapfile -t past < <(git -C "$RWT" rev-list "$MEM_MAIN..$fhead" 2> /dev/null); c="(unreadable)"; (( ${#past[@]} )) && c=${past[-1]}
     if [[ -n $REVIEW_NONE ]]; then note "memory PR: no review ($REVIEW_NONE); not merged (MEMORY_POLICY=auto), left open · $url"
     elif [[ -z $AFTER_REVIEW ]]; then note "memory PR: the landing had no verdicts; not merged (MEMORY_POLICY=auto), left open · $url"
     elif (( fbody != 0 )); then note "memory PR: its body was not updated (see run.log); not merged (MEMORY_POLICY=auto), left open · $url"
-    elif [[ -n $x || -z ${MEM_MAIN:-} ]]; then note "memory PR: ${x:0:12} on harness-memory/$RUN_ID was not held by a review; not merged (MEMORY_POLICY=auto), left open · $url"
+    elif [[ ${#past[@]} != 1 || $c != "$fhead" ]]; then note "memory PR: ${c:0:12} on harness-memory/$RUN_ID is not this segment's commit; not merged (MEMORY_POLICY=auto), left open · $url"
     else memory_merge "$url" "$fhead"; fi
   fi
   memory_record "$r"
@@ -609,11 +607,11 @@ memory_apply() {
 # one count note and one per failed op, or one `none (<why>)` note. REVIEW_HELD, REVIEW_FAILED ← the counts
 memory_verdict() {
   local i=$SCRATCH/memory-review-input.json f=$SCRATCH/memory-review.json why x
-  if [[ -z $REVIEW_NONE ]]; then
-    why=$(node "$HARNESS_HOME/lib/memreview.mjs" validate "$f" "$i" 2>> "$STATE/run.log")
-    [[ $why == ok ]] || REVIEW_NONE="memory-review.json invalid: $(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)"
+  # verdicts validates first: a refused file exits 1 with its reason as the output
+  if [[ -z $REVIEW_NONE ]] && ! why=$(node "$HARNESS_HOME/lib/memreview.mjs" verdicts "$f" "$i" 2>> "$STATE/run.log"); then
+    REVIEW_NONE="memory-review.json invalid: $(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)"
   fi
-  if [[ -z $REVIEW_NONE ]] && node "$HARNESS_HOME/lib/memreview.mjs" verdicts "$f" "$i" > "$SCRATCH/memory-verdicts.json" 2>> "$STATE/run.log" \
+  if [[ -z $REVIEW_NONE ]] && printf '%s\n' "$why" > "$SCRATCH/memory-verdicts.json" \
     && node "$HARNESS_HOME/lib/memreview.mjs" render "$SCRATCH/memory-verdicts.json" "$f" > "$SCRATCH/memory-review.md" 2>> "$STATE/run.log"; then
     IFS=$'\t' read -r REVIEWED REVIEW_HELD REVIEW_FAILED < <(jq -r '[.reviewed, .held, .failed] | @tsv' "$SCRATCH/memory-verdicts.json")
     note "memory review: $REVIEWED reviewed · $REVIEW_HELD held · $REVIEW_FAILED failed"
@@ -629,8 +627,7 @@ memory_verdict() {
 # PR this run already has gets this segment's body and a pushed branch without one gets its PR. PASS_URL ← the PR's
 # URL, PASS_HEAD ← the commit pushed (auto merges the facts PR only at it); 1 when that commit's PR kept an older body
 memory_pass() {
-  local t=$1 k=$2 prior nopr B LBL TITLE WORD NONE; shift 2
-  local tr=(); [[ $t == facts ]] && tr=("${HELD[@]}")   # the facts commit's held trailer (memory_pr)
+  local t=$1 k=$2 prior nopr B LBL TITLE WORD NONE want; shift 2
   memory_tier "$t"; PASS_URL="" PASS_HEAD=""
   if [[ $t == rules ]]; then prior=$RULES_URL nopr=$RULES_NOPR; else prior=$MEM_URL nopr=$MEM_NOPR; fi
   if (( k == 0 || $# == 0 )); then
@@ -639,8 +636,14 @@ memory_pass() {
     elif [[ $t == rules ]]; then note "$LBL: none ($NONE)"
     else note "$LBL: none ($NONE); the body is in memory.md"; fi
   elif [[ $MERGE_POLICY == off ]]; then note "$LBL: none (MERGE_POLICY=off); the body is in memory.md"
-  elif ! git -C "$SCRATCH/memory" add -- "$@" 2>> "$STATE/run.log" || ! git -C "$SCRATCH/memory" commit -q -m "memory: $RUN_ID: $k $WORD" "${tr[@]}" -- "$@" 2>> "$STATE/run.log"; then
+  elif ! want=$(cd "$SCRATCH/memory" && git hash-object --no-filters -- "$@" 2>> "$STATE/run.log") \
+    || ! git -C "$SCRATCH/memory" add -- "$@" 2>> "$STATE/run.log" || ! git -C "$SCRATCH/memory" commit -q -m "memory: $RUN_ID: $k $WORD" -- "$@" 2>> "$STATE/run.log"; then
     note "$LBL: could not commit the tier-$([[ $t == rules ]] && echo 2 || echo 1) change (see run.log)"
+  # a git hook, filter or attribute in the shared git dir (a session's reach: no filesystem sandbox) can change what is
+  # committed after the landing's text was compared with what the reviewer read: the commit must be that text, byte for byte
+  elif [[ $(for f in "$@"; do git -C "$SCRATCH/memory" rev-parse -q --verify "HEAD:$f" || echo "-"; done 2> /dev/null) != "$want" ]]; then
+    { echo "$LBL: the commit's blobs differ from the landing's texts: $*"; git -C "$SCRATCH/memory" show --stat HEAD | head -c 2000; } >> "$STATE/run.log" 2>&1
+    note "$LBL: the commit differs from the text the landing wrote (a git hook or filter?); not pushed (see run.log)"
   elif ! origin_t git -C "$SCRATCH/memory" push -q origin "HEAD:refs/heads/$B" 2>> "$STATE/run.log"; then
     note "$LBL: could not push $B (see run.log)"
   else

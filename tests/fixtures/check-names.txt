@@ -412,6 +412,7 @@ curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; 
 curator.mjs apply: in the --verdicts landing a held add that a failed replace leaves a duplicate of is dropped, never written twice
 curator.mjs apply: the landing with --verdicts is the dry run's texts minus the failed ops' writes; a held op the failed one made room for is dropped over the cap
 curator.mjs body: --review puts ## Review after the head and before Applied; over BODY_MAX the review's table goes first and its one-line verdicts never
+curator.mjs body: a fact the review dropped is a failed one, named in ## Review alone: never in the head's dropped count or ## Dropped
 curator.mjs main: apply --answers <file> --project <p> drops the project's answered rule; answers <file> <project> renders the prompt's block
 curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/
 curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands
@@ -1055,18 +1056,19 @@ memory PR: no run leaves a local harness-memory or harness-rules branch or a reg
 memory PR: summary.json's memory holds the counts and both URLs, harness report prints the Memory row, and memory-result.json is in the run record
 memory PR: the PR is opened and left for Michael under MEMORY_POLICY=pr
 memory PR: the commit changes CLAUDE.md alone
-memory PR: the next segment refreshes the reused PR's body and merges it at the commit it pushed
 memory PR: the notes count the ops, re-derived tiers and each dropped op; memory.json holds the counts
 memory PR: the run's record PR opens too
 memory PR: the same add with an anchor lands as one edit
 memory PR: the two project facts land under Gotchas in one commit on harness-memory/<run>, with their suffix
 memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note
 memory PR: under MEMORY_POLICY=auto a reused PR whose body refresh failed gets its commit but no merge, with one note
+memory PR: under auto the next segment refreshes the reused PR's body and leaves it open: the earlier segments' commits on it are not its own, a held trailer on one included
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+memory review: a commit a git hook changed after the landing wrote its text is never pushed: one note per tier, no memory branch or PR
 memory review: a continue after no review reviews its new fact and leaves the reused PR open under auto, its earlier commit unreviewed
 memory review: a fact restating a rule Michael declined fails q4 naming declined by Michael (<run>/<n>), marked **fails** in the PR body under pr
 memory review: a file the landing reads that changes during the review (the answers file) lands nothing: one note, no memory branch or PR
@@ -1086,7 +1088,7 @@ memory review: under pr a failed eviction reads **fails** with its grep in the t
 memory review: under pr both PR bodies and memory.md carry ## Review, one holds line per op and the five-column table; one note counts 3 reviewed · 3 held · 0 failed
 memory review: what lands on harness-memory/<run> and harness-rules/<run> is the dry apply's after texts the reviewer read
 memory review: with every op proposed no reviewer runs, one note says nothing to review, memory.json reviewed 0, and no facts PR opens
-memory review: with no review (no file, an invalid file, a limit) under auto the PR opens with none: <why>, one note, every op committed and no merge
+memory review: with no review (no file, an invalid file, a limit, a timeout after a valid file) under auto the PR opens with none: <why>, one note, every op committed and no merge
 memory rules PR: MEMORY_POLICY=auto merges the facts PR alone and leaves the rules PR for Michael
 memory rules PR: a continue after main gained lines outside Gotchas drops the tier-2 add the merge would take past the cap
 memory rules PR: a rule Michael declined is dropped by a later run with his why and opens no rules PR; its curator prompt carries the line

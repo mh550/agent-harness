@@ -241,6 +241,7 @@ curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; 
 curator.mjs apply: in the --verdicts landing a held add that a failed replace leaves a duplicate of is dropped, never written twice
 curator.mjs apply: the landing with --verdicts is the dry run's texts minus the failed ops' writes; a held op the failed one made room for is dropped over the cap
 curator.mjs body: --review puts ## Review after the head and before Applied; over BODY_MAX the review's table goes first and its one-line verdicts never
+curator.mjs body: a fact the review dropped is a failed one, named in ## Review alone: never in the head's dropped count or ## Dropped
 curator.mjs main: apply --answers <file> --project <p> drops the project's answered rule; answers <file> <project> renders the prompt's block
 curator.mjs: .claude/CLAUDE.md is a third file: validated, capped and written as CLAUDE.md; a rules file is refused; never through a symlinked .claude/
 curator.mjs: a 16th Gotchas add without an anchor is dropped naming the cap; the replace beside it lands
