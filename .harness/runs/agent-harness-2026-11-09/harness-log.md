@@ -48,3 +48,9 @@
 - 2026-11-10 02:53 · run ended (done): 6/6 passing · 9 sessions (9 real) · 6 features passed · $49.00 · 3.5 h · by kind: init 1 ($4.06), coding 6 ($41.26), verify 2 ($3.67) · by model: claude-fable-5-1 1 ($4.06), claude-opus-5-5 8 ($44.93)
 - 2026-11-10 02:53 · services stopped (done)
 - 2026-11-10 02:53 · services stopped (done)
+- 2026-11-10 02:54 · curator: session denied Bash(git push:*), Bash(gh:*)
+- 2026-11-10 02:54 · memory: 1 ops · 1 facts · 0 rules · 0 dropped · 0 proposals
+- 2026-11-10 02:54 · memory: evicted "- INBOX.md: cut at lib/inbox.mjs answersLine (the `## Answers` outside the steer" for add ## Gotchas
+- 2026-11-10 02:54 · memory PR opened; left for Michael (MEMORY_POLICY=pr) · https://github.com/mh550/agent-harness/pull/169
+- 2026-11-10 02:54 · memory rules PR: none (no tier-2 change)
+- 2026-11-10 02:54 · summary.json and report.md kept in the state dir (harness report reads them after gc)
