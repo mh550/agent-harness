@@ -39,3 +39,5 @@
 - 2026-11-10 02:34 · verify R2: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-10 02:46 · context.md for R2: 11764 bytes
 - 2026-11-10 02:52 · verify R2: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 02:52 · R2: checks +14 ~2 −0 against a budget of 25
+- 2026-11-10 02:52 · R2 verified and tagged run/agent-harness-2026-11-09/R2
