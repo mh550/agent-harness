@@ -11,6 +11,37 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-09-memory-reviewer.md` (R1) and `journal/decisions/2026-11-09-memory-graduation.md` (R2).
 
+### 2026-11-10 01:27 · verify R1 · passes
+
+R1-01, R1-02, R1-03 hold. memory-review.sh 21/21 in 116 s alone (row: 115.4); memory-review+curator-run+memory-branch 68/68; fast tier 1116/1116; init full suite green (1986). renderEntry hash matches the base's. R1-02 step 3's continue merge is replaced by no merge, per the brief; the question is already open.
+
+| Feature | Step | What you ran or read | What you saw | Holds |
+|---|---|---|---|---|
+| R1-01 | 1 | read tests/checks/memory-review.sh:36-47 (mr run); TEST_JOBS=1 bash tests/run.sh memory-review | checks assert done, 1 zz-memory-review transcript, metrics memory-review row after curator, run.log/note order, argv --disallowedTools exactly the two, no other role but curator; all pass | yes |
+| R1-01 | 2 | read memory-review.sh:48-65,84-90 and ran the file | ids facts/1 facts/2 rules/<n> from memory-result.json, all fields, cap {gotchas:1,lines:10}, rules base memory-rules-base (recorded default); EDITS=1 reverted, one note, record PR; proposal: no session, nothing to review, reviewed 0, no facts PR; pass | yes |
+| R1-01 | 3 | cat prompts/memory-review.md; memory-review.sh:66-74 prompt check | # Memory review session; input/output files; Q1-Q4 with git grep -nF -e and 4 exclusions, cap counted on base, ~/.claude/CLAUDE.md, ANSWERS_FILE declined -> ## Gotchas fails Q4; thin rule; nothing but; denies gh; no {{; curator twin stays in curator-run.sh | yes |
+| R1-01 | 4 | node --test --test-isolation=none tests/unit/memreview.test.mjs …; node lib/memreview.mjs input r.json b af ar (hand-made dirs) | 106/106 pass; input orders facts/1.. then rules/<n>, paths and cap; empty -> []; the CLI printed JSON and exited 0 for both | yes |
+| R1-01 | 5 | read lib/driver.sh:262-322, lib/record.sh memory_pr, lib/config.sh:43, templates, lib/prompt.sh diff, stub diff; bash -n; node --check lib/*.mjs | memory_review: MAX_TURNS=40 $3, S_DENY=CURATOR_DENY, zz-memory-review-HHMMSS, ro_rescue (+256 KB bound from R1-03), MET row; dry apply, input committed before rstart; stub modes documented; syntax clean | yes |
+| R1-01 | 6 | read journal/decisions/2026-11-09-memory-reviewer.md; grep docs/architecture.md, README.md | R1-01 rows marked *default* (Opus knob, deny list/bound, gate first, tier 3 not reviewed, skip, Q4 declined rows); arch: memreview.mjs, prompt, guard row :451, REVIEW lines :319-330, state row; README Memory reviewer paragraph | yes |
+| R1-01 | 7 | TEST_JOBS=1 bash tests/run.sh memory-review (timed); grep suite-tiers.md; bash tests/run.sh memory-review curator-run memory-branch | 21/21 in 116 s (the row says 23.8 / 97.0 / 115.4); 68/68 checks passed (curator-run 14/14) | yes |
+| R1-01 | 8 | bash tests/run.sh --tier fast; init full suite | 1116/1116 checks passed; init: check green in 767 s, 1986 tests, 0 FAIL | yes |
+| R1-02 | 1 | read tests/unit/memreview.test.mjs:65-112; node --test | validate refuses unknown id, q 5, doubled (id,q), non-boolean holds, >12 rows, each naming the row; verdicts holds/fails (q2)/thin 3 of 4/not reviewed; render ## Review, op lines, five-column header; renderNone none: <why>; pass | yes |
+| R1-02 | 2 | read the entries/curator unit test diffs; ran renderEntry(E) at merge-base f4a4bbc vs HEAD with sha256 | both babf0c2e…5de863 (the test's hash); --verdicts drop review: <reason> (<id>), duplicate-key loser stays out, landing = dry minus failed; body --review sits before Applied, table cut first, verdict lines kept; pass | yes |
+| R1-02 | 3 | read memory-review.sh:75-177 and ran it (21/21) | pr/evict-fails/auto/thin/none/bad/limit/declined/rules-PR all as written. One deviation: the continue of mn reviews again but leaves the reused PR open. That follows the brief's rule (merge only when the review ran and every committed op held); a default, asked in entries.jsonl:3/4 | yes |
+| R1-02 | 4 | git diff tests/checks/curator-run.sh; grep check-names*.txt; LC_ALL=C sort -c | check renamed to '…its notes and then the memory review's before the record PR's', old name gone; both fixtures sorted; 8 memreview.mjs unit names in both; +36 net vs budget 35, reason in the decision file | yes |
+| R1-02 | 5 | grep -n memory_merge lib/record.sh; read memory_pr/memory_verdict, curator.mjs flags, summary.mjs test, prompts/curator.md diff, templates; bash -n; node --check | one call (:582), only under auto with REVIEW_NONE empty, AFTER_REVIEW set, body refreshed and the one commit past MEM_MAIN = fhead; --verdicts/--review flags; curator.md two sentences; templates say auto merges only when the review ran; syntax ok | yes |
+| R1-02 | 6 | read the decision file's R1-02 choice and rejected lists; docs/architecture.md:571,488; README | thin is a fail, the pr/auto landing, no review → no merge, rules PR never merged, all marked *default*; rejected list as asked; policy row 'merged only when the review ran and every committed op held'; PR row names ## Review; README names the four questions | yes |
+| R1-02 | 7 | read entries.jsonl:3 verified_how and dead_ends; the decision file R1-02 found-by notes | two Opus reviews of R1-02 recorded (1 Critical, 3+2 Important fixed: sums guard, answers tamper, held-only merge); the four invariants reviewed again in R1-03 review file; fixes covered by checks that pass | yes |
+| R1-02 | 8 | bash tests/run.sh memory-review curator-run memory-branch | 68/68 checks passed | yes |
+| R1-02 | 9 | bash tests/run.sh --tier fast; init full suite | 1116/1116 checks passed; init green 1986 tests | yes |
+| R1-03 | 1 | ls /tmp/harness/agent-harness/agent-harness-2026-11-09/R1.diff; read docs/plans/2026-11-09-R1-review.md | diff file exists; review graded 0 Critical/3 Important/8 Minor, covers all five items: memory_merge guards, S_DENY grep/rescue/revert, duplicate-key test, renderEntry hash, stub vs prompt shape field by field; no second round needed | yes |
+| R1-03 | 2 | read the review's Resolution; memory-review.sh mk/mx checks; memory-branch.sh mw diff; curator.test.mjs M4 test | I1 (no trailer, own commit only), I2 (hash-object compare, hook check), I3 (hold-exit 124) fixed with checks; M2 M3 M4 M7 fixed; M5 M6 listed with why; simplifications 1 and 3 applied, 2 declined with a reason | yes |
+| R1-03 | 3 | grep docs/README; read the decision file's Checks part; grep suite-tiers.md:180 | docs level (policy row, guard row, state files, ## Review placement); both removed names listed with their successors; +36 vs 35 with the reason; tiers row 115.4 beside 23.8/97.0; my alone run took 116 s | yes |
+| R1-03 | 4 | bash -n on 8 touched shell files; node --check lib/*.mjs; bash tests/run.sh memory-review curator-run memory-branch | no syntax errors; 68/68 checks passed | yes |
+| R1-03 | 5 | bash tests/run.sh --tier fast; init full suite | 1116/1116 checks passed; full suite green in 767 s, 1986 tests | yes |
+
+- *011920-verify-R1 · claude-opus-5-5*
+
 ### 2026-11-10 01:06 · R1-03 · passes
 
 R1 review: 0 Critical, 3 Important, 8 Minor. Fixed: auto merges only this segment's own commit (trailer was forgeable, I1); a hook/filter-changed commit is never pushed (I2); timeout-after-file check (I3); M2 M3 M4 M7; verdicts-only spawn. M5, M6 listed. Docs, decisions, tiers row (115.4 s) level.
