@@ -35,3 +35,7 @@
 - 2026-11-10 02:33 · R2-03: suite ran 1x (130 s) in the session
 - 2026-11-10 02:33 · R2-03: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-10 02:33 · R2-03 · claude-opus-5-5 · passes=true · 19 min · 6/6 passing
+- 2026-11-10 02:33 · merged main into harness-lane/agent-harness-2026-11-09/R2
+- 2026-11-10 02:34 · verify R2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-10 02:46 · context.md for R2: 11764 bytes
+- 2026-11-10 02:52 · verify R2: 1 question(s) for Michael recorded (harness needs)

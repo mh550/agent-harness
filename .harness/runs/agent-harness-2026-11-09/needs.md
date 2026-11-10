@@ -83,3 +83,24 @@ harness needs done agent-harness-2026-11-09/3 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-09/4 --why "<answer>"
 ```
+
+## ⚠ R2 asked: R2-02 step 1 states the line 'auto: not yet (held 7 of 8 · …
+
+`agent-harness-2026-11-09/5` · since 2026-11-10T07:52:47.397Z
+
+**blocked** nothing waits on it; R2's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:9](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-09/.harness/runs/agent-harness-2026-11-09/entries.jsonl?plain=1#L9)
+
+> R2-02 step 1 states the line 'auto: not yet (held 7 of 8 · 88 % · …)'; R2-03's review (M3) floors the per cent so it prints 87 %, recorded in decisions/2026-11-09-memory-graduation. I held the step on that recorded change. Keep the floor? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/lib/summary.mjs:384, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/journal/decisions/2026-11-09-memory-graduation.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/lib/summary.mjs:384](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-09/R2/lib/summary.mjs#L384) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/journal/decisions/2026-11-09-memory-graduation.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-09/R2/journal/decisions/2026-11-09-memory-graduation.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-09/.harness/runs/agent-harness-2026-11-09/entries.jsonl:9](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-09/.harness/runs/agent-harness-2026-11-09/entries.jsonl?plain=1#L9)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-09/5 --why "<answer>"
+```
