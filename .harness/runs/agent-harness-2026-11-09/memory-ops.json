@@ -1,8 +1,0 @@
-[
-  {"op": "add", "file": "CLAUDE.md", "section": "## Gotchas",
-   "anchor": "INBOX.md: cut at lib/inbox.mjs answersLine (the `## Answers` outside the steering comment), never `/^## Answers/` (agent-harness-2026-10-28 2026-10-28)",
-   "text": "a stub exit 1 with no result line under 120 s reads as MET limit; only exit 124 reaches a role's failed-exit branch (agent-harness-2026-11-09 2026-11-10)",
-   "tier": 1,
-   "why": "A stub check of a role's failure path silently tests the usage-limit branch unless it exits 124; Gotchas is full, so it evicts the narrowest line (one module's parse point).",
-   "from": "entries.jsonl:4"}
-]
