@@ -561,18 +561,68 @@ test("summary.mjs memoryView: an answers: tally line after the tiers' and `· n 
 });
 
 
-test("summary.mjs memory: build reads the review's keys and memoryLine ends with the review's counts; nothing for a memory.json without reviewed", () => {
+test("summary.mjs memory: build reads the review's keys, cost, wall and model; memoryLine ends with held, failed, dollars and minutes, none (<why>) without a review, nothing for a memory.json without reviewed", () => {
   const d = mkdtempSync(join(tmpdir(), "mem-"));
   try {
     const base = '"ops":3,"applied":2,"dropped":0,"proposed":1,"pr":"https://example.test/pr/4","rules":1,"rules_pr":null';
-    writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":2,"failed":1,"review":"ok","merged_by":"driver"}\n`);
+    writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":2,"failed":1,"review":"ok","merged_by":"driver","review_cost_usd":0.42,"review_s":250,"review_model":"opus","reviewed_ids":["facts/1","facts/2","rules/1"],"failed_ids":["facts/2:q2"]}\n`);
     const m = build("/nonexistent/p/w", "r", d).memory;
-    assert.equal(JSON.stringify([m.reviewed, m.held, m.failed, m.review, m.merged_by]), '[3,2,1,"ok","driver"]');
-    assert.equal(memoryLine(m), "2 applied · 1 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR none · review 2 held · 1 failed");
-    writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":0,"failed":0,"review":"the reviewer hit a limit","merged_by":null}\n`);
-    assert.equal(memoryLine(build("/nonexistent/p/w", "r", d).memory).endsWith(" · review none (the reviewer hit a limit)"), true);
+    assert.equal(JSON.stringify([m.reviewed, m.held, m.failed, m.review, m.merged_by, m.review_cost_usd, m.review_s, m.review_model, m.reviewed_ids, m.failed_ids]),
+      '[3,2,1,"ok","driver",0.42,250,"opus",["facts/1","facts/2","rules/1"],["facts/2:q2"]]');
+    assert.equal(memoryLine(m), "2 applied · 1 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR none · review 2 held · 1 failed · $0.42 · 4 min");
+    // a memory.json from R1 (no cost keys): no session cost read, $0.00 and 0 min
+    writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":3,"failed":0,"review":"ok","merged_by":null}\n`);
+    const r1 = build("/nonexistent/p/w", "r", d).memory;
+    assert.equal(JSON.stringify([r1.review_cost_usd, r1.review_s, r1.review_model, "reviewed_ids" in r1]), "[0,0,null,false]");
+    assert.equal(memoryLine(r1).endsWith(" · rules PR none · review 3 held · 0 failed · $0.00 · 0 min"), true);
+    writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":0,"failed":0,"review":"the reviewer hit a limit","merged_by":null,"review_cost_usd":0.05,"review_s":30,"review_model":"opus"}\n`);
+    assert.equal(memoryLine(build("/nonexistent/p/w", "r", d).memory).endsWith(" · rules PR none · review none (the reviewer hit a limit)"), true);
     writeFileSync(join(d, "memory.json"), `{${base}}\n`);
     const old = build("/nonexistent/p/w", "r", d).memory;
-    assert.equal(`${"reviewed" in old} ${memoryLine(old)}`, "false 2 applied · 1 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR none");
+    assert.equal(`${Object.keys(old).filter(k => /review|held|failed|merged_by/.test(k)).join(",")}|${memoryLine(old)}`, "|2 applied · 1 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR none");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("summary.mjs memory: run.log's memory review line is its session; Spend by role and Time list memory-review after curator", () => {
+  const log = ["2026-11-07 10:00:00 run r on harness/r in /w · port 7800", "2026-11-07 10:03:10 curator · opus · deny Bash(git push:*) Bash(gh:*)", "2026-11-07 10:05:10   curator exit 0 · abc x",
+    "2026-11-07 10:05:20 memory review · opus · deny Bash(git push:*) Bash(gh:*)", "2026-11-07 10:09:20   memory-review exit 0 · abc x"].join("\n");
+  assert.equal(JSON.stringify(parseRunLog(log).sessions.map(s => [s.kind, s.wall])), JSON.stringify([["curator", 120], ["memory-review", 240]]));
+  const d = mkdtempSync(join(tmpdir(), "mrv-")), wt = join(d, "p", "w"), rec = join(wt, ".harness/runs/r"), st = join(d, "state");
+  try {
+    mkdirSync(rec, { recursive: true }); mkdirSync(st);
+    writeFileSync(join(rec, "feature_list.json"), JSON.stringify({ features: [{ id: "A", milestone: "M1", kind: "build", passes: true }] }));
+    writeFileSync(join(rec, "metrics.jsonl"), [{ kind: "curator", role: "curator", feature: null, model: "opus", passes: true, cost_usd: 0.1, turns: 12 },
+      { kind: "memory-review", role: "memory-review", feature: null, model: "opus", passes: true, cost_usd: 0.42, turns: 9 }].map(r => JSON.stringify(r) + "\n").join(""));
+    writeFileSync(join(st, "run.log"), log + "\n");
+    const s = build(wt, "r", st);
+    assert.equal(JSON.stringify([s.sessions.total, s.cost.by_role, s.time.by_role_h]), JSON.stringify([2, { curator: 0.1, "memory-review": 0.42 }, { curator: 0.03, "memory-review": 0.07 }]));
+    assert.equal(rowOf(s, "| Spend by role | ").row, "| Spend by role | curator $0.10 · memory-review $0.42 · manager (the bash driver) $0.00 |");
+    assert.match(rowOf(s, "| Time | ").row, /\(curator 0\.03, memory-review 0\.07\)/);
+    // a summary without the reviewer's cost lists no memory-review
+    assert.doesNotMatch(rowOf({ ...s, cost: { ...s.cost, by_role: { curator: 0.1 } } }, "| Spend by role | ").row, /memory-review/);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("summary.mjs memory: memory-line writes the review's fields into the facts row and the rules row, each tier's counts from its own ids; an unreviewed summary's rows have none", async () => {
+  const d = mkdtempSync(join(tmpdir(), "mrl-"));
+  try {
+    const m = join(d, "memory.jsonl"), mem = { ops: 4, applied: 2, dropped: 0, proposed: 1, pr: "https://example.test/pr/4", rules: 2, rules_pr: "https://example.test/pr/5",
+      sections: { facts: ["## Gotchas"], rules: ["## Code rules"] }, reviewed: 4, held: 2, failed: 2, review: "ok", merged_by: "driver", review_cost_usd: 0.42, review_s: 250,
+      review_model: "opus", reviewed_ids: ["facts/1", "facts/2", "rules/3", "rules/4"], failed_ids: ["facts/2:q2", "rules/4:q4"] };
+    writeFileSync(join(d, "s.json"), JSON.stringify({ ...fixture(), memory: mem }));
+    await sameAsCli("summary.mjs", ["memory-line", join(d, "s.json"), m]);
+    const rows = readFileSync(m, "utf8").trim().split("\n").map(l => JSON.parse(l)), pick = r => [r.tier, r.reviewed, r.held, r.failed, r.review, r.failed_ids, r.merged_by, r.review_cost_usd];
+    assert.equal(JSON.stringify(rows.map(pick)), JSON.stringify([["facts", 2, 1, 1, "ok", ["facts/2:q2"], "driver", 0.42], ["rules", 2, 1, 1, "ok", ["rules/4:q4"], null, 0.42]]));
+    // no review: each tier's ids reviewed, none held or failed
+    writeFileSync(join(d, "n.json"), JSON.stringify({ ...fixture(), memory: { ...mem, held: 0, failed: 0, review: "the reviewer hit a limit", merged_by: null, failed_ids: [] } }));
+    rmSync(m); await sameAsCli("summary.mjs", ["memory-line", join(d, "n.json"), m]);
+    assert.equal(JSON.stringify(readFileSync(m, "utf8").trim().split("\n").map(l => pick(JSON.parse(l)))),
+      JSON.stringify([["facts", 2, 0, 0, "the reviewer hit a limit", [], null, 0.42], ["rules", 2, 0, 0, "the reviewer hit a limit", [], null, 0.42]]));
+    // a summary before R2 (no reviewed, or reviewed without its ids): rows without a review key
+    for (const old of [{ ops: 3, applied: 2, dropped: 0, proposed: 1, pr: "https://example.test/pr/4" }, { ...mem, reviewed_ids: undefined, failed_ids: undefined }]) {
+      writeFileSync(join(d, "o.json"), JSON.stringify({ ...fixture(), memory: old }));
+      rmSync(m, { force: true }); await sameAsCli("summary.mjs", ["memory-line", join(d, "o.json"), m]);
+      assert.equal(readFileSync(m, "utf8").trim().split("\n").map(l => Object.keys(JSON.parse(l)).filter(k => /review|held|failed|merged_by/.test(k)).length).join(","), old.rules_pr ? "0,0" : "0");
+    }
   } finally { rmSync(d, { recursive: true, force: true }); }
 });

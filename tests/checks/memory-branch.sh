@@ -70,7 +70,7 @@ HARNESS_TTY=0 "$H" report mp > "$T/mp-report.out" 2>&1; HARNESS_TTY=0 "$H" memor
 check "memory PR: summary.json's memory holds the counts and both URLs, harness report prints the Memory row, and memory-result.json is in the run record" \
   'p=$(mpr mp) && u=$(url "$p") && ru=$(url "$(rpr mp)") && [[ $(jq .memory.applied "$(rec mp)/summary.json") == 2 && $(jq -r .memory.pr "$(rec mp)/summary.json") == "$u" ]] \
   && [[ $(jq .memory.rules "$(rec mp)/summary.json") == 1 && $(jq -r .memory.rules_pr "$(rec mp)/summary.json") == "$ru" ]] \
-  && grep -xF "| Memory | 2 applied · 1 rules · 0 dropped · 0 proposals · PR $u · rules PR $ru · review 3 held · 0 failed |" "$T/mp-report.out" > /dev/null \
+  && grep -F "| Memory | 2 applied · 1 rules · 0 dropped · 0 proposals · PR $u · rules PR $ru · review 3 held · 0 failed · \$0.10 · " "$T/mp-report.out" | grep -E " [0-9]+ min \|$" > /dev/null \
   && [[ -s $(rec mp)/memory-ops.json ]] && jq -e "(.rules | map(.n)) == [1] and (.ruleFiles == [\"CLAUDE.md\"]) and (has(\"ruleTexts\") | not)" "$(rec mp)/memory-result.json" > /dev/null'
 
 # Michael's verdict on mp's rule (N2-03): proposals lists the numbered items (three-ops has no tier-3 op: mp/1 alone),

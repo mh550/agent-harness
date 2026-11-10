@@ -80,6 +80,7 @@ test("memreview.mjs: verdicts holds an op with four holding rows and fails one o
   assert.equal(JSON.stringify([v.reviewed, v.held, v.failed]), "[4,1,3]");
   assert.equal(JSON.stringify(v.ops.map(o => [o.id, o.holds, o.reason])),
     JSON.stringify([["facts/1", true, null], ["facts/2", false, "7 files (q2 saw) (q2)"], ["rules/3", false, "review too thin (3 of 4 rows)"], ["rules/4", false, "not reviewed"]]));
+  assert.equal(JSON.stringify(v.ops.map(o => o.q)), "[null,2,null,null]", "the failing row's question, for the ledger's failed_ids");
 });
 
 test("memreview.mjs: render the ## Review section, one line per op and the verify's five-column table; none: <why> without a review", () => {

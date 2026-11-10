@@ -968,11 +968,13 @@ suite tools: wait_for refuses a limit that isn't whole seconds with one line, ex
 suite tools: wait_for returns as soon as its command succeeds (a background touch, well under its 30 s limit)
 summary.mjs memory: a summary built before this run has no Memory row
 summary.mjs memory: build reads memory.json's keys, the rules PR's among them, none with no file
-summary.mjs memory: build reads the review's keys and memoryLine ends with the review's counts; nothing for a memory.json without reviewed
+summary.mjs memory: build reads the review's keys, cost, wall and model; memoryLine ends with held, failed, dollars and minutes, none (<why>) without a review, nothing for a memory.json without reviewed
 summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
+summary.mjs memory: memory-line writes the review's fields into the facts row and the rules row, each tier's counts from its own ids; an unreviewed summary's rows have none
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
 summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
+summary.mjs memory: run.log's memory review line is its session; Spend by role and Time list memory-review after curator
 summary.mjs memoryView: an answers: tally line after the tiers' and `· n answered` on a listed run's first line; none or no answers file still lists
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing

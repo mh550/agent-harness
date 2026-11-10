@@ -48,6 +48,7 @@
 # edits CLAUDE.md and writes lib/review-hack.sh (restrict reverts both, R1-01); =ops: it rewrites the first op's text in
 # the driver's $HARNESS_SCRATCH/memory-ops.json (still a valid op), outside the tree (the landing's check refuses it);
 # =answers: it appends a row for another project to the answers file its prompt names (only the input sums see it).
+# STUB_MEMORY_REVIEW_COST=<usd> (unset: 0.1, the stub curator's): the memory review's result line's total_cost_usd.
 # Every headless session records its argv in $STUB_DIR/argv/<n>-<kind>.args (one per line, the prompt as <prompt>,
 # then PWD= and HARNESS_RUN_ID=; <kind> from the prompt's first line: coding, verify, retro, curator, entry-resume, …).
 # STUB_FACTS=<id>[,<id>…]: each one's first coding entry has its own project fact, naming <id> (M2-04).
@@ -509,7 +510,7 @@ JSON
             else {id: $it.id, q: $q, ran: "stub: q\($q) of \($it.id)", saw: "stub: it holds", holds: true} end],
           summary: "Stub memory review (\($how))."}' "$HARNESS_RUN_DIR/memory-review-input.json" > "$o" 2> /dev/null || true ;; esac   # set -e: a missing input ends no stub
     [[ ${STUB_MEMORY_REVIEW:-} == hold-exit ]] && exit 124   # a valid file, then the driver's timeout (124: no result line)
-    ok 0.1 "Stub memory review: ${STUB_MEMORY_REVIEW:-hold}." ;;
+    ok "${STUB_MEMORY_REVIEW_COST:-0.1}" "Stub memory review: ${STUB_MEMORY_REVIEW:-hold}." ;;
   "# Entry resume")   # resumed.jsonl on the session's figures: cost plus the fixture's increment, modelUsage plus its usage
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')
     kind=$(after_session '/^Kind: `/ { sub(/^Kind: `/, ""); sub(/`.*/, ""); print; exit }')

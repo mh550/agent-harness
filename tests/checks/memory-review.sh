@@ -80,6 +80,16 @@ check "memory review: under pr both PR bodies and memory.md carry ## Review, one
   && [[ $(hlog mr | grep -c " · memory review: 3 reviewed · 3 held · 0 failed$") == 1 ]] && ! hlog mr | grep -F " fails: " > /dev/null'
 check "memory review: the rules PR carries the verdict and is never merged by the driver" \
   'q=$(rpr mr) && review "$q.body" | grep -xF -- "- rules/1 holds" > /dev/null && ! merged mr "$q"'
+"$H" report --md mr > "$T/mr-report.md" 2>&1
+check "memory review: harness report prints the Memory row ending with the review's held, failed, cost and minutes, and Spend by role a memory-review line after the curator's" \
+  'grep -E "^\| Memory \| 2 applied · 1 rules · .* · rules PR https://example\.test/pr/[0-9]+ · review 3 held · 0 failed · \\\$0\.10 · [0-9]+ min \|$" "$T/mr-report.md" > /dev/null \
+  && grep -E "^\| Spend by role \| .*curator \\\$0\.10 · memory-review \\\$0\.10 · manager \(the bash driver\) \\\$0\.00 \|$" "$T/mr-report.md" > /dev/null'
+check "memory review: memory.jsonl's facts row and rules row of one run carry the review's fields, each tier's counts its own" \
+  'jq -se "map(select(.run == \"mr\")) | map(.tier) == [\"facts\", \"rules\"]
+     and (.[0] | .reviewed == 2 and .held == 2 and .failed == 0 and .review == \"ok\" and .failed_ids == [] and .merged_by == null and .review_cost_usd == 0.1)
+     and (.[1] | .reviewed == 1 and .held == 1 and .failed == 0 and .review == \"ok\" and .failed_ids == [] and .merged_by == null and .review_cost_usd == 0.1)" "$T/ledger/memory.jsonl" > /dev/null'
+check "memory review: a reviewer at the curator's cost gets no cost note" \
+  '! hlog mr | grep -F " · memory review: cost " > /dev/null'
 
 # mp: every op proposed: nothing would land, so no reviewer
 run mp STUB_CURATOR_OPS=proposal STUB_MEMORY_REVIEW=hold
@@ -107,12 +117,17 @@ check "memory review: a commit a git hook changed after the landing wrote its te
   && [[ -z $(git -C "$T/origin.git" ls-remote --heads . "harness-memory/mk" "harness-rules/mk") ]] && ! titles | grep -E "^memory( rules)?: mk$" > /dev/null \
   && ! git -C "$T/origin.git" log --all -p | grep -F "planted by a hook" > /dev/null && titles | grep -x "mk: run record" > /dev/null'
 
-# mt: a thin review (three rows for the first op)
-run mt STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=thin
+# mt: a thin review (three rows for the first op), its stub reviewer dearer than the curator
+run mt STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=thin STUB_MEMORY_REVIEW_COST=2.5
 check "memory review: a review with three rows for an op fails it as review too thin (3 of 4 rows); the rest hold" \
   'p=$(mpr mt) && review "$p.body" | grep -xF -- "- facts/1 **fails**: review too thin (3 of 4 rows)" > /dev/null && review "$p.body" | grep -xF -- "- facts/2 holds" > /dev/null \
   && [[ $(hlog mt | grep -c " · memory review: facts/1 fails: review too thin (3 of 4 rows)$") == 1 ]] && hlog mt | grep -E " · memory review: 3 reviewed · 2 held · 1 failed$" > /dev/null \
   && jq -e ".held == 2 and .failed == 1" "$(st mt)/memory.json" > /dev/null'
+check "memory review: a reviewer dearer than its curator gets one note after the review's counts, its cost and wall in memory.json" \
+  'c=$(ats mt " · memory review: 3 reviewed · 2 held · 1 failed$") n=$(ats mt " · memory review: cost \\\$2\.50 over the curator'"'"'s \\\$0\.10$") \
+  && [[ -n $c && -n $n ]] && (( c < n )) && [[ $(hlog mt | grep -c " · memory review: cost ") == 1 ]] \
+  && jq -e --slurpfile m "$(rec mt)/metrics.jsonl" "(\$m | map(select(.role == \"memory-review\")) | .[0]) as \$r
+     | .review_cost_usd == 2.5 and .review_s == \$r.wall_s and .review_model == \$r.model and (.review_model | startswith(\"claude-\"))" "$(st mt)/memory.json" > /dev/null'
 
 # ep / ea: at 15 Gotchas a replace (facts/1), an eviction (facts/2) and a rule; the reviewer fails the eviction's q2
 base=$seed15
@@ -123,7 +138,8 @@ check "memory review: under pr a failed eviction reads **fails** with its grep i
   && review "$p.body" | grep -F "| facts/2 | 2 | git grep -nF -e '"'"'- seeded gotcha 03: the seeded project k'"'"' -- . '"'"':!.harness/runs'"'"' | 7 files: " | grep -F "| no |" > /dev/null \
   && ! grep -F "seeded gotcha 03" "$T/ep-claude.md" > /dev/null && grep -F "work-B.txt" "$T/ep-claude.md" > /dev/null \
   && [[ $(hlog ep | grep -c " · memory review: facts/2 fails: 7 files: ") == 1 ]] && [[ ! -f $p.merged ]] && ! merged ep "$p" \
-  && jq -e ".failed == 1 and .held == 2 and .merged_by == null" "$(st ep)/memory.json" > /dev/null'
+  && jq -e ".failed == 1 and .held == 2 and .merged_by == null" "$(st ep)/memory.json" > /dev/null \
+  && jq -se "map(select(.run == \"ep\" and .tier == \"facts\"))[0] | .reviewed == 2 and .failed == 1 and .failed_ids == [\"facts/2:q2\"]" "$T/ledger/memory.jsonl" > /dev/null'
 pol auto
 run ea STUB_CURATOR_OPS=evict-two STUB_MEMORY_REVIEW=evict-fails
 git -C "$T/origin.git" show harness-memory/ea:CLAUDE.md > "$T/ea-claude.md" 2> /dev/null

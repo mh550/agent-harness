@@ -177,7 +177,7 @@ the one 2026-11-04 timing where that output has none.
 | `no-deadline` | slow | 37.7 (2026-11-05) | was `89-no-deadline`; no row until the shape: the same run, over 30 s (50–67 s when its session timed it, `decisions/2026-11-04-no-default-end-time`) |
 | `fix-rounds` | slow | 64.8 (2026-11-05) | was `90-fix-rounds`; no row until the shape: the same run, over 30 s |
 | `resident-helper-run` | slow | 72.0 (2026-11-05) | was `92-resident-helper-run`; no row until the shape: the same run, over 30 s |
-| `memory-review` | slow | 23.8 (2026-11-09), 97.0 with R1-02's eleven more runs (2026-11-10), 115.4 with R1-03's two more (2026-11-10) | new in agent-harness-2026-11-09 (R1-01), timed alone (`TEST_JOBS=1`) with its first three stub runs; over 30 s: stub runs, slow by Michael's brief since R1-02 adds eight more runs to the file; R1-03 timed it again with the review's hook and timeout runs (14 stub runs, 21 checks) |
+| `memory-review` | slow | 23.8 (2026-11-09), 97.0 with R1-02's eleven more runs (2026-11-10), 115.4 with R1-03's two more (2026-11-10), 115.9 with R2-01's four checks on those runs, no run added (2026-11-10) | new in agent-harness-2026-11-09 (R1-01), timed alone (`TEST_JOBS=1`) with its first three stub runs; over 30 s: stub runs, slow by Michael's brief since R1-02 adds eight more runs to the file; R1-03 timed it again with the review's hook and timeout runs (14 stub runs, 21 checks) |
 
 Updated in place 2026-11-04: 33-suite-runner 51.7 s, 51.7 s (T1-02's two solo `TEST_JOBS=4 bash tests/run.sh --tier fast`
 runs, walls 161.9 s and 161.1 s): moved to slow, its header and the fast fixture. Over 30 s in both too:

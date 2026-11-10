@@ -287,6 +287,7 @@ curator() {
   [[ -n $reverted ]] && note "curator: reverted edits (it is read-only): $reverted"
   [[ -n $RULES_NOTE ]] && note "$RULES_NOTE"   # memory_base's: the rules half stopped, the facts half goes on
   record MET append "$clog" "$REC/metrics.jsonl" "$RUN_ID" curator "" "$(F model "$CURATOR_MODEL")" true "$S_WALL" "$S_EXIT" false curator "$S_PEAK"
+  CURATOR_COST=$(MET cost "$clog" 2> /dev/null)   # the bound the reviewer's cost is read against (memory_cost_note)
   [[ -f $SCRATCH/memory-ops.json ]] || { note "curator: wrote no memory-ops.json"; return 0; }
   cp "$SCRATCH/memory-ops.json" "$REC/"   # in the run record, as retro-proposals.json
   memory_pr
@@ -300,7 +301,8 @@ curator() {
 # One read-only session between memory_pr's dry apply and its landing (decisions/2026-11-09-memory-reviewer): it reads
 # memory-review-input.json (committed before rstart: restrict deletes an uncommitted new file) and writes
 # memory-review.json alone, rescued around the revert and kept in the run record, under the curator's deny list and
-# bound. REVIEW_NONE ← why there is no review ("" when there is a file to validate: memory_verdict's)
+# bound. REVIEW_NONE ← why there is no review ("" when there is a file to validate: memory_verdict's); REVIEW_COST,
+# REVIEW_S, REVIEW_MODEL ← its cost from the transcript, its wall and its model, as the metrics row reads them
 memory_review() {
   local mlog=$LOGS/zz-memory-review-$(date +%H%M%S).jsonl rstart reverted x model
   model=$(F model "$MEMORY_REVIEW_MODEL") rstart=$(git rev-parse HEAD) REVIEW_NONE=""
@@ -313,6 +315,7 @@ memory_review() {
   x=$(printf '%s, ' "${CURATOR_DENY[@]}"); note "memory review: session denied ${x%, }"
   [[ -n $reverted ]] && note "memory review: reverted edits (it is read-only): $reverted"
   record MET append "$mlog" "$REC/metrics.jsonl" "$RUN_ID" memory-review "" "$model" true "$S_WALL" "$S_EXIT" false memory-review "$S_PEAK"
+  REVIEW_COST=$(MET cost "$mlog" 2> /dev/null) REVIEW_S=$S_WALL REVIEW_MODEL=$model
   # the file is kept whenever rescued; a limit, a failed exit (a timeout's too) or no file is no review (invariant 3)
   [[ -f $SCRATCH/memory-review.json ]] && cp "$SCRATCH/memory-review.json" "$REC/"   # in the run record, as memory-ops.json
   if MET limit "$mlog" "$S_WALL" "$S_EXIT" > /dev/null; then REVIEW_NONE="the reviewer hit a limit"

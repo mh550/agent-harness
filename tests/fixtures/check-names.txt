@@ -1073,12 +1073,16 @@ memory review: a continue after no review reviews its new fact and leaves the re
 memory review: a fact restating a rule Michael declined fails q4 naming declined by Michael (<run>/<n>), marked **fails** in the PR body under pr
 memory review: a file the landing reads that changes during the review (the answers file) lands nothing: one note, no memory branch or PR
 memory review: a review with three rows for an op fails it as review too thin (3 of 4 rows); the rest hold
+memory review: a reviewer at the curator's cost gets no cost note
+memory review: a reviewer dearer than its curator gets one note after the review's counts, its cost and wall in memory.json
 memory review: a reviewer that changes the ops in scratch lands nothing: the landing differs from what it read, one note, no memory branch or PR
 memory review: a reviewer's edits to CLAUDE.md and lib/ are reverted with one note, its memory-review.json kept and the record PR opened
 memory review: a run under MEMORY_POLICY=pr ends done with one zz-memory-review transcript and a memory-review metrics row after the curator's
+memory review: harness report prints the Memory row ending with the review's held, failed, cost and minutes, and Spend by role a memory-review line after the curator's
 memory review: its run.log line follows the curator's; its denied note follows the curator's notes and precedes the first memory PR note
 memory review: memory-review-input.json lists facts/1, facts/2 and rules/<n> (memory-result.json's number), each op with its base (the rules base for rules/*) and after paths and the cap read on that base
 memory review: memory-review.json is kept in the run record and memory.json reads reviewed 3, held 3, failed 0, review ok, merged_by null
+memory review: memory.jsonl's facts row and rules row of one run carry the review's fields, each tier's counts its own
 memory review: prompts/memory-review.md renders through lib/prompt.sh as a command: the files, the four questions, the thin rule, read-only, no {{ left
 memory review: the review session runs under --disallowedTools with exactly Bash(git push:*) and Bash(gh:*); no role but the curator's carries it
 memory review: the rules PR carries the verdict and is never merged by the driver
@@ -1724,11 +1728,13 @@ summary end reason is how the run ended
 summary, report and retro written
 summary.mjs memory: a summary built before this run has no Memory row
 summary.mjs memory: build reads memory.json's keys, the rules PR's among them, none with no file
-summary.mjs memory: build reads the review's keys and memoryLine ends with the review's counts; nothing for a memory.json without reviewed
+summary.mjs memory: build reads the review's keys, cost, wall and model; memoryLine ends with held, failed, dollars and minutes, none (<why>) without a review, nothing for a memory.json without reviewed
 summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
+summary.mjs memory: memory-line writes the review's fields into the facts row and the rules row, each tier's counts from its own ids; an unreviewed summary's rows have none
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
 summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
+summary.mjs memory: run.log's memory review line is its session; Spend by role and Time list memory-review after curator
 summary.mjs memoryView: an answers: tally line after the tiers' and `· n answered` on a listed run's first line; none or no answers file still lists
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
