@@ -11,6 +11,19 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-09-memory-reviewer.md` (R1) and `journal/decisions/2026-11-09-memory-graduation.md` (R2).
 
+### 2026-11-10 02:33 · R2-03 · passes
+
+R2's review: 0 Critical, 1 Important, 8 Minor (docs/plans/2026-11-09-R2-review.md). I1 fixed: a reused PR's memory.jsonl row merges every landed segment's review (memoryMerge, segments by continuation). M1 unknown gh state never earned, M2 no $0.00 tail for R1 files, M3 per cent floored, M4 checks bullet, M5 input-failed card line, M8 docs; M7 left.
+
+- **Files:** lib/summary.mjs, lib/memreview.mjs, tests/unit/summary.test.mjs, tests/unit/memreview.test.mjs, tests/checks/memory-branch.sh, tests/checks/memory-review.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-09-R2-review.md, docs/architecture.md, README.md, journal/decisions/2026-11-09-memory-graduation.md, +1 more
+- **Verified:** new unit test red first ([1,1,0] vs [3,2,1]); unit tier 587/587; bash tests/run.sh memory-review memory-branch 61/61; memory-review.sh alone 28 checks 118.7 s; check.sh --fast 1123/1123; bash -n and node --check on every touched file
+- **Tests:** 1999 → 2000
+- **Discovery** (affects run): memory.jsonl rows with review fields now carry segments (per continuation); memoryMerge sums landed segments, one unreviewed segment makes the row unreviewed
+- **Discovery** (affects run): graduation's auto: line ends · unknown <k> and is never earned when a window PR has no gh state; a stub or unit check without gh answers sees it
+- **Question for Michael:** R2 review M7: should `harness memory .` (or `..`) read the project's own config for revisit, as a path does? Default kept: only an argument with a / is a path. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/lib/memory.sh:72, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/docs/plans/2026-11-09-R2-review.md
+- **Proposed change:** A later run: take any existing directory argument of harness memory as a path (M7), with a stub check of a project config on auto reading revisit
+- *06-R2-03 · claude-opus-5-5*
+
 ### 2026-11-10 02:13 · R2-02 · passes
 
 harness memory: held/failed columns (unreviewed for old rows or a review none), overrides (memoryOverride: merged against a fail / closed against a hold), review: tally, auto: line via graduation (8 PRs, 10 ops, 90 %, ≤1 override, revisit <80 % on auto); memreview.mjs line + heldFailed, noted once after both PR notes; fails_dropped; decision, docs.

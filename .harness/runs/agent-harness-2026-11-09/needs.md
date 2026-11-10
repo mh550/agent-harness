@@ -62,3 +62,24 @@ harness needs done agent-harness-2026-11-09/2 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-09/3 --why "<answer>"
 ```
+
+## ⚠ R2-03 asked: R2 review M7: should `harness memory .` (or `..`) read the …
+
+`agent-harness-2026-11-09/4` · since 2026-11-10T07:33:54.145Z
+
+**blocked** nothing waits on it; R2-03's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:8](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-09/.harness/runs/agent-harness-2026-11-09/entries.jsonl?plain=1#L8)
+
+> R2 review M7: should `harness memory .` (or `..`) read the project's own config for revisit, as a path does? Default kept: only an argument with a / is a path. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/lib/memory.sh:72, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/docs/plans/2026-11-09-R2-review.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/lib/memory.sh:72](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-09/R2/lib/memory.sh#L72) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/docs/plans/2026-11-09-R2-review.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-09/R2/docs/plans/2026-11-09-R2-review.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-09/.harness/runs/agent-harness-2026-11-09/entries.jsonl:8](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-09/.harness/runs/agent-harness-2026-11-09/entries.jsonl?plain=1#L8)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-09/4 --why "<answer>"
+```
