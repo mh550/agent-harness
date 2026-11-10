@@ -87,7 +87,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - a check's regex on a glyph run is locale-bound: `grep -E "(─)+"` (BRE: parens literal), never `─+`; awk length: bytes (agent-harness-2026-10-29-2 2026-10-29)
 - a card or view cuts every line at the width (100 off a TTY): a check comparing whole run.log lines sets COLUMNS=200 (agent-harness-2026-10-28 2026-10-28)
 - tests/fixtures/check-names.txt is LC_ALL=C sorted: add run.sh <f>'s PASS names; a fast file's in check-names-fast.txt too (agent-harness-2026-11-04 2026-11-04)
-- INBOX.md: cut at lib/inbox.mjs answersLine (the `## Answers` outside the steering comment), never `/^## Answers/` (agent-harness-2026-10-28 2026-10-28)
+- a stub exit 1 with no result line under 120 s reads as MET limit; only exit 124 reaches a role's failed-exit branch (agent-harness-2026-11-09 2026-11-10)
 - F's memo (lib/record.sh) lives in its shell: one stored in $(F …), < <(…) or a pipe dies there; Fv <var> … keeps it (agent-harness-2026-11-03 2026-11-03)
 - `[[ $(jq …) -ge 1 ]]`: a jq `null` is an unbound name under set -u and ends the file; test in jq (`>= 1` == true) (agent-harness-2026-10-28 2026-10-28)
 - stub runs in one check file share origin main: update-ref it between runs; `git log --all` sees all runs' commits (agent-harness-2026-10-29-2 2026-10-29)
