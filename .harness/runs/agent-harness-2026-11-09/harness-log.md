@@ -17,3 +17,5 @@
 - 2026-11-10 01:06 · R1-03 · claude-opus-5-5 · passes=true · 35 min · 3/6 passing
 - 2026-11-10 01:06 · verify R1: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-10 01:19 · context.md for R1: 11892 bytes
+- 2026-11-10 01:27 · R1: checks +37 ~1 −1 against a budget of 35 (over budget: R1 adds 38 names and removes 2 (+36 net) against the budget of 35: the review's I2 hook check and M4's body unit test are the overrun.)
+- 2026-11-10 01:27 · R1 verified and tagged run/agent-harness-2026-11-09/R1
