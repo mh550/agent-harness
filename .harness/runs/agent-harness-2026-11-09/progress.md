@@ -11,6 +11,26 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-09-memory-reviewer.md` (R1) and `journal/decisions/2026-11-09-memory-graduation.md` (R2).
 
+### 2026-11-10 00:30 · R1-02 · passes
+
+memreview validate/verdicts/render, evidenceTable (renderEntry byte-identical), apply --verdicts (failed facts dropped at the write, held ones replayed and capped), body --review; ## Review in both bodies and memory.md, notes, memory.json keys; auto lands held facts only and merges only Memory-review: held commits; inputs summed around the session.
+
+- **Files:** lib/memreview.mjs, lib/entries.mjs, lib/curator.mjs, lib/record.sh, lib/driver.sh, lib/summary.mjs, lib/config.sh, prompts/curator.md, prompts/memory-review.md, tests/stub-claude.sh, tests/checks/memory-review.sh, tests/checks/curator-run.sh, +13 more
+- **Verified:** unit: memreview 8/8, curator 39/39, entries 23/23, summary 35/35; bash tests/run.sh memory-review curator-run memory-branch 67/67; memory-review alone (TEST_JOBS=1) 97.0 s 20/20; the answers-tamper check watched red with the sums guard off; two Opus reviews (1 Critical, 3+2 Important fixed); check.sh --fast green, 1115 tests.
+- **Tests:** 1963 → 1983
+- **Dead end:** evict-fails on stub-cap-evict for the auto run — its only applied op is the eviction, so under auto nothing is left to commit or merge; stub-evict-two adds a held replace and a rule
+- **Dead end:** the continue check on mn after the mb and ml runs — run() resets origin main to main0, so mn's branch carried a milestone commit main lacked and memory_foreign stopped the curator; the continue now runs on the main mn ended on
+- **Dead end:** a memory-held-heads list in the run record — the second review showed a session can hide a planted line from restrict (a .gitignore) and move origin/main locally; replaced by a trailer in the driver's pushed commit and memory_base's main sha
+- **Discovery** (affects R1-03): memory-review.sh runs 12 stub runs in 97 s alone (TEST_JOBS=1); its tiers row has both timings
+- **Discovery** (affects R1-03, R2-01, R2-02): auto merges a facts PR only when every commit past memory_base's main sha carries the Memory-review: held trailer; memory-branch.sh's hand-made mw0 now carries it
+- **Discovery** (affects R2-01, R2-02): memory.json's applied and dropped stay the gate's counts under auto (review drops are failed): R2-01's memory.jsonl must read failed, not applied minus dropped
+- **Discovery** (affects R1-03): memory-review.md and memory-verdicts.json live in scratch and are written after the session; memory_sums covers ops, dry result, after texts, bases, input and answers
+- **Question for Michael:** Under MEMORY_POLICY=auto, should a continue whose review holds its new facts merge a reused PR that carries an earlier segment's unreviewed commit? Default taken: no (the brief's 'merges only when the review ran and every committed op held'); the spec's §5 and R1-02 step 3 said it merges. Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-0/lib/record.sh, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-0/journal/decisions/2026-11-09-memory-reviewer.md
+- **Proposed change:** R1-02 step 3: 'a harness continue of the none run … merges the reused PR' contradicts the brief's merge rule; built and checked as 'leaves the reused PR open, its earlier commit unreviewed' (memory-held-heads).
+- **Proposed change:** R1-02 step 3 names stub-cap-evict for the evict-fails runs; built on a new tests/fixtures/memory/stub-evict-two.json (a held replace, the eviction, a rule) so the auto run has a held op to merge.
+- **Proposed change:** R1-03 should check the review's residual gaps it named Minor: a background process a read-only session leaves running can write after restrict (every read-only role), and the fin reset's rules PR under a stale rules tip.
+- *02-R1-02 · claude-opus-5-5*
+
 ### 2026-11-09 23:40 · R1-01 · passes
 
 memory_pr dry-applies into memory-after-facts/-rules, writes memory-review-input.json (memreview.mjs input), commits it, runs a read-only memory-review session under CURATOR_DENY (now top-level), keeps memory-review.json, then lands; nothing to review skips. A landing differing from the dry apply commits nothing (review finding). Prompt, stub, docs, decision file.
