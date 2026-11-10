@@ -1,0 +1,2 @@
+[{"id":"suite-time-budget","title":"Cap or warn on session suite runs and report which tier ran","evidence":"R1-03, R2-01..03 each log 'suite ran 1x (130 s)'; full 0, fast 7 over 6 sessions, so the old 800 s concern did not recur"},
+{"id":"verify-question-noise","title":"Recorded 'question(s) for Michael' on nearly every passing feature (5 of 6 sessions plus verify R2) should be classed as info vs blocking so needs cards don't pile up","evidence":"harness-log: R1-02, R1-03, R2-02, R2-03 and verify R2 each 'question(s) for Michael recorded' with no run stop"}]
