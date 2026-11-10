@@ -11,6 +11,20 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-09-memory-reviewer.md` (R1) and `journal/decisions/2026-11-09-memory-graduation.md` (R2).
 
+### 2026-11-10 01:49 · R2-01 · passes
+
+memory.json gains review_cost_usd, review_s, review_model, reviewed_ids, failed_ids (facts/2:q2; verdicts now carry q); summary carries them; Memory row ends `review 3 held · 0 failed · $0.42 · 4 min`; run.log's memory review is a session, memory-review after curator in Spend by role/Time; memory.jsonl rows per tier; over-the-curator note; STUB_MEMORY_REVIEW_COST; decision, docs.
+
+- **Files:** lib/summary.mjs, lib/record.sh, lib/driver.sh, lib/memreview.mjs, tests/stub-claude.sh, tests/checks/memory-review.sh, tests/checks/memory-branch.sh, tests/unit/summary.test.mjs, tests/unit/memreview.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-09-memory-graduation.md, +3 more
+- **Verified:** unit tier 582/582; bash tests/run.sh memory-review 25/25 (115.9 s, red 21/25 first); curator-run 14/14; memory-branch 32/32; check.sh --fast green, 1118 tests; bash -n and node --check clean; lib/metrics.mjs untouched (MET cost reads the transcript)
+- **Tests:** 1986 → 1992
+- **Dead end:** asserting memory.json review_model == "opus" — F model resolves to the full claude-… id; the check compares it with the memory-review metrics row's model
+- **Discovery** (affects R2-02, R2-03): memory.json now carries reviewed_ids and failed_ids (`facts/2:q2`, a bare id when not reviewed or thin); memory.jsonl rows carry per-tier reviewed/held/failed/failed_ids, merged_by on the facts row only (rules row always null), review_cost_usd in both
+- **Discovery** (affects R2-02): memreview.mjs verdicts' ops now carry q (the failing row's question, else null): R2-02's line can print `, q<n>` from it instead of parsing the reason
+- **Discovery** (affects R2-02): A summary with reviewed but no reviewed_ids (a run between R1 and R2) writes ledger rows with no review fields: R2-02 reads those as unreviewed
+- **Discovery** (affects R2-02, R2-03): The stub curator and reviewer both cost $0.10 by default; STUB_MEMORY_REVIEW_COST sets the reviewer's (the mt run uses 2.5)
+- *04-R2-01 · claude-opus-5-5*
+
 ### 2026-11-10 01:27 · verify R1 · passes
 
 R1-01, R1-02, R1-03 hold. memory-review.sh 21/21 in 116 s alone (row: 115.4); memory-review+curator-run+memory-branch 68/68; fast tier 1116/1116; init full suite green (1986). renderEntry hash matches the base's. R1-02 step 3's continue merge is replaced by no merge, per the brief; the question is already open.
