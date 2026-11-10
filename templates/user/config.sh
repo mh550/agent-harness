@@ -46,6 +46,7 @@
 # RECORD_PR=end                      # the run record's own PR, opened when the run ends; off = none
 # MEMORY_POLICY=pr                   # the curator at the run's end, tier-1 Gotchas edits in a memory: <run> PR: pr = left for you · auto = the driver merges it, only with its body on it (facts only: the memory rules: <run> PR is always yours) · off = no curator (separate from MERGE_POLICY)
 # CURATOR_MODEL=opus                 # the curator session's model (40 turns, $3)
+# MEMORY_REVIEW_MODEL=opus           # the memory reviewer session's model, which checks the curator's ops before they land (40 turns, $3)
 # HOURS=                             # a run's end time: empty or 0 none; a whole number, that many hours (anything else is refused)
 #                                    #     With none, what still bounds a run: MAX_SESSIONS, MAX_ATTEMPTS, MAX_VERIFY_ROUNDS, MAX_FIX_ROUNDS, MAX_REBASE_ROUNDS, MAX_RESOLVES,
 #                                    #     MAX_LIMIT_HITS and the limit waits, WEEKLY_STOP_AT, AUTO_CONTINUE_MAX, SESSION_TIMEOUT, SESSION_BUDGET_USD,

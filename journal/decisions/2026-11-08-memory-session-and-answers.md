@@ -144,3 +144,5 @@ decisions/2026-11-07-memory-tiers (the known limit this closes).)*
   30: N2-01 3 (curator-run), N2-02 2 (memory-branch), N2-03 14 (8 unit, 6 stub), N2-04 none new (two of N2-03's unit
   names reworded in place for the asserts the review added: a sentence sharing the 40-character key, a torn answers
   line).
+Updated in place 2026-11-09: `CURATOR_DENY` is one top-level array of `lib/driver.sh`, and the memory reviewer is its
+second reader (`S_DENY` in `memory_review()`): decisions/2026-11-09-memory-reviewer.

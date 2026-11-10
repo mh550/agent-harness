@@ -38,6 +38,13 @@
 # STUB_CURATOR_PUSH=1: the curator commits a Gotchas line and pushes it to harness-memory/<run> (`pushed <run>` in
 # $STUB_DIR/curator-push.log), unless its argv carries --disallowedTools with Bash(git push:*): then it writes `denied
 # <run>` and pushes nothing. No denial event is printed: none has been captured from the real CLI (N2-01).
+# STUB_MEMORY_REVIEW=hold|evict-fails|thin|none|bad|limit (unset: hold): the memory reviewer writes memory-review.json from
+# the run's memory-review-input.json: four holding rows per id (hold); as hold, but q 2 of every add with an anchor and
+# every delete fails, ran the `git grep -nF -e '<the anchor's first backticked span, else its first 40 characters>' --
+# . ':!.harness/runs'` line, saw `7 files: …` (evict-fails, PR #137's shape); three rows for the first id (thin); no file
+# (none); `{not json` (bad); the real usage-limit refusal, nothing written (limit). STUB_MEMORY_REVIEW_EDITS=1: it also
+# edits CLAUDE.md and writes lib/review-hack.sh (restrict reverts both, R1-01); =ops: it rewrites the first op's text in
+# the driver's $HARNESS_SCRATCH/memory-ops.json (still a valid op), outside the tree (the landing's check refuses it).
 # Every headless session records its argv in $STUB_DIR/argv/<n>-<kind>.args (one per line, the prompt as <prompt>,
 # then PWD= and HARNESS_RUN_ID=; <kind> from the prompt's first line: coding, verify, retro, curator, entry-resume, …).
 # STUB_FACTS=<id>[,<id>…]: each one's first coding entry has its own project fact, naming <id> (M2-04).
@@ -475,6 +482,22 @@ JSON
           sed -i "s/{{LINE:$id}}/$(jq -s --arg i "$id" 'map(.feature == $i and .kind == "coding") | (index(true) // -1) + 1' "$HARNESS_RUN_DIR/entries.jsonl")/g" "$o"
         done ;; esac
     ok 0.1 "Stub curator: $(jq length "$o" 2> /dev/null || echo 0) ops." ;;
+  "# Memory review session")
+    echo "memory-review" >> "$RS/sessions.log"
+    [[ ${STUB_MEMORY_REVIEW:-hold} == limit ]] && { cat "$HERE/fixtures/usage-limit.jsonl"; exit 1; }   # refused before it reads a file
+    [[ ${STUB_MEMORY_REVIEW_EDITS:-} == 1 ]] && { echo "reviewer was here" >> CLAUDE.md; mkdir -p lib && echo "# reviewer was here" > lib/review-hack.sh; }
+    [[ ${STUB_MEMORY_REVIEW_EDITS:-} == ops ]] && ( set +e; m=$HARNESS_SCRATCH/memory-ops.json; jq '.[0].text |= sub("A work"; "A reviewed work")' "$m" > "$m.t" && mv "$m.t" "$m" )
+    o=$HARNESS_RUN_DIR/memory-review.json
+    case ${STUB_MEMORY_REVIEW:-hold} in none) ;; bad) printf '{not json' > "$o" ;;
+      *) jq --arg how "${STUB_MEMORY_REVIEW:-hold}" '. as $items | {rows: [$items | to_entries[] | .key as $k | .value as $it
+          | range(1; if $how == "thin" and $k == 0 then 4 else 5 end) as $q
+          | if $how == "evict-fails" and $q == 2 and (($it.op == "add" and $it.anchor != null) or $it.op == "delete") then
+              ([$it.anchor | match("`([^`]+)`") | .captures[0].string][0] // $it.anchor[0:40]) as $span
+              | {id: $it.id, q: $q, ran: "git grep -nF -e '"'"'\($span)'"'"' -- . '"'"':!.harness/runs'"'"'",
+                 saw: "7 files: tests/checks/needs-cards.sh, tests/checks/needs-questions.sh, tests/checks/queue-view.sh, tests/checks/show.sh, tests/checks/status-card.sh, tests/checks/status-view.sh, tests/checks/tty-views.sh", holds: false}
+            else {id: $it.id, q: $q, ran: "stub: q\($q) of \($it.id)", saw: "stub: it holds", holds: true} end],
+          summary: "Stub memory review (\($how))."}' "$HARNESS_RUN_DIR/memory-review-input.json" > "$o" 2> /dev/null || true ;; esac   # set -e: a missing input ends no stub
+    ok 0.1 "Stub memory review: ${STUB_MEMORY_REVIEW:-hold}." ;;
   "# Entry resume")   # resumed.jsonl on the session's figures: cost plus the fixture's increment, modelUsage plus its usage
     id=$(after_session '/^Feature: `/ { sub(/^Feature: `/, ""); sub(/`.*/, ""); print; exit }')
     kind=$(after_session '/^Kind: `/ { sub(/^Kind: `/, ""); sub(/`.*/, ""); print; exit }')

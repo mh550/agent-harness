@@ -1062,6 +1062,16 @@ memory gate: every session starts with the services up, a verify after its wait 
 memory gate: the real fixture's 9 GB passes without a note
 memory gate: the wait stops the services (services stopped (memory wait))
 memory gate: under 5 GB the driver waits, then starts the session anyway (HARNESS_MEMINFO, HARNESS_MEM_POLL)
+memory review: a reviewer that changes the ops in scratch lands nothing: the landing differs from what it read, one note, no memory branch or PR
+memory review: a reviewer's edits to CLAUDE.md and lib/ are reverted with one note, its memory-review.json kept and the record PR opened
+memory review: a run under MEMORY_POLICY=pr ends done with one zz-memory-review transcript and a memory-review metrics row after the curator's
+memory review: its run.log line follows the curator's; its denied note follows the curator's notes and precedes the first memory PR note
+memory review: memory-review-input.json lists facts/1, facts/2 and rules/<n> (memory-result.json's number), each op with its base (the rules base for rules/*) and after paths and the cap read on that base
+memory review: memory-review.json is kept in the run record and memory.json reads reviewed 3, review ok
+memory review: prompts/memory-review.md renders through lib/prompt.sh as a command: the files, the four questions, the thin rule, read-only, no {{ left
+memory review: the review session runs under --disallowedTools with exactly Bash(git push:*) and Bash(gh:*); no role but the curator's carries it
+memory review: what lands on harness-memory/<run> and harness-rules/<run> is the dry apply's after texts the reviewer read
+memory review: with every op proposed no reviewer runs, one note says nothing to review, memory.json reviewed 0, and no facts PR opens
 memory rules PR: MEMORY_POLICY=auto merges the facts PR alone and leaves the rules PR for Michael
 memory rules PR: a continue after main gained lines outside Gotchas drops the tier-2 add the merge would take past the cap
 memory rules PR: a rule Michael declined is dropped by a later run with his why and opens no rules PR; its curator prompt carries the line
@@ -1079,6 +1089,10 @@ memory: a session that leaves CLAUDE.md and .harness/project.md alone gets no re
 memory: the initializer's Gotchas write stays reverted with its outside-the-record note
 memory: the same session's lib, tests and journal/decisions edits stay on the branch and merge
 memory_guard: after a session's own merge of main, main's CLAUDE.md lines stay; only the session's own edit goes
+memreview.mjs: capReading Gotchas entries and lines as the gate counts them; no file is null
+memreview.mjs: input an apply result with empty applied and rules is an empty list (nothing to review)
+memreview.mjs: input as a command prints the list as one JSON document and exits 0
+memreview.mjs: input facts/<i> in apply's order then rules/<n> with the result's numbers, each with its paths and the cap reading
 merge-sorted: a base line one side removed stays removed
 merge-sorted: a line both sides added is one line
 merge-sorted: a side not in LC_ALL=C order falls back to git's text merge: clean is 0, a conflict exits 1 with markers in A

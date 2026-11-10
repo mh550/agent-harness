@@ -40,6 +40,7 @@ harness_config() {
   MEM_MIN_AVAILABLE_GB=5 MEM_WAIT_MAX=30m   # mem_gate before each session: under this much MemAvailable, wait up to this long, then start anyway
   INIT_MODEL=fable WORKER_MODEL=opus VERIFY_MODEL=sonnet VERIFY_ESCALATE_MODEL=opus RETRO_MODEL=sonnet SUPERVISOR_MODEL=opus
   CURATOR_MODEL=opus   # the curator: one read-only session at finish that writes memory-ops.json (40 turns, $3 cap, like the retro)
+  MEMORY_REVIEW_MODEL=opus   # the memory reviewer: one read-only session after the curator that writes memory-review.json (40 turns, $3 cap, like the curator)
   REVIEW_OPUS_LINES=400 REVIEW_ESCALATE_MODEL=opus   # a review feature: sonnet under this many changed lines, opus at or over (M6)
   DEBRIEF_MODEL=sonnet   # `harness debrief`: one read-only session after a queue (40 turns, $3 cap, like the retro)
   POLICY=build-only MERGE_POLICY=pr MAIN_BRANCH=main RETRO=1 AUTO_CONTINUE=1   # MERGE_POLICY=pr: a project self-merges only by setting auto

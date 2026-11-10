@@ -442,14 +442,16 @@ memory_foreign() {
 }
 
 # <ops> <applied> <rules> <dropped> <proposed> <pr url|""> <rules pr url|""> [<invalid why>] → $STATE/memory.json, for
-# the summary (M3, N1-01), with the `##` sections each tier's ops touched (from memory-result.json, when this segment has one)
+# the summary (M3, N1-01), with the `##` sections each tier's ops touched (from memory-result.json, when this segment has
+# one), and once memory_pr reached the review, `reviewed` (its input's items) and `review` ("ok", or why none: REVIEW_NONE)
 memory_json() {
   local r=$SCRATCH/memory-result.json sec='{"facts":[],"rules":[]}'
   [[ -s $r ]] && sec=$(jq -c 'def seen: reduce .[] as $x ([]; if index([$x]) then . else . + [$x] end);
     {facts: ([.applied[]?.section | sub("\\s+$"; "")] | seen), rules: ([.rules[]?.section | sub("\\s+$"; "")] | seen)}' "$r" 2> /dev/null || echo '{"facts":[],"rules":[]}')
-  jq -nc --argjson o "$1" --argjson a "$2" --argjson rl "$3" --argjson d "$4" --argjson p "$5" --arg u "$6" --arg ru "$7" --arg w "${8:-}" --argjson s "$sec" \
+  jq -nc --argjson o "$1" --argjson a "$2" --argjson rl "$3" --argjson d "$4" --argjson p "$5" --arg u "$6" --arg ru "$7" --arg w "${8:-}" --argjson s "$sec" --arg rv "${REVIEWED:-}" --arg rn "${REVIEW_NONE:-}" \
     '{ops: $o, applied: $a, dropped: $d, proposed: $p, pr: (if $u == "" then null else $u end), rules: $rl, rules_pr: (if $ru == "" then null else $ru end), sections: $s}
-     + (if $w == "" then {} else {invalid: $w} end)' > "$STATE/memory.json"
+     + (if $w == "" then {} else {invalid: $w} end)
+     + (if $rv == "" then {} else {reviewed: ($rv | tonumber), review: (if $rn == "" then "ok" else $rn end)} end)' > "$STATE/memory.json"
 }
 
 # The curator's memory-ops.json (rescued to $SCRATCH) → applied by curator.mjs in a detached scratch worktree at
@@ -464,30 +466,55 @@ memory_json() {
 # branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
 memory_pr() {
   local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" fbody=0 o a rl d p rd x f files=() rfiles=() rb=()
-  rm -f "$r"; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
+  rm -f "$r" "$REC/memory-review.json" "$REC/memory-review-input.json" "$SCRATCH/memory-review.json"   # an earlier segment's review never sits beside this one's ops
+  REVIEWED="" REVIEW_NONE=""; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
   [[ -z $RULES_STOP && -d $SCRATCH/memory-rules-mb ]] && rb+=("$SCRATCH/memory-rules-mb" "$SCRATCH/memory-main")
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
     why=$(head -1 <<< "${why:-the validator gave no answer}" | cut -c1-200)
     note "curator: memory-ops.json invalid: $why"; memory_json 0 0 0 0 0 "$MEM_URL" "$RULES_URL" "$why"; return 0; }
   n=$(jq length "$SCRATCH/memory-ops.json" 2> /dev/null)
   [[ $n == 0 ]] && { note "curator: no operations"; memory_json 0 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0; }
-  memory_wt_gone
-  git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
-    || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
-  # Michael's verdicts close their rules and proposals by line (this project's rows of the ledger's memory-answers.jsonl)
-  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$w" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" \
-    --answers "$LEDGER/memory-answers.jsonl" --project "$PROJECT_NAME" > "$r" 2>> "$STATE/run.log"
-  # a stopped rules half commits nothing: its tier-2 ops are dropped (named in both bodies), the proposals renumbered
-  [[ -n $RULES_STOP && -s $r ]] && jq -c '.dropped += [.rules[]? | {op: del(.n), reason: "the rules half stopped; its note says why"}]
-    | .rules = [] | .ruleFiles = [] | .ruleTexts = {} | .proposed |= (to_entries | map(.value + {n: (.key + 1)}))' "$r" > "$r.t" 2> /dev/null && mv "$r.t" "$r"
+  # the dry apply (decisions/2026-11-09-memory-reviewer): tier 1 written into a copy of the base, tier 2's texts into a
+  # copy of the rules base, so the reviewer reads what would land; the gate's counts and drops are noted from it
+  local dry=$SCRATCH/memory-dry.json af=$SCRATCH/memory-after-facts ar=$SCRATCH/memory-after-rules
+  rm -rf "$af" "$ar" "$dry"; cp -r "$SCRATCH/memory-base" "$af"
+  memory_apply "$af" "$dry"
   # an apply that threw prints nothing: no commit and no PR (tests/checks/no-answer.sh's rule)
-  IFS=$'\t' read -r o a rl d p rd < <(jq -r '[.ops, (.applied | length), (.rules | length), (.dropped | length), (.proposed | length), .rederived] | @tsv' "$r" 2> /dev/null)
-  if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; fi
+  IFS=$'\t' read -r o a rl d p rd < <(jq -r '[.ops, (.applied | length), (.rules | length), (.dropped | length), (.proposed | length), .rederived] | @tsv' "$dry" 2> /dev/null)
+  if [[ ! $o =~ ^[0-9]+$ ]]; then note "memory: apply failed (see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; return 0; fi
   note "memory: $o ops · $a facts · $rl rules · $d dropped · $p proposals"
   # a cap breach is a dropped op as any other (N1-03); an anchored add that evicted names the line it cut
   while IFS= read -r x; do note "${x:0:200}"; done < <(jq -r '(.dropped[] | "memory: dropped \(.op.op) \(.op.section) (\(.reason))"),
-    (.applied[], .rules[] | select(.evicted != null) | "memory: evicted \"\(.evicted[0:80])\" for \(.op) \(.section)")' "$r")
+    (.applied[], .rules[] | select(.evicted != null) | "memory: evicted \"\(.evicted[0:80])\" for \(.op) \(.section)")' "$dry")
   (( rd > 0 )) && note "memory: tier re-derived for $rd ops"
+  cp -r "${rb[0]:-$SCRATCH/memory-base}" "$ar"
+  while IFS= read -r f; do jq -j --arg f "$f" '.ruleTexts[$f]' "$dry" > "$ar/$f"; done < <(jq -r '.ruleFiles[]?' "$dry")
+  # the review's input is the ops that would land, gate first (an op it dropped keeps its reason); tier 3 is not reviewed
+  REVIEWED=0 REVIEW_NONE="nothing to review"
+  node "$HARNESS_HOME/lib/memreview.mjs" input "$dry" "$SCRATCH/memory-base" "$af" "$ar" "${rb[0]:-$SCRATCH/memory-base}" > "$SCRATCH/memory-review-input.json" 2>> "$STATE/run.log"
+  REVIEWED=$(jq length "$SCRATCH/memory-review-input.json" 2> /dev/null)
+  if [[ $REVIEWED == 0 ]]; then note "memory review: nothing to review"
+  elif [[ ! $REVIEWED =~ ^[1-9][0-9]*$ ]]; then REVIEWED=0 REVIEW_NONE="the review input failed (see run.log)"; note "memory review: none ($REVIEW_NONE)"
+  else
+    cp "$SCRATCH/memory-review-input.json" "$REC/"
+    rec_commit "HARNESS: memory review input"   # restrict reverts every uncommitted file since its start, notes included
+    memory_review
+  fi
+  memory_wt_gone
+  git -C "$RWT" worktree add -q --detach "$w" "$MEM_BASE" 2>> "$STATE/run.log" \
+    || { note "memory: apply failed (no worktree at ${MEM_BASE:0:12}; see run.log)"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
+  # the landing: the same apply in the scratch worktree (deterministic, so it writes what the reviewer read)
+  memory_apply "$w" "$r"
+  [[ $(jq -r .ops "$r" 2> /dev/null) =~ ^[0-9]+$ ]] || { note "memory: apply failed (see run.log)"; rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0; }
+  # fail closed: the reviewer could reach the apply's inputs outside the tree its revert covers (the ops and bases in
+  # scratch), so a landing that differs from the dry apply it read, in the result or a tier-1 text, commits nothing
+  x=0; cmp -s "$dry" "$r" || x=1
+  while IFS= read -r f; do cmp -s "$w/$f" "$af/$f" || x=1; done < <(jq -r '.files[]?' "$r" 2> /dev/null)
+  if (( x )); then
+    { echo "memory: the landing's result differs from the dry apply's:"; diff "$dry" "$r" | head -c 4000; } >> "$STATE/run.log" 2>&1
+    note "memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)"
+    rm -f "$r"; memory_json "$n" 0 0 0 0 "$MEM_URL" "$RULES_URL"; memory_wt_gone; return 0
+  fi
   # the facts: tier 1 as apply wrote it into the worktree; its body names the rules PR this run already has
   mapfile -t files < <(jq -r '.files[]?' "$r")
   memory_body "$r" facts "$RULES_URL"
@@ -517,6 +544,16 @@ memory_pr() {
   memory_record "$r"
   memory_wt_gone
   memory_json "$o" "$a" "$rl" "$d" "$p" "${url:-$MEM_URL}" "${rurl:-$RULES_URL}"
+}
+# <dir> <result.json>: curator.mjs apply of memory-ops.json at <dir> (tier 1 written there), Michael's verdicts closing
+# their rules and proposals by line (this project's rows of the ledger's memory-answers.jsonl); a stopped rules half
+# commits nothing: its tier-2 ops are dropped (named in both bodies), the proposals renumbered
+memory_apply() {
+  node "$HARNESS_HOME/lib/curator.mjs" apply "$SCRATCH/memory-ops.json" "$1" "$RUN_ID" "$REC/entries.jsonl" "${rb[@]}" \
+    --answers "$LEDGER/memory-answers.jsonl" --project "$PROJECT_NAME" > "$2" 2>> "$STATE/run.log"
+  [[ -n $RULES_STOP && -s $2 ]] && jq -c '.dropped += [.rules[]? | {op: del(.n), reason: "the rules half stopped; its note says why"}]
+    | .rules = [] | .ruleFiles = [] | .ruleTexts = {} | .proposed |= (to_entries | map(.value + {n: (.key + 1)}))' "$2" > "$2.t" 2> /dev/null && mv "$2.t" "$2"
+  return 0
 }
 # <facts|rules> <count> <files…> → that tier's change committed in $SCRATCH/memory (`memory: <run>: <n> <tier>`), pushed
 # to its branch (never forced: a reused head moves forward) and its PR opened or its body refreshed; with no change, a
@@ -761,7 +798,7 @@ clock() {
 
 # kind model log who → runs claude headless on $LS/prompt.md in its own capped scope (decisions/2026-10-25-scoped-sessions);
 # sets S_EXIT, S_WALL, S_PEAK (MB, empty when uncapped) and S_NOTES (what the scope showed; noted here, except for the
-# read-only retro and curator, whose callers note them after restrict, which would revert them). The caller's S_RESUME (a session id:
+# read-only retro, curator and memory review, whose callers note them after restrict, which would revert them). The caller's S_RESUME (a session id:
 # --resume, and its entry.json kept), S_TURNS, S_TIMEOUT and S_BUDGET override the defaults (entry_resume's); an S_DENY
 # array is the session's deny rules, --disallowedTools last on the line (the curator's: decisions/2026-11-08-memory-session-and-answers)
 session() {
@@ -790,7 +827,7 @@ session() {
   [[ -n ${SCOPE_BARE:-} ]] && S_NOTES+=("$1 session ran uncapped: $SCOPE_BARE")   # its error is in the transcript
   # the peak alone could be page cache: a cap kill is the kernel's 137 with the peak at the cap
   (( S_EXIT == 137 )) && scope_capped "$unit" "$SESSION_MEMORY_MAX" && S_NOTES+=("${4:-$1}: the session hit its memory cap ($SESSION_MEMORY_MAX)")
-  [[ $1 == retro || $1 == curator ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
+  [[ $1 == retro || $1 == curator || $1 == memory-review ]] || for x in "${S_NOTES[@]}"; do note "$x"; done
   # the box-wide 7-day and 5-hour windows (admit reads the second); a temporary file per process: two lanes' sessions
   # may end in the same second
   MET usage "$3" > "$USAGE.$$.tmp" 2> /dev/null && mv "$USAGE.$$.tmp" "$USAGE" || rm -f "$USAGE.$$.tmp"

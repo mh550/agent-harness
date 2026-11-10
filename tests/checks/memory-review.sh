@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# tier: slow
+source "$(dirname "$0")/../lib.sh" && suite_setup
+# ---- the memory reviewer (R1): one read-only session after the curator's dry apply, before the landing ----
+# Every run here curates against a main whose CLAUDE.md has the two sections stub-three-ops writes to (curator-run.sh's
+# cd shape), under MEMORY_POLICY=pr. Each run gets its own gh.log.
+st() { echo "$HARNESS_STATE/proj/$1"; }
+rec() { echo "$T/wt/proj/$1/.harness/runs/$1"; }
+rline() { grep -n -m1 -E -- "$2" "$(st "$1")/run.log" | cut -d: -f1; }   # <run> <ERE>: run.log's first line matching
+titles() { cat "$T"/prs/pr-*.title 2> /dev/null; }
+args() { grep -lx "HARNESS_RUN_ID=$1" "$T"/argv/*-"$2".args 2> /dev/null; }   # <run> <kind> → its sessions' argv files
+denied() { sed -n '/^--disallowedTools$/,/^PWD=/p' "$1" | sed '1d;$d'; }   # <args file> → what follows --disallowedTools
+kept() { git -C "$T/origin.git" show "harness/$1:.harness/runs/$1/$2"; }   # <run> <file>: the run record's copy on origin
+w=$T/seed; git clone -q "$T/origin.git" "$w" && printf '# proj\nrules\n\n## Code rules\n\n- bash, set -uo pipefail\n\n## Gotchas\n\n- seeded gotcha 1 (seed 2026-11-01)\n' > "$w/CLAUDE.md" \
+  && git -C "$w" -c user.name=m -c user.email=m@test commit -qam "CLAUDE.md with two sections" && git -C "$w" push -q origin HEAD:main
+main0=$(git -C "$T/origin.git" rev-parse main)
+cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=pr RECORD_PR=end' >> "$T/user-config.sh"
+run() {   # <run> [VAR=value…]: a stub run from main0 with the facts three-ops states
+  local r=$1; shift; git -C "$T/origin.git" update-ref refs/heads/main "$main0"
+  env "$@" STUB_FACTS=A,B STUB_PROPOSE=A STUB_NO_TAMPER=1 STUB_NO_RED=1 STUB_LENIENT=1 "$H" start "$T/proj" "$r" --spec SPEC.md --foreground > "$T/$r.out" 2>&1
+  mv "$T/gh.log" "$T/gh-$r.log" 2> /dev/null
+}
+
+# mr: three ops (two facts, one rule), a reviewer that holds them all and also edits CLAUDE.md and lib/
+run mr STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=hold STUB_MEMORY_REVIEW_EDITS=1
+check "memory review: a run under MEMORY_POLICY=pr ends done with one zz-memory-review transcript and a memory-review metrics row after the curator's" \
+  'grep -q "^done" "$(st mr)/ended" && [[ $(ls "$(st mr)"/logs/zz-memory-review-*.jsonl 2> /dev/null | wc -l) == 1 ]] \
+  && jq -se "(map(.role) | index(\"curator\")) as \$c | (map(.role) | index(\"memory-review\")) as \$m | \$c != null and \$m != null and \$m > \$c and (map(select(.role == \"memory-review\")) | length) == 1" "$(rec mr)/metrics.jsonl" > /dev/null'
+check "memory review: its run.log line follows the curator's; its denied note follows the curator's notes and precedes the first memory PR note" \
+  'c=$(rline mr "[0-9] curator · ") v=$(rline mr "[0-9] memory review · [^ ]+ · deny Bash\(git push:\*\) Bash\(gh:\*\)$") \
+  n=$(hlog mr | grep -n " · curator: " | tail -1 | cut -d: -f1) d=$(ats mr " · memory review: session denied Bash\(git push:\*\), Bash\(gh:\*\)$") p=$(ats mr " · memory PR"); \
+  [[ -n $c && -n $v && -n $n && -n $d && -n $p ]] && (( c < v && n < d && d < p )) && [[ $(hlog mr | grep -c " · memory review: session denied ") == 1 ]]'
+check "memory review: the review session runs under --disallowedTools with exactly Bash(git push:*) and Bash(gh:*); no role but the curator's carries it" \
+  'm=$(args mr memory-review) && [[ $(wc -l <<< "$m") == 1 && $(grep -cx -- --disallowedTools "$m") == 1 ]] \
+  && [[ $(denied "$m") == "Bash(git push:*)"$'"'"'\n'"'"'"Bash(gh:*)" ]] && c=$(args mr curator) && [[ -n $c ]] \
+  && others=$(grep -lx "HARNESS_RUN_ID=mr" "$T"/argv/*.args | grep -vxF -e "$m" -e "$c") && [[ -n $others ]] && ! grep -lx -- --disallowedTools $others > /dev/null'
+kept mr memory-review-input.json > "$T/mr-input.json" 2> /dev/null; kept mr memory-result.json > "$T/mr-result.json" 2> /dev/null
+check "memory review: memory-review-input.json lists facts/1, facts/2 and rules/<n> (memory-result.json's number), each op with its base (the rules base for rules/*) and after paths and the cap read on that base" \
+  'n=$(jq -r ".rules[0].n" "$T/mr-result.json") && [[ $n =~ ^[0-9]+$ ]] && s=$T/scratch/proj/mr \
+  && jq -e --arg n "rules/$n" --arg s "$s" "map(.id) == [\"facts/1\", \"facts/2\", \$n]
+     and all(.[]; has(\"op\") and has(\"file\") and has(\"section\") and has(\"anchor\") and has(\"text\") and has(\"why\") and has(\"from\"))
+     and all(.[]; .cap == {gotchas: 1, lines: 10}) and .[2].base == \$s + \"/memory-rules-base/CLAUDE.md\" and .[2].after == \$s + \"/memory-after-rules/CLAUDE.md\"
+     and (.[0:2] | all(.[]; .base == \$s + \"/memory-base/CLAUDE.md\" and .after == \$s + \"/memory-after-facts/CLAUDE.md\"))
+     and .[0].text == \$r[0].applied[0].text" --slurpfile r "$T/mr-result.json" "$T/mr-input.json" > /dev/null'
+check "memory review: memory-review.json is kept in the run record and memory.json reads reviewed 3, review ok" \
+  'kept mr memory-review.json > "$T/mr-review.json" 2> /dev/null && [[ $(jq "[.rows[] | select(.holds)] | length" "$T/mr-review.json") == 12 ]] \
+  && jq -e ".reviewed == 3 and .review == \"ok\"" "$(st mr)/memory.json" > /dev/null'
+check "memory review: what lands on harness-memory/<run> and harness-rules/<run> is the dry apply's after texts the reviewer read" \
+  's=$T/scratch/proj/mr; git -C "$T/origin.git" show harness-memory/mr:CLAUDE.md > "$T/mr-facts.md" 2> /dev/null && git -C "$T/origin.git" show harness-rules/mr:CLAUDE.md > "$T/mr-rules.md" 2> /dev/null \
+  && cmp -s "$T/mr-facts.md" "$s/memory-after-facts/CLAUDE.md" && cmp -s "$T/mr-rules.md" "$s/memory-after-rules/CLAUDE.md" && ! cmp -s "$T/mr-facts.md" "$T/mr-rules.md"'
+check "memory review: a reviewer's edits to CLAUDE.md and lib/ are reverted with one note, its memory-review.json kept and the record PR opened" \
+  '[[ $(hlog mr | grep -c " · memory review: reverted edits (it is read-only): ") == 1 ]] && hlog mr | grep -x -- "- .* · memory review: reverted edits (it is read-only): CLAUDE.md lib/review-hack.sh" > /dev/null \
+  && ! git -C "$T/origin.git" show harness/mr:lib/review-hack.sh > /dev/null 2>&1 && ! git -C "$T/origin.git" show harness/mr:CLAUDE.md 2> /dev/null | grep -F "reviewer was here" > /dev/null \
+  && [[ ! -e $T/wt/proj/mr/lib/review-hack.sh && -s $(rec mr)/memory-review.json ]] && titles | grep -x "mr: run record" > /dev/null'
+check "memory review: prompts/memory-review.md renders through lib/prompt.sh as a command: the files, the four questions, the thin rule, read-only, no {{ left" \
+  'P=$T/mr-prompt.md; "$HH/lib/prompt.sh" "$(st mr)" memory-review A > "$P" 2> "$T/mr-prompt.err" && [[ $(head -1 "$P") == "# Memory review session" ]] \
+  && grep -F ".harness/runs/mr/memory-review-input.json" "$P" > /dev/null && grep -F ".harness/runs/mr/memory-review.json" "$P" > /dev/null \
+  && grep -F "**Q1, stated and recorded.**" "$P" > /dev/null && grep -F "**Q2, no live referents.**" "$P" > /dev/null \
+  && grep -F "**Q3, the cap and the anchor.**" "$P" > /dev/null && grep -F "**Q4, no duplicate.**" "$P" > /dev/null \
+  && grep -F "git grep -nF -e" "$P" | grep -F "'"'"':!.harness/runs'"'"' '"'"':!journal'"'"' '"'"':!ledger'"'"' '"'"':!docs/plans'"'"'" > /dev/null \
+  && grep -F "~/.claude/CLAUDE.md" "$P" > /dev/null && grep -F "$T/ledger/memory-answers.jsonl" "$P" > /dev/null && grep -F "declined" "$P" | grep -F "## Gotchas" > /dev/null \
+  && grep -F "fewer than four" "$P" > /dev/null && grep -F "nothing but" "$P" | grep -F "memory-review.json" > /dev/null \
+  && grep -F "denies" "$P" | grep -F "gh" > /dev/null && [[ $(grep -c "{{" "$P") == 0 ]]'
+
+# mp: every op proposed: nothing would land, so no reviewer
+run mp STUB_CURATOR_OPS=proposal STUB_MEMORY_REVIEW=hold
+check "memory review: with every op proposed no reviewer runs, one note says nothing to review, memory.json reviewed 0, and no facts PR opens" \
+  'grep -q "^done" "$(st mp)/ended" && grep -x curator "$T/scratch/proj/mp/sessions.log" > /dev/null && ! grep -x memory-review "$T/scratch/proj/mp/sessions.log" > /dev/null \
+  && [[ $(hlog mp | grep -c " · memory review: ") == 1 ]] && hlog mp | grep -E " · memory review: nothing to review$" > /dev/null \
+  && jq -e ".reviewed == 0 and .review == \"nothing to review\"" "$(st mp)/memory.json" > /dev/null && ! kept mp memory-review-input.json > /dev/null 2>&1 \
+  && ! titles | grep -x "memory: mp" > /dev/null && [[ -z $(args mp memory-review) ]]'
+
+# mo: a reviewer that rewrites the curator's ops in scratch, outside the tree its revert covers: nothing lands
+run mo STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=hold STUB_MEMORY_REVIEW_EDITS=ops
+check "memory review: a reviewer that changes the ops in scratch lands nothing: the landing differs from what it read, one note, no memory branch or PR" \
+  'grep -q "^done" "$(st mo)/ended" && grep -x memory-review "$T/scratch/proj/mo/sessions.log" > /dev/null \
+  && [[ $(hlog mo | grep -c " · memory: the landing differs from the dry apply the reviewer read; no memory PR (see run.log)$") == 1 ]] \
+  && [[ -z $(git -C "$T/origin.git" ls-remote --heads . "harness-memory/mo" "harness-rules/mo") ]] && ! titles | grep -E "^memory( rules)?: mo$" > /dev/null \
+  && titles | grep -x "mo: run record" > /dev/null'
+
+suite_end
