@@ -1,17 +1,16 @@
-# Context pack for `R2-02`
+# Context pack for `R2-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (R2-02, affects R2-03): memory.json and the facts row gain fails_dropped (true when auto's landing dropped the failed facts by verdict): a hand merge of such a PR is no override (review I2) → entries.jsonl:7
+- Discovery (R2-02, affects R2-03): memreview.mjs line prints nothing for reviewed 0 (memory_json writes review 'nothing to review' there, not ok); the note goes only on the path that reaches memory_json at memory_pr's end → entries.jsonl:7
+- Discovery (R2-02, affects R2-03): memory-review.sh now 120.8 s with memory-branch beside it (4 jobs); its tiers-table row (115.4) wants a re-time alone in R2-03 → entries.jsonl:7
+- Discovery (R2-02, affects R2-03): harness memory <path> reads the policy via harness_config in a subshell; a bare name (no /) reads the user's config alone → entries.jsonl:7
 - Discovery (R2-01, affects R2-02, R2-03): memory.json now carries reviewed_ids and failed_ids (`facts/2:q2`, a bare id when not reviewed or thin); memory.jsonl rows carry per-tier reviewed/held/failed/failed_ids, merged_by on the facts row only (rules row always null), review_cost_usd in both → entries.jsonl:6
-- Discovery (R2-01, affects R2-02): memreview.mjs verdicts' ops now carry q (the failing row's question, else null): R2-02's line can print `, q<n>` from it instead of parsing the reason → entries.jsonl:6
-- Discovery (R2-01, affects R2-02): A summary with reviewed but no reviewed_ids (a run between R1 and R2) writes ledger rows with no review fields: R2-02 reads those as unreviewed → entries.jsonl:6
 - Discovery (R2-01, affects R2-02, R2-03): The stub curator and reviewer both cost $0.10 by default; STUB_MEMORY_REVIEW_COST sets the reviewer's (the mt run uses 2.5) → entries.jsonl:6
 - Discovery (R1-03, affects R2-01, R2-02, run): Under auto a facts PR merges only when its one commit past MEM_MAIN is this segment's; the Memory-review: held trailer is gone (R1-03, I1) → entries.jsonl:4
-- Discovery (R1-03, affects R2-01, R2-02): memory.json review can read 'the landing differs from the dry apply' (the sums guard's refusal) besides ok and the no-review reasons → entries.jsonl:4
-- Discovery (R1-02, affects R1-03, R2-01, R2-02): auto merges a facts PR only when every commit past memory_base's main sha carries the Memory-review: held trailer; memory-branch.sh's hand-made mw0 now carries it → entries.jsonl:3
-- Discovery (R1-02, affects R2-01, R2-02): memory.json's applied and dropped stay the gate's counts under auto (review drops are failed): R2-01's memory.jsonl must read failed, not applied minus dropped → entries.jsonl:3
 - Discovery (init, affects run): The follow-up (2026-11-08) made apply's answers a flag (--answers <file> --project <p>), not the fifth positional: the spec's 'sixth argument' for verdicts is --verdicts <file> (agent-harness-2026-11-09 2026-11-09) → entries.jsonl:1
 - Discovery (init, affects run): restrict … nothing reverts every uncommitted new file since <start>: memory-review-input.json must be rec_commit-ed before rstart is taken or the review's restrict deletes it (agent-harness-2026-11-09 2026-11-09) → entries.jsonl:1
 - Discovery (init, affects run): features.mjs lint prints review-small for R1-03 and R2-03 (two build features each); the brief asks for three features per milestone with the review last, so those two lines stand by Michael's word (agent-harness-2026-11-09 2026-11-09) → entries.jsonl:1
@@ -25,11 +24,11 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 ## What it builds on
 
 - 2026-11-10 01:49 · R2-01 · passes: memory.json gains review_cost_usd, review_s, review_model, reviewed_ids, failed_ids (facts/2:q2; verdicts now carry q); summary carries them; Memory row ends `review 3 held · 0 failed · $0.42 · 4 min`; run.log's memory review is a session, memory-review after curator in Spend by role/Time; memory.jsonl rows per tier; over-the-curator note; STUB_MEMORY_REVIEW_COST; decision, docs.; tests 1986 → 1992; files lib/summary.mjs, lib/record.sh, lib/driver.sh, lib/memreview.mjs, tests/stub-claude.sh, … → entries.jsonl:6
+- 2026-11-10 02:13 · R2-02 · passes: harness memory: held/failed columns (unreviewed for old rows or a review none), overrides (memoryOverride: merged against a fail / closed against a hold), review: tally, auto: line via graduation (8 PRs, 10 ops, 90 %, ≤1 override, revisit <80 % on auto); memreview.mjs line + heldFailed, noted once after both PR notes; fails_dropped; decision, docs.; tests 1992 → 1999; files lib/summary.mjs, lib/memreview.mjs, lib/memory.sh, lib/record.sh, bin/harness, … → entries.jsonl:7
 
 ## Lately in the run
 
 - 2026-11-10 01:27 · verify R1 · passes: R1-01, R1-02, R1-03 hold. memory-review.sh 21/21 in 116 s alone (row: 115.4); memory-review+curator-run+memory-branch 68/68; fast tier 1116/1116; init full suite green (1986). renderEntry hash matches the base's. R1-02 step 3's continue merge is replaced by no merge, per the brief; the question is already open. → entries.jsonl:5
-- 2026-11-10 01:06 · R1-03 · passes: R1 review: 0 Critical, 3 Important, 8 Minor. Fixed: auto merges only this segment's own commit (trailer was forgeable, I1); a hook/filter-changed commit is never pushed (I2); timeout-after-file check (I3); M2 M3 M4 M7; verdicts-only spawn. M5, M6 listed. Docs, decisions, tiers row (115.4 s) level.; tests 1983 → 1985; files lib/record.sh, lib/driver.sh, lib/curator.mjs, prompts/memory-review.md, tests/stub-claude.sh, … → entries.jsonl:4
 
 ## Current rules
 
