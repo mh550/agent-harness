@@ -1,3 +1,8 @@
 - 2026-11-09 22:58 · test count: parsed (generic)
 - 2026-11-09 23:05 · feature list written: 0/6 passing
 - 2026-11-09 23:05 · lint: 2 findings (review-small: 2); the list is not edited — first: R1-03 step - review-small
+- 2026-11-09 23:05 · lane R1 opened (slot 0, port 7836, from f4a4bbc)
+- 2026-11-09 23:05 · context.md for R1-01: 4081 bytes
+- 2026-11-09 23:40 · coding session left 5 process(es) running; stopped with its scope
+- 2026-11-09 23:40 · R1-01: suite ran 2x (259 s) in the session
+- 2026-11-09 23:40 · R1-01 · claude-opus-5-5 · passes=true · 34 min · 1/6 passing

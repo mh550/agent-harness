@@ -1,7 +1,16 @@
-{ "run": "agent-harness-2026-11-09", "branch": "harness/agent-harness-2026-11-09",
-  "check_budget": { "R1": 35, "R2": 25 },
+{
+  "run": "agent-harness-2026-11-09",
+  "branch": "harness/agent-harness-2026-11-09",
+  "check_budget": {
+    "R1": 35,
+    "R2": 25
+  },
   "features": [
-    { "id": "R1-01", "milestone": "R1", "kind": "build", "model": "opus",
+    {
+      "id": "R1-01",
+      "milestone": "R1",
+      "kind": "build",
+      "model": "opus",
       "description": "At a run's end the driver dry-applies the curator's ops on a copy of the base, writes memory-review-input.json (one item per op that would land, facts/<i> and rules/<n>), and runs one read-only `memory-review` session under the curator's deny list whose only kept output is memory-review.json; with nothing to review it runs no session and notes so.",
       "steps": [
         "Written first and watched failing in a new slow file tests/checks/memory-review.sh (line 2 `# tier: slow`; its names in tests/fixtures/check-names.txt, LC_ALL=C sorted): a run with `STUB_CURATOR_OPS=three-ops STUB_MEMORY_REVIEW=hold` under MEMORY_POLICY=pr ends done with one `zz-memory-review-*.jsonl` transcript in its logs, a metrics.jsonl row whose role is `memory-review` after the `curator` row, a run.log line starting `memory review · ` after the `curator · ` line, harness-log.md's `memory review: session denied Bash(git push:*), Bash(gh:*)` note after the curator's notes and before the first `memory PR` note, and the review session's argv file in the stub's argv/ directory carrying `--disallowedTools` followed by exactly `Bash(git push:*)` and `Bash(gh:*)` (no other role's argv carries it besides the curator's).",
@@ -14,8 +23,13 @@
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/M checks passed` line); the suite is green."
       ],
       "after": [],
-      "passes": false },
-    { "id": "R1-02", "milestone": "R1", "kind": "build", "model": "opus",
+      "passes": true
+    },
+    {
+      "id": "R1-02",
+      "milestone": "R1",
+      "kind": "build",
+      "model": "opus",
       "description": "The reviewer's memory-review.json is validated and turned into one verdict per op (four questions, one row each; thin or missing rows fail), rendered as a `## Review` section with the verify's five-column evidence table in both PR bodies and memory.md, noted, counted in memory.json, and under MEMORY_POLICY=auto only held ops are committed and the facts PR merges only when the review ran and every committed op held.",
       "steps": [
         "Written first in tests/unit/memreview.test.mjs: `validate <review.json> <input.json>` passes a file with four rows per input id and refuses, each naming the offending row, an `id` not in the input, a `q` of 5, a doubled `(id, q)`, a non-boolean `holds` and more than 4 × items rows; `verdicts <review.json> <input.json>` prints one JSON line `{reviewed, held, failed, ops: [{id, holds, reason}]}` holding an op whose four rows hold, failing one on its first failing row's `saw` with the question named (`… (q2)`), failing one with three rows as `review too thin (3 of 4 rows)` and one with no rows as `not reviewed`; `render <verdicts.json> <review.json>` prints `## Review`, one line per op (`- facts/1 holds`, `- facts/2 **fails**: <reason> (q2)`) and the table headed `| Op | Q | What you ran or read | What you saw | Holds |`, and `render` with a why and no files prints `## Review` with the one line `none: <why>`.",
@@ -28,9 +42,16 @@
         "`bash tests/run.sh memory-review curator-run memory-branch` ends with every check passing (its `N/M checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/M checks passed` line); the suite is green."
       ],
-      "after": ["R1-01"],
-      "passes": false },
-    { "id": "R1-03", "milestone": "R1", "kind": "review", "model": "opus",
+      "after": [
+        "R1-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "R1-03",
+      "milestone": "R1",
+      "kind": "review",
+      "model": "opus",
       "description": "An Opus review of R1's whole diff against the four invariants, its findings fixed test-first, simplifications applied, the docs and the tiers table brought level; the review's file is docs/plans/2026-11-09-R1-review.md.",
       "steps": [
         "`git diff $(git merge-base HEAD origin/main) -- lib prompts tests templates docs README.md > /tmp/harness/agent-harness/agent-harness-2026-11-09/R1.diff`; an Opus subagent reads the diff from that file (never the conversation) and writes docs/plans/2026-11-09-R1-review.md with its findings graded Critical, Important, Minor, on at least: every path that calls `memory_merge` (`grep -n memory_merge lib/record.sh`) is guarded by a review that ran and held every committed op; the reviewer session can write nothing the driver keeps but memory-review.json (the rescue, the revert, the deny list on its argv and on no role's but the curator's: `grep -n S_DENY lib/*.sh`); a failed op dropped by verdict cannot let an op the reviewer never saw land (the duplicate-key case in tests/unit/curator.test.mjs); `renderEntry` is unchanged (the byte-identical test); the stub's memory-review.json has the shape prompts/memory-review.md asks the real session for (the prompt's example and the stub's `hold` output compared field by field). A second round only when the first found something Critical.",
@@ -39,9 +60,17 @@
         "`bash -n` on every shell file the fixes touched and `node --check` on every .mjs pass; `bash tests/run.sh memory-review curator-run memory-branch` ends with every check passing (its `N/M checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/M checks passed` line); the suite is green."
       ],
-      "after": ["R1-01", "R1-02"],
-      "passes": false },
-    { "id": "R2-01", "milestone": "R2", "kind": "build", "model": "opus",
+      "after": [
+        "R1-01",
+        "R1-02"
+      ],
+      "passes": false
+    },
+    {
+      "id": "R2-01",
+      "milestone": "R2",
+      "kind": "build",
+      "model": "opus",
       "description": "The reviewer's cost, wall time and model reach memory.json, summary.json, the report's `Memory` row (`review 3 held · 0 failed · $0.42 · 4 min`), `Spend by role` and `Time`, and ledger/memory.jsonl's rows gain the review fields per tier; a reviewer dearer than its curator is one note.",
       "steps": [
         "Written first in tests/unit/summary.test.mjs (names in check-names.txt and check-names-fast.txt): `build` reads memory.json's `review_cost_usd`, `review_s`, `review_model`, `reviewed`, `held`, `failed`, `review` and `merged_by` into summary.json's `memory` and leaves every review key out for a memory.json without `reviewed`; `memoryLine` ends `· review <held> held · <failed> failed · $<cost> · <n> min` for a reviewed summary, `· review none (<why>)` when `review` is not `ok` and nothing after `rules PR …` for a summary without `reviewed`; `reportRows`' `Spend by role` and `Time` list `memory-review` after `curator` when the summary has its cost; `memory-line` writes `reviewed`, `held`, `failed`, `review`, `failed_ids` (`[\"facts/2:q2\"]`), `merged_by` and `review_cost_usd` into the facts row and the rules row of one run, each tier's counts from the input's `facts/*` or `rules/*` ids.",
@@ -51,9 +80,16 @@
         "`bash tests/run.sh memory-review` ends with every check passing (its `N/M checks passed` line); R2's added names so far are counted against its budget of 25 in the entry's `checks` field.",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/M checks passed` line); the suite is green."
       ],
-      "after": ["R1"],
-      "passes": false },
-    { "id": "R2-02", "milestone": "R2", "kind": "build", "model": "opus",
+      "after": [
+        "R1"
+      ],
+      "passes": false
+    },
+    {
+      "id": "R2-02",
+      "milestone": "R2",
+      "kind": "build",
+      "model": "opus",
       "description": "`harness memory` shows each PR's held and failed columns (`unreviewed` for an old row), marks Michael's overrides from the row and gh's state, adds the `review:` tally line, and `harness memory <project>` ends with the `auto:` graduation line (window 8 reviewed facts PRs, at least 10 ops, 90 % held, at most one override); `memreview.mjs line` is the one text behind the harness-log.md note, the `Memory` row's counts and the future card.",
       "steps": [
         "Written first in tests/unit/memory.test.mjs (or summary.test.mjs where `memoryView` is tested; names in check-names.txt and check-names-fast.txt): `memoryView` prints `held <h> · failed <f>` in a reviewed row's line and `unreviewed` for a row without the fields, ends a line `· override: merged against a fail` (state merged unchanged, `failed` > 0, `merged_by` not `driver`) or `· override: closed against a hold` (state merged edited or closed, `reviewed` > 0, `failed` 0), prints a driver-merged row with a fail as no override and a closed facts PR whose run has a declined row in the answers as no override, and adds the fourth tally line `review: held h · failed f · overrides o (merged against a fail m · edited or closed against a hold e) · unreviewed u`; `graduation(rows, states, answers, project)` returns `earned` for 8 reviewed facts PRs with 20 reviewed, 19 held, 0 overrides, `not yet` at 88 %, at 2 overrides and at 9 reviewed ops, `revisit` for a project on auto under 80 % held, and the line's wording `auto: not yet (held 7 of 8 · 88 % · overrides 1 of 6 reviewed PRs · window 8)`; `memreview.mjs line <verdicts.json> <memory.json>` prints `memory: facts <h> held · <f> failed (<id>: <reason>, q<n>) · rules <h> held · PR <url> · rules PR <url|none>` and the note and the card text are that one function's output.",
@@ -63,9 +99,16 @@
         "`bash tests/run.sh memory-review memory-branch` ends with every check passing (its `N/M checks passed` line); R2's added names against its budget of 25 are counted in the entry's `checks` field (over it: the reason there).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/M checks passed` line); the suite is green."
       ],
-      "after": ["R2-01"],
-      "passes": false },
-    { "id": "R2-03", "milestone": "R2", "kind": "review", "model": "opus",
+      "after": [
+        "R2-01"
+      ],
+      "passes": false
+    },
+    {
+      "id": "R2-03",
+      "milestone": "R2",
+      "kind": "review",
+      "model": "opus",
       "description": "An Opus review of R2's whole diff, its findings fixed test-first, simplifications applied, docs level; the review's file is docs/plans/2026-11-09-R2-review.md.",
       "steps": [
         "`git diff $(git merge-base HEAD origin/main) -- lib bin tests templates docs README.md journal/decisions > /tmp/harness/agent-harness/agent-harness-2026-11-09/R2.diff`; an Opus subagent reads the diff from that file (never the conversation) and writes docs/plans/2026-11-09-R2-review.md with findings graded Critical, Important, Minor, on at least: the override reading cannot count the driver's own auto merge against Michael (`merged_by` read where the override is decided); an old memory.jsonl row and an old summary.json print as before (`unreviewed`, no review tail: the unit tests that say so); the three uses of the card text come from `memreview.mjs line` alone (`grep -rn 'held ·' lib/` shows one renderer); the graduation line's hold counts come from the ledger's rows and only the override from gh's state; every check name removed in R2 has its successor in journal/decisions/2026-11-09-memory-graduation.md (decisions/2026-11-03-trim). A second round only when the first found something Critical.",
@@ -74,6 +117,11 @@
         "`bash -n` on every shell file the fixes touched and `node --check` on every .mjs pass; `bash tests/run.sh memory-review memory-branch` ends with every check passing (its `N/M checks passed` line).",
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/M checks passed` line); the suite is green."
       ],
-      "after": ["R2-01", "R2-02"],
-      "passes": false }
-  ] }
+      "after": [
+        "R2-01",
+        "R2-02"
+      ],
+      "passes": false
+    }
+  ]
+}
