@@ -1,0 +1,56 @@
+- 2026-11-09 22:58 · test count: parsed (generic)
+- 2026-11-09 23:05 · feature list written: 0/6 passing
+- 2026-11-09 23:05 · lint: 2 findings (review-small: 2); the list is not edited — first: R1-03 step - review-small
+- 2026-11-09 23:05 · lane R1 opened (slot 0, port 7836, from f4a4bbc)
+- 2026-11-09 23:05 · context.md for R1-01: 4081 bytes
+- 2026-11-09 23:40 · coding session left 5 process(es) running; stopped with its scope
+- 2026-11-09 23:40 · R1-01: suite ran 2x (259 s) in the session
+- 2026-11-09 23:40 · R1-01 · claude-opus-5-5 · passes=true · 34 min · 1/6 passing
+- 2026-11-09 23:40 · context.md for R1-02: 5675 bytes
+- 2026-11-10 00:30 · R1-02: suite ran 1x (130 s) in the session
+- 2026-11-10 00:30 · R1-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 00:30 · R1-02 · claude-opus-5-5 · passes=true · 49 min · 2/6 passing
+- 2026-11-10 00:30 · review R1-03: 1145 changed lines, at or over 0; opus
+- 2026-11-10 00:30 · context.md for R1-03: 6230 bytes
+- 2026-11-10 01:06 · R1-03: suite ran 1x (130 s) in the session
+- 2026-11-10 01:06 · R1-03: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 01:06 · R1-03 · claude-opus-5-5 · passes=true · 35 min · 3/6 passing
+- 2026-11-10 01:06 · verify R1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-10 01:19 · context.md for R1: 11892 bytes
+- 2026-11-10 01:27 · R1: checks +37 ~1 −1 against a budget of 35 (over budget: R1 adds 38 names and removes 2 (+36 net) against the budget of 35: the review's I2 hook check and M4's body unit test are the overrun.)
+- 2026-11-10 01:27 · R1 verified and tagged run/agent-harness-2026-11-09/R1
+- 2026-11-10 01:27 · lane R2 opened (slot 1, port 7837, from 24a8357)
+- 2026-11-10 01:27 · context.md for R2-01: 6936 bytes
+- 2026-11-10 01:27 · R1 merged into main · https://github.com/mh550/agent-harness/pull/167
+- 2026-11-10 01:27 · lane R1 closed (R1 merged)
+- 2026-11-10 01:27 · lane R1: branch harness-lane/agent-harness-2026-11-09/R1 deleted (merged)
+- 2026-11-10 01:49 · R2-01: suite ran 1x (130 s) in the session
+- 2026-11-10 01:49 · R2-01 · claude-opus-5-5 · passes=true · 21 min · 4/6 passing
+- 2026-11-10 01:49 · context.md for R2-02: 7113 bytes
+- 2026-11-10 02:13 · R2-02: suite ran 1x (131 s) in the session
+- 2026-11-10 02:13 · R2-02: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 02:13 · R2-02 · claude-opus-5-5 · passes=true · 24 min · 5/6 passing
+- 2026-11-10 02:13 · review R2-03: 649 changed lines, at or over 0; opus
+- 2026-11-10 02:13 · context.md for R2-03: 6918 bytes
+- 2026-11-10 02:33 · R2-03: suite ran 1x (130 s) in the session
+- 2026-11-10 02:33 · R2-03: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 02:33 · R2-03 · claude-opus-5-5 · passes=true · 19 min · 6/6 passing
+- 2026-11-10 02:33 · merged main into harness-lane/agent-harness-2026-11-09/R2
+- 2026-11-10 02:34 · verify R2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-10 02:46 · context.md for R2: 11764 bytes
+- 2026-11-10 02:52 · verify R2: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 02:52 · R2: checks +14 ~2 −0 against a budget of 25
+- 2026-11-10 02:52 · R2 verified and tagged run/agent-harness-2026-11-09/R2
+- 2026-11-10 02:53 · R2 merged into main · https://github.com/mh550/agent-harness/pull/168
+- 2026-11-10 02:53 · lane R2 closed (R2 merged)
+- 2026-11-10 02:53 · lane R2: branch harness-lane/agent-harness-2026-11-09/R2 deleted (merged)
+- 2026-11-10 02:53 · every feature passes
+- 2026-11-10 02:53 · run ended (done): 6/6 passing · 9 sessions (9 real) · 6 features passed · $49.00 · 3.5 h · by kind: init 1 ($4.06), coding 6 ($41.26), verify 2 ($3.67) · by model: claude-fable-5-1 1 ($4.06), claude-opus-5-5 8 ($44.93)
+- 2026-11-10 02:53 · services stopped (done)
+- 2026-11-10 02:53 · services stopped (done)
+- 2026-11-10 02:54 · curator: session denied Bash(git push:*), Bash(gh:*)
+- 2026-11-10 02:54 · memory: 1 ops · 1 facts · 0 rules · 0 dropped · 0 proposals
+- 2026-11-10 02:54 · memory: evicted "- INBOX.md: cut at lib/inbox.mjs answersLine (the `## Answers` outside the steer" for add ## Gotchas
+- 2026-11-10 02:54 · memory PR opened; left for Michael (MEMORY_POLICY=pr) · https://github.com/mh550/agent-harness/pull/169
+- 2026-11-10 02:54 · memory rules PR: none (no tier-2 change)
+- 2026-11-10 02:54 · summary.json and report.md kept in the state dir (harness report reads them after gc)
