@@ -253,6 +253,7 @@ verify() {
         F passes "$LIST" "$id" && continue
         if (( rounds < maxr )); then
           note "verify $m: $id failed the re-check, back in the queue (one more attempt)"; record F grant "$ATT" "$id" "$MAX_ATTEMPTS"
+          touch "$STATE/recheck-$id"   # the given_up card's why says the re-check sent it back (decisions/2026-11-09-claim-gap)
         else
           touch "$STATE/needs-$m"; note "verify $m: $id failed the re-check in round $rounds of $maxr; $m needs Michael (see progress.md)"
           failed+=("$id")
@@ -414,6 +415,16 @@ while :; do
       && lane_exit 0 "default: every feature passes"
     p=$(F parked "$PARKED" "$LIST" | cut -f1 | while read -r id; do in_lane "$id" && echo "$id"; done | paste -sd, -)
     [[ -n $p ]] && lane_exit 11 "parked $p"
+    # the lane's own given-up features, each with its attempts and last verdict: the claim-gap file's first clause when
+    # the claim never reached the list, else its last entry's outcome (decisions/2026-11-09-claim-gap); none of its own
+    # (a dependency outside it): what waits on whom, as before
+    own=""; Fv gl given-up "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$M"
+    while IFS=$'\t' read -r gid gn; do [[ -n $gid ]] || continue
+      v=$(head -n 1 "$STATE/claim-gap-$gid" 2> /dev/null); v=${v%%;*}; v=${v#"$gid: "}
+      [[ -n $v ]] || v="its last entry: $(cat "$LS/outcome-$gid" 2> /dev/null || echo "not yet")"
+      own+="${own:+; }$gid after $gn attempt$( (( gn == 1 )) || echo s): $v"
+    done <<< "$gl"
+    [[ -n $own ]] && lane_exit 10 "given up ($own)"
     g=$(F blocked "$LIST" "$ATT" "$MAX_ATTEMPTS" "$PARKED" "$M" | awk -F'\t' '{print $2}' | sort -u | paste -sd, -)
     lane_exit 10 "given up ${g:-(nothing left to try)}"
   fi
@@ -443,9 +454,12 @@ while :; do
   [[ $esc ]] || record F bump "$ATT" "$id"
   run_init fast; pack_and_copy "$id"   # the copy, the snapshot and the INBOX the session is judged against; the fast tier
   if [[ $esc ]]; then sclock="Review round 2 of 2 (escalated: $esc)"; else sclock="attempt $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") of $MAX_ATTEMPTS"; fi
+  # a claim gap's told retry (decisions/2026-11-09-claim-gap): claim-gap-<id> holds the gap's words until a session was
+  # told them (a `told` line after); that one session's prompt carries them ({{GAP}}), once per feature per run
+  gapw=""; [[ -f $STATE/claim-gap-$id ]] && ! grep -qx told "$STATE/claim-gap-$id" && gapw=$(head -n 1 "$STATE/claim-gap-$id")
   # the counts the gate reads (the findings check below and the summary's found_nothing), asked in one fixed form
   [[ $kind == review ]] && rdiff+=$'\n'"Review findings: give your entry's summary this review's findings as \`<n> Critical, <n> Important, <n> Minor\` (the driver reads the counts)."
-  HARNESS_CLOCK=$(clock "$sclock") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone HARNESS_MODEL=$mdl HARNESS_REVIEW_DIFF=$rdiff prompt coding
+  HARNESS_CLOCK=$(clock "$sclock") HARNESS_FEATURE=$id HARNESS_MILESTONE=$milestone HARNESS_MODEL=$mdl HARNESS_REVIEW_DIFF=$rdiff HARNESS_GAP=$gapw prompt coding
   log "session $n · $id · $mdl"; printf '%s · session %s\n' "$id" "$n" > "$LDIR/now"   # harness status's lane line
   slog="$LOGS/$(printf '%02d' "$n")-$id.jsonl"
   sstart=$(git rev-parse HEAD)
@@ -490,6 +504,20 @@ while :; do
     repairs=$(( repairs + 1 )); note "restored the feature list after $id: $out"
     (( repairs >= MAX_REPAIRS )) && { note "$repairs sessions in a row edited the feature list; stopping for Michael"; lane_exit 12 "feature-list edits"; }
   fi
+  # a claim that never reached the list (decisions/2026-11-09-claim-gap): the entry's word (journal_'s outcome-<id>)
+  # against the copy's key, said before the gate reads it; the same words go to claim-gap-<id>, the told retry's prompt
+  # and the card's why. Nothing here reads the claim as a pass: the list stays the verdict
+  gap=$(ask lane.mjs claim-gap "$id" "$(cat "$LS/outcome-$id" 2> /dev/null)" "$(F passes "$SLIST" "$id" && echo 1 || echo 0)")
+  if [[ -n $gap ]]; then
+    note "$gap"
+    if [[ ! -e $STATE/claim-gap-$id ]]; then   # the first gap of this feature in the run: one told retry, granted when none is left
+      printf '%s\n' "$gap" > "$STATE/claim-gap-$id"
+      if (( $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") >= MAX_ATTEMPTS )); then
+        record F grant "$ATT" "$id" "$MAX_ATTEMPTS"; note "$id: one more attempt, told to set passes (once per run)"
+      fi
+    fi
+  fi
+  [[ -n $gapw ]] && echo told >> "$STATE/claim-gap-$id"   # the told retry ran, whatever its verdict: a second gap grants and tells nothing more
   # passes stands on the fast tier; the full suite runs at the verify (decisions/2026-11-03-fast-gate). A fix feature's
   # stands on its red's files first, then the fast tier (green_fix, decisions/2026-11-04-fix-rounds)
   if F passes "$SLIST" "$id"; then
@@ -531,7 +559,9 @@ while :; do
     [[ -n $nref ]] && jq -e '.card.files_from == "session" and (.card.question.text // "") != ""' "$STATE/needs/${nref##*/}.json" > /dev/null 2>&1 \
       && note "$id: its INBOX question had no Files: line; the park card's where is the session's files"   # the entry's own fill is journal_'s note
   elif [[ $passed == false && ! -s $LS/review-escalate ]] && (( $(jq -r --arg id "$id" '.[$id] // 0' "$ATT") >= MAX_ATTEMPTS )); then
-    needs_open given_up "$id" feature="$id" attempts="$(jq -r --arg id "$id" '.[$id]' "$ATT")" max_attempts="$MAX_ATTEMPTS" log="$slog" > /dev/null
+    # its why names the re-check that sent it back and the claim gap (the file whole: its told line says the retry ran)
+    needs_open given_up "$id" feature="$id" attempts="$(jq -r --arg id "$id" '.[$id]' "$ATT")" max_attempts="$MAX_ATTEMPTS" log="$slog" \
+      gap="$(cat "$STATE/claim-gap-$id" 2> /dev/null)" recheck="$([[ -e $STATE/recheck-$id ]] && echo 1)" > /dev/null
   fi
   rec_commit "HARNESS: after $id (passes=$passed)"; sync_record
   if [[ -n $why ]]; then   # after the push, so its links show the question; a failed post's note is committed too

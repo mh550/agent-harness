@@ -877,6 +877,9 @@ journal_() {   # who kind id name model outcome worktree: the ingest and the ren
     rm -f "$REC/entry.json"; [[ -e $RUN_DIR/entry.json ]] && mv -f "$RUN_DIR/entry.json" "$REC/entry.json"
   fi
   out=$(ask entries.mjs ingest "$REC" "$2" "$3" "$4" "$5" "$6" "$SCRATCH/entry-files" "$SCRATCH/entry-final" "$7"); rc=$?
+  # the entry's outcome as appended, kept for the session's end (the lane holds it against the list's key: claimGap in
+  # lib/lane.mjs, decisions/2026-11-09-claim-gap); none appended: the driver's own word, which never opens a gap
+  n=$(sed -n 's/^outcome //p' <<< "$out"); out=$(grep -v '^outcome ' <<< "$out"); printf '%s\n' "${n:-$6}" > "$LS/outcome-$3"
   # a question without a Files: line got the session's files (decisions/2026-10-27-question-locations)
   n=$(sed -n 's/^filled //p' <<< "$out"); out=$(grep -v '^filled ' <<< "$out")
   [[ -n $n ]] && note "$1: $n question(s) had no Files: line; filled from the session's diff"

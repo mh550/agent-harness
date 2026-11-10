@@ -261,3 +261,19 @@ test("needs verify_thin: the card's why names the steps with no row, per feature
   assert.deepEqual({ ...c, why: plain.why }, plain);
   assert.doesNotMatch(JSON.stringify(c), /undefined|NaN|\[object/);
 });
+
+// ---- the given_up card after a re-check and a claim gap (decisions/2026-11-09-claim-gap) ----
+test("the given-up card's why carries the re-check and the claim gap in place of \"its entries say what failed\"", () => {
+  const rx = s => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$");
+  const f = fixture("given_up"), plain = N.card("given_up", f);
+  const gap = "P2-02: its entry says passes but feature_list.json's passes stayed false; the claim never reached the list (the flip is the session's one list edit, prompts/coding.md §3.1)";
+  const recheck = "The verify's re-check sent it back (`verify P2: P2-02 failed the re-check`), and ";
+  assert.match(plain.why, / Its sessions' entries say what failed\.$/);
+  assert.match(N.card("given_up", { ...f, recheck: "1" }).why, rx(` ${recheck}its sessions' entries say what failed.`));
+  assert.match(N.card("given_up", { ...f, gap }).why, rx(` ${gap}.`));   // the file's words alone: the told retry is still to come
+  const both = N.card("given_up", { ...f, recheck: "1", gap: `${gap}\ntold\n` });   // the file as the lane passes it, whole
+  assert.match(both.why, rx(` ${recheck}${gap}; its told retry did not set it either.`));
+  assert.doesNotMatch(both.why, /Its sessions' entries say what failed/);
+  assert.deepEqual({ ...both, why: plain.why }, plain);   // nothing else of the card moves
+  assert.doesNotMatch(JSON.stringify(both), /undefined|NaN|\[object/);
+});

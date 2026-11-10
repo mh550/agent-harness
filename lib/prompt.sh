@@ -95,8 +95,9 @@ memory_answers() {
 }
 
 prompt_render() {   # template name → stdout: the static template, the policy, this run (its lines, the brief, the line naming CLAUDE.md, the routing block), this session
-  local extra=() rules=() where=where-things-go length="" flength="" fix=""
+  local extra=() rules=() where=where-things-go length="" flength="" fix="" gap=""
   [[ $1 == coding ]] && fix=$(fix_line "${HARNESS_FEATURE:-}")
+  [[ $1 == coding ]] && gap=${HARNESS_GAP:-}   # a claim gap's told retry: the lane's words for {{GAP}} (decisions/2026-11-09-claim-gap); no other template has the block
   local answers=${HARNESS_MEMORY_ANSWERS:-}   # curator() renders it; lib/prompt.sh's own use outside a driver, here
   [[ $1 == curator && -z $answers ]] && answers=$(memory_answers)
   # Claude Code loads CLAUDE.md in the worktree itself: one line names it, the file isn't pasted (decisions/2026-10-21-no-double-claude-md)
@@ -121,7 +122,7 @@ prompt_render() {   # template name → stdout: the static template, the policy,
   fi
   # the last 40 whole lines and where the rest is (decisions/2026-10-21-clock-and-bounded-init-output)
   HARNESS_DECISIONS=$(ask memlint.mjs store-line .) HARNESS_INIT_OUTPUT=$([[ -f $SCRATCH/init.out ]] && { tail -n 40 "$SCRATCH/init.out"; echo "full output: $SCRATCH/init.out"; }) HARNESS_CHECK="$CHECK" \
-    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix HARNESS_MEMORY_ANSWERS=$answers ask render.mjs "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
+    HARNESS_SUITE_LENGTH=$length HARNESS_SUITE_FAST_LENGTH=$flength HARNESS_FIX=$fix HARNESS_GAP=$gap HARNESS_MEMORY_ANSWERS=$answers ask render.mjs "$HARNESS_HOME/prompts/$1.md" "${extra[@]}"
 }
 
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then

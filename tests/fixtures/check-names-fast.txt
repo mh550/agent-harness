@@ -14,6 +14,7 @@ SPEC_FILES in the project's .harness/config.sh and no --spec: a missing path is 
 WEEKLY_STOP_AT raises the bar
 a $( ask ) before this shell has a helper spawns and starts none: a coproc started in a subshell would die with it
 a body over the cap is trimmed
+a claim that never reached the list is named at the session's end
 a cwd that is gone: declined and spawned (the spawn's exit code), not a restart, no line from the helper
 a declined request's stderr is dropped: the spawn says it, once
 a failed read inside $( ask ): the spawn's bytes, one line; the parent's next call finds the helper gone, logs nothing more, spawns
@@ -39,6 +40,8 @@ a request over a pipe's buffer spawns (a wedged helper must never block the writ
 a request's stderr: into the call's 2> file, nowhere under 2> /dev/null, onto the end under 2>>, in order with the shell's own writes; the answer on stdout each time, all through the helper
 a resume (the run's worktree exists) is not checked: a missing spec in its run.env and --spec does not refuse it
 a scratch directory that is missing or unset: a spawn with the spawn's bytes, nothing on stderr, no restart line
+a second claim gap grants nothing: the lane closes naming the feature, its attempts and the gap
+a session whose entry says passes with the list at false is a claim gap, named with the id
 a session's edits to the journal are restored (E4 review F1)
 a spec check that fails without a line parks with a reason, never an empty one
 a stale green marker is caught at verify: M1 red, not tagged
@@ -370,6 +373,7 @@ framing: no trailing newline, empty, lone newline, two newlines, UTF-8, every by
 framing: those answers come from the helper (one start for all of them)
 gc units: --dry-run with units of another project's runs (live and ended) prints no ? line and no line naming them
 gc units: a unit no run on this box owns prints the ? line with the command, with and without --dry-run, and stays
+given-up lines name each given-up feature of the lane with its attempts, parked and passing ones left out
 glossary.mjs: Q99 is unresolved and no near match is taken
 glossary.mjs: a D1 that is a decision row and a milestone keeps both
 glossary.mjs: a dotted id (M8.1, D24.3) is not its prefix, in a text or a table row
@@ -723,6 +727,8 @@ needs: a run whose worktree and record branch are both gone resolves run removed
 next <m>: a feature without after waits on its own milestone's earlier features only
 night words: memlint says run-scope and that it goes in the run's brief
 night words: out of the docs, prompts, templates and code, but for memlint's patterns and the catch-up's lines
+no claim gap for an entry that says not yet while the list says true (the gate's case)
+no claim gap when the list agrees with the entry (passes/true, not yet/false, parked/false)
 notify.mjs event: a debrief has null project, run and feature
 notify.mjs event: a given id= is the event's id
 notify.mjs event: a kind outside v1 prints nothing and exits 2
@@ -988,9 +994,12 @@ the answer skill: another live run of the project: ask, with the queue add and -
 the call after a throw is answered by the same helper (no start, the same pid, no restart line)
 the call after that starts a new helper (+1), and the one after is answered by it (no start); stderr empty; no second line
 the call's environment is the call's alone: the plain ask after it answers as before; none of them started node (the two HARNESS_HELPER=0 lines did)
+the claim gap gets one told retry, its prompt carrying the same words
 the debrief page never reads a stop reason's words as its tone
 the desk prompt reads COLUMNS=60 harness needs and needs --json, never harness parked
 the desk prompt: two continues on a card: ask Michael which, run one
+the given-up card says the re-check sent it back and the told retry did not set passes
+the given-up card's why carries the re-check and the claim gap in place of "its entries say what failed"
 the helper killed between two calls: the next call is a spawn (+1), the spawn's bytes, one helper restarted: line
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value
@@ -1005,6 +1014,7 @@ the runner hands a queued multi-line --brief to harness start as one argument: b
 the runner parks a queued start whose spec left origin/main: .args and .why in held/, a parked line, no run
 the same runner goes on to the next entry and starts it (a --brief start of the same project)
 the suite never sees the handed key; a check.sh from a subdirectory or with no parent asks treekey.mjs itself (one start each), the same key
+the told retry's flip passes and the milestone verifies and merges
 the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/unit-tier/v8
 the weekly budget ends a run after the session that crossed it
 thin verify: after the escalated round the note and the card's why name the steps with no row

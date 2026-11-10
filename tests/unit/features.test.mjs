@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { sameAsCli } from "./cli-same.mjs";
-import { deps, evidence, lint, lintNote, RULES, fixFeature, kindOf, repairList, schedule, shortfall, budgetOf } from "../../lib/features.mjs";
+import { deps, evidence, givenUpLines, lint, lintNote, RULES, fixFeature, kindOf, repairList, schedule, shortfall, budgetOf } from "../../lib/features.mjs";
 
 const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const got = (...steps) => lint([{ id: "A", milestone: "M1", steps }]).map(f => `${f.step}:${f.rule}`).join();
@@ -289,3 +289,18 @@ test("features.mjs: evidence names each step with no row from the rows' step cel
   assert.equal(shortfall(evidence(list, "N2", `### x · verify N2 · passes\n${row("N2-01", 1)}\n`)), "");
   assert.equal(shortfall(evidence([{ id: "Q", milestone: "N3", steps: ["a", "b"] }], "N3", `### x · verify N3 · passes\n${row("Q", "two")}\n`)), "Q 1/2: steps 1 and 2 have no row");   // a step cell that is no number names no step
 });
+
+// ---- givenUpLines: what the lane's close names (decisions/2026-11-09-claim-gap), the mirror of blockedLines ----
+test("given-up lines name each given-up feature of the lane with its attempts, parked and passing ones left out", () => inList(async d => {
+  const l = [{ id: "A", milestone: "M1", passes: false }, { id: "B", milestone: "M1", passes: true }, { id: "C", milestone: "M1", passes: false },
+    { id: "D", milestone: "M2", passes: false }, { id: "E", milestone: "M1", passes: false }, { id: "Z", passes: false }];
+  const att = { A: 2, B: 2, C: 2, D: 3, E: 1, Z: 2 };
+  assert.deepEqual(givenUpLines(l, att, 2, new Set(["C"]), "M1"), ["A\t2"]);   // B passes, C is parked, E has an attempt left
+  assert.deepEqual(givenUpLines(l, att, 2, new Set(["C"]), "default"), ["Z\t2"]);
+  assert.deepEqual(givenUpLines(l, att, 2, new Set(["C"])), ["A\t2", "D\t3", "Z\t2"]);   // no lane: the whole list
+  assert.deepEqual(givenUpLines(l, {}, 2, new Set(), "M1"), []);
+  const list = join(d, "l.json"), a = join(d, "att.json"), p = join(d, "parked.json");
+  writeFileSync(list, JSON.stringify({ features: l })); writeFileSync(a, JSON.stringify(att)); writeFileSync(p, JSON.stringify({ C: { answers: "h" } }));
+  assert.equal((await sameAsCli("features.mjs", ["given-up", list, a, "2", p, "M1"])).out, "A\t2\n");
+  assert.equal((await sameAsCli("features.mjs", ["given-up", list, a, "2", p])).out, "A\t2\nD\t3\nZ\t2\n");
+}));

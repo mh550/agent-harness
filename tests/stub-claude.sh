@@ -13,7 +13,10 @@
 # fast-<key> for its committed tree into $HARNESS_CHECK_CACHE and the key to $STUB_DIR/planted-<run> (S1-04, T2-02:
 # verify clears all three). STUB_SLOW_RED=<id>: that feature's first coding session commits BROKEN-SLOW (a suite
 # red bare, green under --tier fast: a slow-tier red, session-gate-driver); STUB_FAST_RED=<id>: its first commits
-# BROKEN-FAST (red under --tier fast), its later sessions remove it. Every coding session appends `session <id> <n>`
+# BROKEN-FAST (red under --tier fast), its later sessions remove it. STUB_NO_FLIP=<id>:<n>[,…]: that feature's n-th coding
+# session does its work and writes its entry with `outcome: passes`, ends with the final message `<id> passes. The commit
+# is pushed.`, but never sets the list's `passes` key (the claim never reaches the list: tests/checks/claim-gap.sh).
+# Every coding session appends `session <id> <n>`
 # to the run's scratch suite-args.log when the log exists (a project suite that logs its calls there).
 # STUB_FIX=rename|fix|none (unset: none): a coding session of a fix feature (an id matching *-fix[0-9]*, tests/checks/fix-rounds.sh)
 # moves BROKEN-SLOW to BROKEN-SLOW2 (rename: the red moves to another check), removes both (fix) or leaves them (none).
@@ -316,7 +319,8 @@ JSON
     if [[ $id == R && $n == 2 && ${STUB_REVIEW_ROUND:-} == fail ]]; then
       entry R 2 '{feature: "R", kind: "coding", outcome: "not yet", summary: "R: the round did not finish"}'; ok 0.5 "R: not done"; exit 0
     fi
-    set_passes "$id" true
+    noflip=""; nfs=${STUB_NO_FLIP:-}; for nf in ${nfs//,/ }; do if [[ $nf == "$id:$n" ]]; then noflip=1; fi; done   # the entry says passes; the key stays as it was
+    [[ $noflip ]] || set_passes "$id" true
     if [[ ${STUB_PASS_THEN_LIMIT:-} && $id == A && $n == 1 ]]; then   # claims the feature, then the limit cuts it off
       echo "A $n" > "work-A.txt"; git add -A && git commit -qm "A: claimed"; sed -n 2p "$HERE/fixtures/usage-limit.jsonl"; exit 1
     fi
@@ -398,7 +402,7 @@ JSON
       printf '%s\n' 1 t1 "wall 7" "check: RED (planted)" > "$HARNESS_CHECK_CACHE/red-$k"; printf '%s\n' "99 tests" "wall 7" > "$HARNESS_CHECK_CACHE/green-$k"
       printf '%s\n' "98 tests" "wall 7" > "$HARNESS_CHECK_CACHE/fast-$k"
     fi
-    ok ;;
+    ok 0.25 "${noflip:+$id passes. The commit is pushed.}" ;;
   "# Verify session")
     m=$(after_session '/^Milestone: / { print $2; exit }'); n=$(count "verify-$m")
     echo "verify $m $n" >> "$RS/sessions.log"
