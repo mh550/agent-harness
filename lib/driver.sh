@@ -300,7 +300,7 @@ curator() {
 # One read-only session between memory_pr's dry apply and its landing (decisions/2026-11-09-memory-reviewer): it reads
 # memory-review-input.json (committed before rstart: restrict deletes an uncommitted new file) and writes
 # memory-review.json alone, rescued around the revert and kept in the run record, under the curator's deny list and
-# bound. REVIEW_NONE ← why there is no review file ("" when there is one)
+# bound. REVIEW_NONE ← why there is no review ("" when there is a file to validate: memory_verdict's)
 memory_review() {
   local mlog=$LOGS/zz-memory-review-$(date +%H%M%S).jsonl rstart reverted x model
   model=$(F model "$MEMORY_REVIEW_MODEL") rstart=$(git rev-parse HEAD) REVIEW_NONE=""
@@ -313,9 +313,11 @@ memory_review() {
   x=$(printf '%s, ' "${CURATOR_DENY[@]}"); note "memory review: session denied ${x%, }"
   [[ -n $reverted ]] && note "memory review: reverted edits (it is read-only): $reverted"
   record MET append "$mlog" "$REC/metrics.jsonl" "$RUN_ID" memory-review "" "$model" true "$S_WALL" "$S_EXIT" false memory-review "$S_PEAK"
+  # the file is kept whenever rescued; a limit, a failed exit (a timeout's too) or no file is no review (invariant 3)
+  [[ -f $SCRATCH/memory-review.json ]] && cp "$SCRATCH/memory-review.json" "$REC/"   # in the run record, as memory-ops.json
   if MET limit "$mlog" "$S_WALL" "$S_EXIT" > /dev/null; then REVIEW_NONE="the reviewer hit a limit"
-  elif [[ -f $SCRATCH/memory-review.json ]]; then cp "$SCRATCH/memory-review.json" "$REC/"   # in the run record, as memory-ops.json
-  else REVIEW_NONE="the reviewer wrote no memory-review.json"; fi
+  elif [[ $S_EXIT != 0 ]]; then REVIEW_NONE="the reviewer failed (exit $S_EXIT)"
+  elif [[ ! -f $SCRATCH/memory-review.json ]]; then REVIEW_NONE="the reviewer wrote no memory-review.json"; fi
 }
 
 ledger() {   # the whole run record into the harness's own record, for `harness trends`, retros and calibration

@@ -56,7 +56,7 @@ harness_config() {
   # a conflict with main in a lane: resolve = a resolve session, verified, merged; michael = needs Michael (decisions/2026-10-29-conflict-resolution)
   CONFLICTS=resolve RESOLVE_MODEL=opus RESOLVE_MAX_TURNS=60 RESOLVE_BUDGET_USD=5 RESOLVE_TIMEOUT=30m MAX_RESOLVES=3
   RECORD_PR=end   # the run record's own PR, opened at finish (off = none: the record stays on harness/<run>)
-  MEMORY_POLICY=pr   # the curator at finish: pr = tier 1 on harness-memory/<run>, its PR left for Michael; auto = that PR merged by the driver; off = no curator (separate from MERGE_POLICY: decisions/2026-11-07-memory-policy)
+  MEMORY_POLICY=pr   # the curator at finish: pr = tier 1 on harness-memory/<run>, its PR left for Michael; auto = that PR merged by the driver when the memory review ran and every committed op held; off = no curator (separate from MERGE_POLICY: decisions/2026-11-07-memory-policy)
   LIVE_SYNC=1   # the queue runner keeps the live checkout level with origin while no run is alive (lib/sync.sh; 0 = off)
   CONTEXT_PACK_BYTES=8192   # context.md's cap (E4): the pack of the journal a coding session reads first
   CONTEXT_PACK_BYTES_VERIFY=16384   # a verify session's pack: its failed rows first (decisions/2026-10-26-pack-current-rules)

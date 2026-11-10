@@ -5,7 +5,8 @@ import { mkdtempSync, readFileSync as rd, rmSync, writeFileSync as wr } from "no
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { sameAsCli, cli, mainOf } from "./cli-same.mjs";
-import { validate, minimal, normalize, journalEntry, renderProgress, renderArchive, renderEntry, legacyOf, headerOf, pack, reviewFindings, sessionFiles, fillQuestions, checksReason } from "../../lib/entries.mjs";
+import { validate, minimal, normalize, journalEntry, renderProgress, renderArchive, renderEntry, legacyOf, headerOf, pack, reviewFindings, sessionFiles, fillQuestions, checksReason, evidenceTable } from "../../lib/entries.mjs";
+import { createHash } from "node:crypto";
 import { evidence } from "../../lib/features.mjs";
 
 const B = s => Buffer.byteLength(s);
@@ -441,4 +442,15 @@ test("entries.mjs: a coding entry's checks field (the over-budget reason) is a s
     assert.deepEqual(await sameAsCli("entries.mjs", ["checks-reason", d, "C"]), { rc: 0, out: "" });
     assert.deepEqual(await sameAsCli("entries.mjs", ["checks-reason", join(d, "none"), "A"]), { rc: 0, out: "" }, "no journal yet");
   } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+test("entries.mjs: evidenceTable renders the verify's five-column table; renderEntry's verify output is byte-identical to before it", () => {
+  const ls = evidenceTable([{ a: "facts/1", b: 2, ran: "git grep -nF -e 'x|y'", saw: "7\nfiles", holds: false }], ["Op", "Q"]);
+  assert.equal(ls.join("\n"), "| Op | Q | What you ran or read | What you saw | Holds |\n|---|---|---|---|---|\n| facts/1 | 2 | git grep -nF -e 'x\\|y' | 7 files | no |");
+  assert.equal(evidenceTable([{ a: "A", b: 1, ran: "r", saw: "s", holds: true }])[0], "| Feature | Step | What you ran or read | What you saw | Holds |");
+  // captured from renderEntry before evidenceTable (2026-11-09): the hash, never the whole text
+  const E = { feature: "M1", kind: "verify", outcome: "not yet", summary: "verify of M1", at: "2026-11-09 10:00", session: "02-M1", model: "m",
+    evidence: [{ feature: "A", step: 1, ran: "bash tests/run.sh x | tail", saw: "3/3 checks  passed", holds: true }, { feature: "B", step: 2, ran: "grep -n `x` y", saw: "no\nline", holds: false }],
+    files: ["a", "b"], verified_how: "the suite" };
+  assert.equal(createHash("sha256").update(renderEntry(E)).digest("hex"), "babf0c2e630ddaf20c317e1bd4f6920c8a561fc39fbf75b32ed49aff0c5de863");
 });

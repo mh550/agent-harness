@@ -67,6 +67,6 @@ One JSON object, nothing else in the file:
 ```
 
 `id` is an item's id, `q` 1 to 4, `ran` the command you ran or the file and line you read, `saw` what came back, both
-short and on one line, `holds` true or false. Four rows per item, never two for one `(id, q)`.
+on one line and at most 200 characters (the harness cuts longer ones; a failed row's `saw` is the reason Michael reads), `holds` true or false. Four rows per item, never two for one `(id, q)`.
 
 Your final message: at most 60 words, how many held, how many failed and why.

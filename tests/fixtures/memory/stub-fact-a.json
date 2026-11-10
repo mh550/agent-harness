@@ -1,0 +1,3 @@
+[
+  {"op":"add","file":"CLAUDE.md","section":"## Gotchas","text":"the stub's A work sits in work-A.txt at the root ({{RUN}} {{DATE}})","tier":1,"why":"A found where its work sits.","from":"entries.jsonl:{{LINE:A}}"}
+]

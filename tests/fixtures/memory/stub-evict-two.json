@@ -1,0 +1,5 @@
+[
+  {"op":"replace","file":"CLAUDE.md","section":"## Gotchas","anchor":"- seeded gotcha 02: the seeded project keeps its fact number 2 (seed 2026-11-01)","text":"the stub's A work sits in work-A.txt at the root ({{RUN}} {{DATE}})","tier":1,"why":"A sharpens the second seeded line.","from":"entries.jsonl:{{LINE:A}}"},
+  {"op":"add","file":"CLAUDE.md","section":"## Gotchas","anchor":"- seeded gotcha 03: the seeded project keeps its fact number 3 (seed 2026-11-01)","text":"the stub's B work sits in work-B.txt at the root ({{RUN}} {{DATE}})","tier":1,"why":"B found where its work sits; at the cap it evicts the third.","from":"entries.jsonl:{{LINE:B}}"},
+  {"op":"add","file":"CLAUDE.md","section":"## Code rules","text":"stub proposal: run the stub suite before each commit","tier":2,"why":"A proposed it.","from":"entries.jsonl:{{LINE:A}}"}
+]

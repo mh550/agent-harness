@@ -70,7 +70,7 @@ HARNESS_TTY=0 "$H" report mp > "$T/mp-report.out" 2>&1; HARNESS_TTY=0 "$H" memor
 check "memory PR: summary.json's memory holds the counts and both URLs, harness report prints the Memory row, and memory-result.json is in the run record" \
   'p=$(mpr mp) && u=$(url "$p") && ru=$(url "$(rpr mp)") && [[ $(jq .memory.applied "$(rec mp)/summary.json") == 2 && $(jq -r .memory.pr "$(rec mp)/summary.json") == "$u" ]] \
   && [[ $(jq .memory.rules "$(rec mp)/summary.json") == 1 && $(jq -r .memory.rules_pr "$(rec mp)/summary.json") == "$ru" ]] \
-  && grep -xF "| Memory | 2 applied · 1 rules · 0 dropped · 0 proposals · PR $u · rules PR $ru |" "$T/mp-report.out" > /dev/null \
+  && grep -xF "| Memory | 2 applied · 1 rules · 0 dropped · 0 proposals · PR $u · rules PR $ru · review 3 held · 0 failed |" "$T/mp-report.out" > /dev/null \
   && [[ -s $(rec mp)/memory-ops.json ]] && jq -e "(.rules | map(.n)) == [1] and (.ruleFiles == [\"CLAUDE.md\"]) and (has(\"ruleTexts\") | not)" "$(rec mp)/memory-result.json" > /dev/null'
 
 # Michael's verdict on mp's rule (N2-03): proposals lists the numbered items (three-ops has no tier-3 op: mp/1 alone),
@@ -127,11 +127,11 @@ check "ledger: each memory PR is one row of memory.jsonl with its tier and secti
   && [[ $(hlog mp | grep -c " · ledger: memory rules PR $ru in memory.jsonl (1 rules · ## Code rules)$") == 1 ]]'
 
 # mn: harness-memory/mn already on origin with no PR (an earlier push whose pr create failed): it is the base, its PR opens
-hand() {   # <run> [<path>] → harness-memory/<run> pushed by hand, one commit past seed3 (that also adds <path>: not the driver's)
+hand() {   # <run> [<path>] [<trailer>] → harness-memory/<run> pushed by hand, one commit past seed3 (that also adds <path>: not the driver's; with <trailer> in its message)
   local w=$T/hand-$1; rm -rf "$w"; git clone -q "$O" "$w" && git -C "$w" checkout -q --detach "$seed3" \
     && echo "- an earlier push of this memory branch keeps its own line ($1 2026-11-01)" >> "$w/CLAUDE.md" \
     && { [[ -z ${2:-} ]] || { mkdir -p "$(dirname "$w/$2")" && echo "# not memory" > "$w/$2" && git -C "$w" add -- "$2"; }; } \
-    && git -C "$w" -c user.name=m -c user.email=m@test commit -qam "memory: $1: 1 facts" && git -C "$w" push -q origin "HEAD:refs/heads/harness-memory/$1" && git -C "$w" rev-parse HEAD
+    && git -C "$w" -c user.name=m -c user.email=m@test commit -qam "memory: $1: 1 facts" ${3:+-m "$3"} && git -C "$w" push -q origin "HEAD:refs/heads/harness-memory/$1" && git -C "$w" rev-parse HEAD
 }
 git -C "$O" update-ref refs/heads/main "$seed3"; mn0=$(hand mn)
 run mn STUB_FACTS=A,B STUB_PROPOSE=A STUB_CURATOR_OPS=three-ops
@@ -249,7 +249,7 @@ check "memory PR: a refused auto merge leaves the memory PR open with one note" 
   && [[ $(hlog mr | grep -c " · memory PR: the merge was refused; left open · https://example.test/pr/${p##*-}$") == 1 ]] \
   && [[ $(grep -c "^gh pr merge https://example.test/pr/${p##*-} " "$T/gh-mr.log") == 1 ]] && ! hlog mr | grep -F " · memory PR merged" > /dev/null'
 # mw: auto, harness-memory/mw on origin with no PR and this segment's one op a proposal: the PR opens, nothing to merge
-git -C "$O" update-ref refs/heads/main "$seed3"; mw0=$(hand mw)
+git -C "$O" update-ref refs/heads/main "$seed3"; mw0=$(hand mw "" "Memory-review: held")   # a driver commit a review held (decisions/2026-11-09-memory-reviewer)
 cp "$T/base-config.sh" "$T/user-config.sh" && echo 'MEMORY_POLICY=auto RECORD_PR=end' >> "$T/user-config.sh"
 run mw STUB_FACTS=A,B,C STUB_PROPOSE=A STUB_CURATOR_OPS=proposal
 check "memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note" \

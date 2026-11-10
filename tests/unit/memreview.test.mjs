@@ -1,10 +1,10 @@
-// lib/memreview.mjs: the memory reviewer's input (the ops that would land, from one apply result).   node --test tests/unit/memreview.test.mjs
+// lib/memreview.mjs: the memory reviewer's input (the ops that would land), its file validated, its verdicts and the ## Review section.   node --test tests/unit/memreview.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { capReading, input, main } from "../../lib/memreview.mjs";
+import { capReading, input, main, render, renderNone, validate, verdicts } from "../../lib/memreview.mjs";
 
 const F = (text, o) => ({ op: "add", file: "CLAUDE.md", section: "## Gotchas", text, tier: 1, why: "w", from: "entries.jsonl:2", ...o });
 const RESULT = {
@@ -54,5 +54,59 @@ test("memreview.mjs: input as a command prints the list as one JSON document and
     assert.equal(xs[0].base, join(d, "base", "CLAUDE.md"));
     assert.equal(JSON.stringify(xs[0].cap), '{"gotchas":1,"lines":5}');
     assert.equal(main(["input", join(d, "r.json")], { env: {} }).rc, 2, "a missing directory is the usage");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+const ITEMS = [{ id: "facts/1" }, { id: "facts/2" }, { id: "rules/3" }];
+const row = (id, q, o) => ({ id, q, ran: `q${q} of ${id}`, saw: "it holds", holds: true, ...o });
+const four = id => [1, 2, 3, 4].map(q => row(id, q));
+const REVIEW = { rows: [...four("facts/1"), ...four("facts/2"), ...four("rules/3")], summary: "s" };
+
+test("memreview.mjs: validate passes four rows per item and refuses, naming the row, an unknown id, a q of 5, a doubled (id, q), a non-boolean holds and too many rows", () => {
+  assert.equal(validate(REVIEW, ITEMS), null);
+  const bad = (rows, k) => validate({ rows }, ITEMS) ?? "", rs = REVIEW.rows;
+  assert.equal(bad([...rs.slice(0, 11), row("facts/9", 4)]), 'row 12: id "facts/9" is not in the input');
+  assert.equal(bad([row("facts/1", 5)]), "row 1: q 5 is not 1 to 4");
+  assert.equal(bad([row("facts/1", 1), row("facts/1", 1)]), "row 2: (facts/1, q1) twice");
+  assert.equal(bad([row("facts/1", 1, { holds: "yes" })]), "row 1: holds is not a boolean");
+  assert.equal(bad([...rs, row("facts/1", 1)]), "13 rows, at most 12 (4 per item)");
+  assert.match(validate("{not json", ITEMS), /^not JSON/);
+  assert.equal(validate({ rows: {} }, ITEMS), "rows is not a list");
+});
+
+test("memreview.mjs: verdicts holds an op with four holding rows and fails one on its first failing row's saw (q named), one with three rows as thin and one with none as not reviewed", () => {
+  const rows = [...four("facts/1"), ...four("facts/2").map(r => (r.q >= 2 ? { ...r, holds: false, saw: `7 files (q${r.q} saw)` } : r)), ...four("rules/3").slice(0, 3)];
+  const v = verdicts({ rows }, [...ITEMS, { id: "rules/4" }]);
+  assert.equal(JSON.stringify([v.reviewed, v.held, v.failed]), "[4,1,3]");
+  assert.equal(JSON.stringify(v.ops.map(o => [o.id, o.holds, o.reason])),
+    JSON.stringify([["facts/1", true, null], ["facts/2", false, "7 files (q2 saw) (q2)"], ["rules/3", false, "review too thin (3 of 4 rows)"], ["rules/4", false, "not reviewed"]]));
+});
+
+test("memreview.mjs: render the ## Review section, one line per op and the verify's five-column table; none: <why> without a review", () => {
+  const rows = REVIEW.rows.map(r => (r.id === "facts/2" && r.q === 2 ? { ...r, holds: false, saw: "7 files: a | b" } : r));
+  const t = render(verdicts({ rows }, ITEMS), { rows }), ls = t.split("\n");
+  assert.equal(ls[0], "## Review");
+  assert.ok(ls.includes("- facts/1 holds") && ls.includes("- facts/2 **fails**: 7 files: a | b (q2)") && ls.includes("- rules/3 holds"), t);
+  const h = ls.indexOf("| Op | Q | What you ran or read | What you saw | Holds |");
+  assert.ok(h > ls.indexOf("- rules/3 holds") && ls[h + 1] === "|---|---|---|---|---|", t);
+  assert.equal(ls.filter(l => l.startsWith("| facts/") || l.startsWith("| rules/")).length, 12);
+  assert.ok(ls.includes("| facts/2 | 2 | q2 of facts/2 | 7 files: a \\| b | no |"), t);
+  assert.equal(renderNone("the reviewer hit a limit"), "## Review\n\nnone: the reviewer hit a limit\n");
+});
+
+test("memreview.mjs: validate, verdicts and render as commands", () => {
+  const d = mkdtempSync(join(tmpdir(), "memreview-"));
+  try {
+    const f = (n, x) => { writeFileSync(join(d, n), typeof x === "string" ? x : JSON.stringify(x)); return join(d, n); };
+    const i = f("i.json", ITEMS), r = f("r.json", REVIEW), b = f("b.json", "{not json");
+    const ok = main(["validate", r, i], { env: {} }), no = main(["validate", b, i], { env: {} });
+    assert.equal(`${ok.rc} ${ok.out.trim()}`, "0 ok");
+    assert.equal(no.rc, 1); assert.match(no.out, /^not JSON/);
+    const v = main(["verdicts", r, i], { env: {} });
+    assert.equal(v.rc, 0); assert.equal(v.out.trim().split("\n").length, 1);
+    assert.equal(JSON.parse(v.out).held, 3);
+    const out = main(["render", f("v.json", v.out), r], { env: {} });
+    assert.equal(out.rc, 0); assert.ok(out.out.startsWith("## Review\n"));
+    assert.equal(main(["render", "--none", "nothing to review"], { env: {} }).out, "## Review\n\nnone: nothing to review\n");
   } finally { rmSync(d, { recursive: true, force: true }); }
 });

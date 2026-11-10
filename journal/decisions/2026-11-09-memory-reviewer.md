@@ -1,6 +1,6 @@
 # The memory reviewer: one read-only session on what would land, four questions per operation, under the curator's deny list
 
-*(2026-11-09, run agent-harness-2026-11-09, R1 (the session and its input by R1-01); spec
+*(2026-11-09, run agent-harness-2026-11-09, R1 (the session and its input by R1-01, the verdict and what lands by R1-02); spec
 `docs/specs/2026-11-08-memory-reviewer.md` §R1; Decision 27 (a), Michael, 2026-11-08 (`docs/plans/2026-11-03-test-suite-redesign-dispatch.md`,
 row F3f); journal/learning/2026-11-07-memory-curator.md §11 answer 2 (Opus for reviews); the run's brief (2026-11-09
 22:45: proceed on the defaults, Q4 reads the declined rows of `ledger/memory-answers.jsonl`); the follow-up's names as
@@ -59,7 +59,57 @@ built: decisions/2026-11-08-memory-rules-pr, decisions/2026-11-08-memory-session
     and `STUB_MEMORY_REVIEW_EDITS=1`; the checks are `tests/checks/memory-review.sh` (slow by the brief) and
     `tests/unit/memreview.test.mjs`. The prompt check stays in `memory-review.sh`, the curator's twin in
     `curator-run.sh` (*default*: no `memory-prompts.sh` fold).
+- **Choice (R1-02):**
+  - **The verdict.** `memreview.mjs validate` refuses `memory-review.json` whole with its first reason, naming the row
+    (an id not in the input, a `q` outside 1–4, a non-string `ran`/`saw`, a non-boolean `holds`, a doubled `(id, q)`,
+    more than four rows per item): `memory review: none (memory-review.json invalid: <reason>)`. `verdicts`: an op holds
+    on four holding rows; it fails on its first failing row by `q` (`<saw> (q<n>)`), as `review too thin (<k> of 4
+    rows)` with fewer than four, as `not reviewed` with none. **Thin is a fail, not an escalation** (*default*: Opus is
+    already the review model, and under `pr` a fail leaves the op in front of Michael). Cells are cut to
+    `entries.mjs` `ROW_MAX` (200) where they are rendered and in the reason; the prompt asks for at most 200
+    characters, so 50 ops × 4 rows stay under `ro_rescue`'s 64 KB.
+  - **One table renderer**: `entries.mjs` `evidenceTable(rows, [first, second])`, used by `renderEntry` (Feature, Step;
+    its output byte-identical, a unit test on its hash) and `render` (Op, Q). `## Review` goes after the body's head in
+    both PR bodies and `memory.md`; over `BODY_MAX` its table is cut first, whole, with a line saying so, and its
+    one-line verdicts never (*default*: whole, not row by row; memory.md and memory-review.json keep every row).
+  - **What lands, by policy** (*default*): under `pr` every op the gate applied lands, failed ones included, marked in
+    `## Review` (the diff stays the curator's, and R2's override count has something to read). Under `auto` the landing
+    is `apply … --verdicts`: a failed tier-1 op is **dropped at its write, never removed from the input list**, after
+    every other step ran on the full list and on the texts the dry run wrote (the duplicate-key choice, the cap, each
+    later op's anchor), so no op the reviewer did not see can take its place; the held ones are written again on the
+    base in order and capped there (a failed delete that made room makes the add after it the 16th: dropped, `over the
+    cap once the review's failed ops were dropped: …`). A fact with no verdict is dropped as `not reviewed`. The
+    landing first runs plain (R1-01's guard against the dry apply), then again with the verdicts, and a result other
+    than the dry one minus held-or-failed facts (rules, proposals, ruleTexts and the gate's drops unchanged) commits
+    nothing. A review drop counts in `failed`, never in `dropped` (the gate's meaning); `applied` stays the gate's count.
+    Every facts op failed: `memory PR: none (no tier-1 change after the review)`.
+  - **The rules PR carries every op with the verdict under every policy and is never merged** (`apply` never drops a
+    tier-2 op by verdict; follow-up invariant 3).
+  - **No review, no merge** (*default*; invariant 3): no file, an invalid file, `MET limit`, a non-zero exit (a timeout's
+    too) → `## Review` `none: <why>`, every op lands as under `pr`, and under `auto` `memory_merge` is not called:
+    `memory PR: no review (<why>); not merged (MEMORY_POLICY=auto), left open · <url>`. A continue's review runs again
+    on what is new, but **the reused PR merges only when every commit on `harness-memory/<run>` past main is a held
+    one**: the driver writes the trailer `Memory-review: held` into a facts commit whose every op a review held (under
+    `auto` after the verdict drop, under `pr` with no fact failed), and counts from the main sha `memory_base` fetched,
+    never a ref; any commit past it without the trailer leaves the PR
+    open, `memory PR: <sha12> on harness-memory/<run> was not held by a review; not merged …`. *Default*, the brief's
+    rule over the spec's §5, which had the continue merge the earlier segment's unreviewed commit with the new one
+    (found by R1-02's review; asked in the entry). The PR then waits for Michael. Rejected: a list of held heads in the
+    run record (a session can hide a planted line from `restrict` with a `.gitignore`) and `origin/<main>` as the
+    range's start (a session can move a local ref); the trailer lives in a commit only the driver can push.
+  - **The reviewer cannot move what lands from outside the tree**: it runs with no filesystem sandbox, so the sums of
+    every file the landing reads or compares against (the ops, the dry result and its texts, the bases, the input,
+    `ledger/memory-answers.jsonl`) are taken before its session and compared after it; a change commits nothing, the
+    same note as R1-01's guard (found by R1-02's review: rewriting the ops and the dry result together passed it).
+  - In the `--verdicts` replay a held add already in its section once a failed replace kept its line is dropped, and a
+    replay whose held facts would take the union of both PRs past the cap lands no fact at all (fail closed).
+  - `memory.json` gains `held`, `failed` and `merged_by` (`driver` when `memory_merge` merged it); the report's `Memory`
+    row ends `· review <h> held · <f> failed` or `· review none (<why>)`, nothing for an older file. `prompts/curator.md`
+    says a reviewer checks every op and that a `replace` keeping the subject beats an eviction.
 - **Rejected:** reviewing `memory-ops.json` raw (spends the reviewer on ops the gate drops anyway, and shows it a tree
   the driver would not write: an under-cap anchored add lands as a plain add since Decision 24); reviewing tier 3; a
   deny list of the reviewer's own (two arrays can drift; the floor is one); running the review on the landing
-  worktree itself (the landing must wait on the verdict under `auto`, R1-02, so the reviewer reads copies).
+  worktree itself (the landing must wait on the verdict under `auto`, R1-02, so the reviewer reads copies). R1-02: thin as an escalation to a stronger model (Opus is the review model); failed ops
+  dropped under `pr` too (the PR would be the reviewer's, not the curator's, and nothing would be left to override); a
+  failed op removed from the list before `apply` (the duplicate-key loser or an op the cap dropped could land in its
+  place, unseen); tier 3 reviewed (it lands nowhere); dropping failed rules by verdict (the rules PR is Michael's).
