@@ -176,7 +176,8 @@ check "memory review: a continue after no review reviews its new fact and leaves
   && hlog mn | grep -E " · memory review: 1 reviewed · 1 held · 0 failed$" > /dev/null && ! merged mn2 "$p" && [[ ! -f $p.merged ]] \
   && c=$(git -C "$T/origin.git" rev-list --reverse "$mnmain..harness-memory/mn" | head -1) && [[ -n $c ]] \
   && hlog mn | grep -xF -- "$(hlog mn | grep -F " · memory PR: ${c:0:12} on harness-memory/mn is not this segment'"'"'s commit; not merged (MEMORY_POLICY=auto), left open · $(url "$p")" | head -1)" > /dev/null \
-  && [[ $(hlog mn | grep -c " is not this segment'"'"'s commit; ") == 1 ]] && review "$p.body" | grep -xF -- "- facts/1 holds" > /dev/null && jq -e ".merged_by == null" "$(st mn)/memory.json" > /dev/null'
+  && [[ $(hlog mn | grep -c " is not this segment'"'"'s commit; ") == 1 ]] && review "$p.body" | grep -xF -- "- facts/1 holds" > /dev/null && jq -e ".merged_by == null" "$(st mn)/memory.json" > /dev/null \
+  && jq -se "map(select(.run == \"mn\" and .tier == \"facts\")) | length == 1 and .[0].review == \"the reviewer wrote no memory-review.json\" and .[0].held == 1" "$T/ledger/memory.jsonl" > /dev/null'
 
 # md under pr: a fact restating a rule Michael declined (a memory-answers.jsonl row): the reviewer fails its q4
 pol pr

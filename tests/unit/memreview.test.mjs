@@ -123,7 +123,7 @@ test("memreview.mjs: line is the one memory: line of the note and the card, fact
   assert.equal(line(thin, m), "memory: facts 1 held · 1 failed (facts/2: review too thin (2 of 4 rows)) · rules 0 held · 1 failed (rules/3: declined by Michael (old/1), q4) · PR https://example.test/pr/1 · rules PR https://example.test/pr/2");
   assert.equal(line(null, { ...m, review: "the reviewer hit a limit" }), "memory: review none (the reviewer hit a limit) · PR https://example.test/pr/1 · rules PR https://example.test/pr/2");
   assert.equal(line(null, { reviewed: 0, review: "nothing to review", pr: null }), "", "nothing to review (memory_json's shape)");
-  assert.equal(line(null, { reviewed: 0, review: "the review input failed (see run.log)", pr: "u" }), "", "no input, no session: nothing reviewed");
+  assert.equal(line(null, { reviewed: 0, review: "the review input failed (see run.log)", pr: "u" }), "memory: review none (the review input failed (see run.log)) · PR u · rules PR none", "every op landed unreviewed (R2's review, M5)");
   assert.equal(line(null, { applied: 2, pr: "u" }), "", "a memory.json before the review");
   assert.equal(heldFailed(3, 0), "3 held · 0 failed");
   const d = mkdtempSync(join(tmpdir(), "memline-"));

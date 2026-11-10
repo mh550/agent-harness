@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { answerRow } from "../../lib/memory.mjs";
 import { sameAsCli, mainOf } from "./cli-same.mjs";
-import { parseRunLog, redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine, memoryState, memoryView, memoryShown, memoryLine, graduation } from "../../lib/summary.mjs";
+import { parseRunLog, redSuite, redUnpass, failedRecheck, build, report, reviewSummary, laneSpans, conflicts, resolutions, suiteRuns, suiteRunsLine, flakers, flakes, fixRounds, fixRoundsLine, helperHealth, helperLine, helperNote, checksDiff, checksLine, memoryState, memoryView, memoryShown, memoryLine, memoryOverride, graduation } from "../../lib/summary.mjs";
 
 const fixture = () => JSON.parse(readFileSync(fileURLToPath(new URL("../fixtures/summary-report.json", import.meta.url)), "utf8"));
 // <summary> <prefix> → the report's first line starting with it, and its index
@@ -571,11 +571,11 @@ test("summary.mjs memory: build reads the review's keys, cost, wall and model; m
     assert.equal(JSON.stringify([m.reviewed, m.held, m.failed, m.review, m.merged_by, m.review_cost_usd, m.review_s, m.review_model, m.reviewed_ids, m.failed_ids]),
       '[3,2,1,"ok","driver",0.42,250,"opus",["facts/1","facts/2","rules/1"],["facts/2:q2"]]');
     assert.equal(memoryLine(m), "2 applied · 1 rules · 0 dropped · 1 proposals · PR https://example.test/pr/4 · rules PR none · review 2 held · 1 failed · $0.42 · 4 min");
-    // a memory.json from R1 (no cost keys): no session cost read, $0.00 and 0 min
+    // a memory.json from R1 (no cost keys): no session cost read, none printed (R2's review, M2)
     writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":3,"failed":0,"review":"ok","merged_by":null}\n`);
     const r1 = build("/nonexistent/p/w", "r", d).memory;
-    assert.equal(JSON.stringify([r1.review_cost_usd, r1.review_s, r1.review_model, "reviewed_ids" in r1]), "[0,0,null,false]");
-    assert.equal(memoryLine(r1).endsWith(" · rules PR none · review 3 held · 0 failed · $0.00 · 0 min"), true);
+    assert.equal(JSON.stringify(["review_cost_usd" in r1, "review_s" in r1, r1.review_model, "reviewed_ids" in r1]), "[false,false,null,false]");
+    assert.equal(memoryLine(r1).endsWith(" · rules PR none · review 3 held · 0 failed"), true);
     writeFileSync(join(d, "memory.json"), `{${base},"reviewed":3,"held":0,"failed":0,"review":"the reviewer hit a limit","merged_by":null,"review_cost_usd":0.05,"review_s":30,"review_model":"opus"}\n`);
     assert.equal(memoryLine(build("/nonexistent/p/w", "r", d).memory).endsWith(" · rules PR none · review none (the reviewer hit a limit)"), true);
     writeFileSync(join(d, "memory.json"), `{${base}}\n`);
@@ -679,24 +679,29 @@ test("summary.mjs graduation: earned over the last 8 reviewed facts PRs at 10 op
   const noise = [old, { ...rv("q1"), project: "q", held: 0, failed: 2 }, { ...rv("r1"), tier: "rules", held: 0, failed: 2, at: "2026-11-30T10:00:00Z" },
     { ...rv("u1"), reviewed: undefined, held: undefined, failed: undefined, review: undefined, at: "2026-11-30T10:00:00Z" }, rv("n1", { review: "the reviewer hit a limit", held: 0, at: "2026-11-30T10:00:00Z" })];
   assert.equal(graduation([...earn, ...noise], es, [], "p").word, "earned");
-  assert.equal(graduation(fail(prs([3, 3, 3, 3, 3, 3, 3, 3]), 0, 3), states(earn), [], "p").word, "not yet", "88 % (21 of 24)");
-  assert.equal(graduation(fail(prs([3, 3, 3, 3, 3, 3, 3, 3]), 0, 3), states(earn), [], "p").line, "auto: not yet (held 21 of 24 · 88 % · overrides 0 of 8 reviewed PRs · window 8)");
+  assert.equal(graduation(fail(prs([3, 3, 3, 3, 3, 3, 3, 3]), 0, 3), states(earn), [], "p").word, "not yet", "87 % (21 of 24)");
+  assert.equal(graduation(fail(prs([3, 3, 3, 3, 3, 3, 3, 3]), 0, 3), states(earn), [], "p").line, "auto: not yet (held 21 of 24 · 87 % · overrides 0 of 8 reviewed PRs · window 8)");
   assert.equal(graduation(prs([3, 3, 3, 3, 2, 2, 2, 2]), states(earn, "open", { g1: "closed", g2: "merged edited" }), [], "p").word, "not yet", "2 overrides");
   assert.equal(graduation(prs([3, 3, 3, 3, 2, 2, 2, 2]), states(earn, "open", { g1: "closed" }), [], "p").word, "earned", "1 override");
   assert.equal(graduation(prs([2, 1, 1, 1, 1, 1, 1, 1]), {}, [], "p").word, "not yet", "9 reviewed ops");
   assert.equal(graduation(prs([4, 4, 4, 4, 4, 4]), {}, [], "p").word, "not yet", "6 reviewed PRs: the window is not full");
   // the wording of a not yet: an override is Michael's merge over a fail; the driver's is none
   const six = fail(prs([2, 2, 1, 1, 1, 1]), 0), ss = states(six, "open", { g0: "merged unchanged" });
-  assert.equal(graduation(six, ss, [], "p").line, "auto: not yet (held 7 of 8 · 88 % · overrides 1 of 6 reviewed PRs · window 8)");
-  assert.equal(graduation(fail(prs([2, 2, 1, 1, 1, 1]), 0, 1, { merged_by: "driver" }), ss, [], "p").line, "auto: not yet (held 7 of 8 · 88 % · overrides 0 of 6 reviewed PRs · window 8)");
+  assert.equal(graduation(six, ss, [], "p").line, "auto: not yet (held 7 of 8 · 87 % · overrides 1 of 6 reviewed PRs · window 8)");
+  assert.equal(graduation(fail(prs([2, 2, 1, 1, 1, 1]), 0, 1, { merged_by: "driver" }), ss, [], "p").line, "auto: not yet (held 7 of 8 · 87 % · overrides 0 of 6 reviewed PRs · window 8)");
   // a closed PR whose run has a declined row is no override
   assert.equal(graduation(prs([3, 3, 3, 3, 2, 2, 2, 2]), states(earn, "open", { g1: "closed", g2: "closed" }), [{ run: "g2", project: "p", n: 1, tier: 2, verdict: "declined", why: "x", key: "k", at: "1" }], "p").word, "earned");
   // on auto: under 80 % held is revisit (a word, never a switch); at 80 % or more the same reading as under pr
   const low = fail(prs([3, 3, 3, 3, 2, 2, 2, 2]), 0, 3).map((r, j) => (j === 1 ? { ...r, held: 1, failed: 2 } : r));   // 15 of 20: 75 %
   assert.equal(graduation(low, {}, [], "p", "auto").word, "revisit");
-  assert.equal(graduation(low, {}, [], "p", "auto").line, "auto: revisit (held 15 of 20 · 75 % · overrides 0 of 8 reviewed PRs · window 8)");
+  assert.equal(graduation(low, {}, [], "p", "auto").line, "auto: revisit (held 15 of 20 · 75 % · overrides 0 of 8 reviewed PRs · window 8 · unknown 8)");
   assert.equal(graduation(low, {}, [], "p", "pr").word, "not yet");
   assert.equal(graduation(earn, es, [], "p", "auto").word, "earned");
+  // gh could not answer for a PR in the window: its override is unread, so never earned (R2's review, M1)
+  assert.equal(graduation(earn, {}, [], "p").line, "auto: not yet (held 19 of 20 · 95 % · overrides 0 of 8 reviewed PRs · window 8 · unknown 8)");
+  assert.equal(graduation(earn, { ...es, [earn[3].url]: "unknown" }, [], "p").line, "auto: not yet (held 19 of 20 · 95 % · overrides 0 of 8 reviewed PRs · window 8 · unknown 1)");
+  // the per cent is rounded down, so it never reads at a threshold the counts missed (R2's review, M3)
+  assert.equal(graduation(fail(prs([4, 4, 4, 4, 4, 3, 3, 3]), 0, 3), states(earn), [], "p").line, "auto: not yet (held 26 of 29 · 89 % · overrides 0 of 8 reviewed PRs · window 8)");
   assert.equal(graduation([], {}, [], "p").line, "auto: not yet (held 0 of 0 · 0 % · overrides 0 of 0 reviewed PRs · window 8)");
 });
 
@@ -708,7 +713,40 @@ test("summary.mjs memory: memory with a project and a policy ends with the auto:
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "1", "p"]), { rc: 0, out: ["w3", "w2", "w1"].map(r => `https://example.test/pr/${r}\n`).join("") });
     assert.deepEqual(await sameAsCli("summary.mjs", ["memory-urls", join(d, "m.jsonl"), "1"]), { rc: 0, out: "https://example.test/pr/w3\n" });
     const out = (await sameAsCli("summary.mjs", ["memory", join(d, "m.jsonl"), join(d, "none.jsonl"), "1", "p", join(d, "none.jsonl"), "auto"])).out.trim().split("\n");
-    assert.equal(out.at(-1), "auto: not yet (held 6 of 6 · 100 % · overrides 0 of 3 reviewed PRs · window 8)");
+    assert.equal(out.at(-1), "auto: not yet (held 6 of 6 · 100 % · overrides 0 of 3 reviewed PRs · window 8 · unknown 3)", "no gh answers: three states unread");
     assert.equal(out.length, 6, "one row, four tally lines, the auto: line");
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// R2's review, I1: a continue reuses its PR, so the PR's row counts every segment that landed a commit on it
+test("summary.mjs memory: memory-line on a continue's reused PR sums each landed segment's review, a rerun of one replacing its own; one unreviewed segment makes the row unreviewed", async () => {
+  const d = mkdtempSync(join(tmpdir(), "mrm-"));
+  try {
+    const m = join(d, "memory.jsonl"), pr = "https://example.test/pr/4", base = { ops: 2, applied: 2, dropped: 0, proposed: 0, pr, review_cost_usd: 0.1, review_s: 60, review_model: "opus" };
+    const seg = (k, mem) => { writeFileSync(join(d, `s${k}.json`), JSON.stringify({ ...fixture(), continuations: k, memory: { ...base, ...mem } })); return sameAsCli("summary.mjs", ["memory-line", join(d, `s${k}.json`), m]); };
+    const row = () => JSON.parse(readFileSync(m, "utf8").trim().split("\n").at(-1)), pick = r => JSON.stringify([r.reviewed, r.held, r.failed, r.review, r.failed_ids, r.fails_dropped]);
+    const failed = { reviewed: 2, held: 1, failed: 1, review: "ok", merged_by: null, reviewed_ids: ["facts/1", "facts/2"], failed_ids: ["facts/2:q2"] };
+    const held = { applied: 1, reviewed: 1, held: 1, failed: 0, review: "ok", merged_by: null, reviewed_ids: ["facts/1"], failed_ids: [] };
+    await seg(0, failed); await seg(1, held);
+    assert.equal(readFileSync(m, "utf8").trim().split("\n").length, 1, "one row per PR");
+    assert.equal(pick(row()), JSON.stringify([3, 2, 1, "ok", ["facts/2:q2"], false]), "segment 0's failed op is still in the PR");
+    assert.equal(row().applied, 1, "the counts stay the latest segment's");
+    assert.equal(memoryOverride(row(), "merged unchanged"), "merged against a fail");
+    await seg(1, held);
+    assert.equal(pick(row()), JSON.stringify([3, 2, 1, "ok", ["facts/2:q2"], false]), "a rerun of one segment replaces its own part");
+    await seg(2, { applied: 0, ops: 0 });
+    assert.equal(pick(row()), JSON.stringify([3, 2, 1, "ok", ["facts/2:q2"], false]), "a segment that landed nothing leaves the PR's review as it was");
+    // auto dropped segment 0's fails; segment 1's fail is in the PR: no fails_dropped for the PR
+    rmSync(m); await seg(0, { ...failed, fails_dropped: true }); await seg(1, { ...held, held: 0, failed: 1, failed_ids: ["facts/1:q1"] });
+    assert.equal(pick(row()), JSON.stringify([3, 1, 2, "ok", ["facts/2:q2", "facts/1:q1"], false]));
+    rmSync(m); await seg(0, { ...failed, fails_dropped: true }); await seg(1, held);
+    assert.equal(row().fails_dropped, true, "every segment's fails dropped");
+    // segment 0 not reviewed: the PR carries an unreviewed commit, so the row reads unreviewed and no close is against a hold
+    rmSync(m); await seg(0, { ...failed, held: 0, failed: 0, failed_ids: [], review: "the reviewer wrote no memory-review.json" }); await seg(1, held);
+    assert.equal(row().review, "the reviewer wrote no memory-review.json");
+    assert.equal(memoryOverride(row(), "closed"), null);
+    assert.match(memoryView([row()], {}, 10)[0], / · unreviewed · /);
+    rmSync(m); await seg(0, { ops: 2, applied: 2 }); await seg(1, held);   // a segment before R2's review fields
+    assert.equal(memoryOverride(row(), "closed"), null, "an old segment's commit is unreviewed");
   } finally { rmSync(d, { recursive: true, force: true }); }
 });

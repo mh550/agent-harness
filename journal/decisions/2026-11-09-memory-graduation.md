@@ -62,8 +62,8 @@ overrides, the rule and the card's text by R2-02); spec
     questions are wrong, and the falsifier triggers at a third. The hold counts are the ledger's rows; only the override
     needs gh's state. A project on `auto` by its config (`harness memory <path>` reads the user's and the project's
     config; a bare name the user's alone, *default*) reads `revisit` under **80 %** held: a word, never a switch,
-    since turning `auto` off is Michael's. Wording: `auto: not yet (held 7 of 8 · 88 % · overrides 1 of 6 reviewed PRs ·
-    window 8)` (the per cent rounded; the thresholds compared exactly). This replaces decisions/2026-11-07-memory-policy's
+    since turning `auto` off is Michael's. Wording: `auto: not yet (held 7 of 8 · 87 % · overrides 1 of 6 reviewed PRs ·
+    window 8)` (the per cent rounded down, R2-03; the thresholds compared exactly). This replaces decisions/2026-11-07-memory-policy's
     "about five merged unchanged" (its `Updated in place 2026-11-09` line); `merged unchanged` stays a column.
   - **The card's text** is `memreview.mjs line <verdicts.json> <memory.json>`, one function: `memory: facts 1 held · 1
     failed (facts/2: 7 files: …, q2) · rules 1 held · PR <url> · rules PR <url|none>`, `memory: review none (<why>) · PR …`
@@ -76,10 +76,43 @@ overrides, the rule and the card's text by R2-02); spec
     routed kind `memory`, its `title` `[<run>] memory: <held> held · <failed> failed`, its `body` this line, its `click`
     the facts PR, and one object field `memory` beside `context`: `{pr, rules_pr, policy, reviewed, held, failed,
     failures: [{id, section, q, reason}], state}`. The v1 contract and `lib/notify.mjs`'s kind list are unchanged.
+- **Choice (R2-03, R2's review: `docs/plans/2026-11-09-R2-review.md`, 0 Critical, 1 Important, 8 Minor):**
+  - **A reused PR's row counts every segment** (I1). A continue reuses its facts PR, so the PR carries every segment's
+    commits; `memory-line` replaced its row with the last segment's review alone, so a merge over segment 1's fail read
+    as no override and a close over segment 1's unreviewed commit as `closed against a hold`. `memoryMerge` now keeps
+    each segment's part under `segments` (keyed by the summary's `continuations`, so a rerun of one segment's `ledger()`
+    replaces its own part), counts only segments that landed a commit on the PR (`applied`, or `rules` for the rules row,
+    over 0), sums `reviewed`/`held`/`failed` and joins `failed_ids`; one landed segment without a review makes the row
+    unreviewed (its `review` that segment's why); `fails_dropped` is true only when every failed op was dropped. The
+    counts and sections stay the latest segment's, as before (`1/3/0` after mp's continue).
+  - *Default*: a PR in the `auto:` window that gh gave no state for (offline, unauthenticated) is an override unread:
+    never `earned`, the line ending `· unknown <k>` (M1); `revisit` reads the rows alone, so it stands.
+  - The per cent is rounded down (M3), so `90 %` never sits beside a `not yet` the exact compare gave (26 of 29).
+  - A `memory.json` from R1 (`reviewed` but no cost or wall) prints no `$0.00 · 0 min` (M2): a session ran, and its
+    cost is in `Spend by role`.
+  - An input that failed (`memreview.mjs input` threw) lands every op unreviewed, so `line` prints `memory: review none
+    (the review input failed (see run.log)) · PR …` (M5); only `nothing to review` prints nothing.
+  - R1-02's counts note (`memory review: <n> reviewed · <h> held · <f> failed`) keeps its own text in bash, and the
+    rules tier's part of `line` its own (its failed count only when one failed): the three uses this decision names
+    (the `memory:` note, `## Review`, the report's tail) are `heldFailed` (M6).
+  - Not changed: `harness memory .` or `..` reads the user's config alone (M7: a path is a name with a `/`, the default
+    above; a fix wants its own stub check of a project config, left for a later run); the reviewer's cost note at
+    equal cents (`$0.45 over the curator's $0.45`, M3's second half: it is over at full precision).
+- **Checks** (decisions/2026-11-03-trim): R2 removed two names, each kept by its successor:
+  - `harness memory: the run's facts and rules PRs are a line each with its tier, then one tally line per tier; the
+    facts PR merged unchanged after its merge` → `harness memory: the run's facts and rules PRs are a line each with its
+    tier and its review's held and failed, then one tally line per tier and the review: tally; the facts PR merged
+    unchanged after its merge, and with a project the auto: line` (memory-branch.sh, the same check extended).
+  - `summary.mjs memory: build reads the review's keys and memoryLine ends with the review's counts; nothing for a
+    memory.json without reviewed` → `summary.mjs memory: build reads the review's keys, cost, wall and model;
+    memoryLine ends with held, failed, dollars and minutes, none (<why>) without a review, nothing for a memory.json
+    without reviewed` (unit).
+  - R2's count: 16 names added, 2 removed (R2-01 and R2-02 15, R2-03 one: `summary.mjs memory: memory-line on a
+    continue's reused PR sums …`), against the budget of 25.
 - **Rejected:** a `Review` row of its own for cost and time (two rows for one concern); a stop or an unmerged PR on a
   dear reviewer (the cost is read, not enforced, until the Predictions are); the run's whole review counts in both
   ledger rows (the rules PR's held and failed would count the facts' ops); parsing the question out of the reason's
   `(q<n>)` (the verdict knows it); a sub-command in `lib/metrics.mjs` (`cost` already reads a transcript's cost). For the rule (R2-02): a window of 5 PRs (one reviewer failure empties a fifth of it); 95 % (one fail
   in twenty: a project with three ops a run would wait seven runs past its first fail); zero overrides (one mistaken
   click would bar a project for 8 PRs); a hard switch that turns `auto` off under 80 % (the policy is Michael's, the
-  line only reads it); a second PR state for "closed, not an override" (the decline's `--why` already says it).
+  line only reads it); a second PR state for "closed, not an override" (the decline's `--why` already says it). For R2-03: a per-commit map in place of the per-segment one (the segment is what `ledger()` reruns, and one segment makes one facts commit); a sum of the counts and sections too (they are the curator's work in that segment, which the line has always shown).

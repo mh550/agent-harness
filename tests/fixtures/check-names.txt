@@ -1736,6 +1736,7 @@ summary.mjs memory: build reads memory.json's keys, the rules PR's among them, n
 summary.mjs memory: build reads the review's keys, cost, wall and model; memoryLine ends with held, failed, dollars and minutes, none (<why>) without a review, nothing for a memory.json without reviewed
 summary.mjs memory: ledger-line carries memory; memory-line is one memory.jsonl row per memory PR, a continue on the same PR replacing it
 summary.mjs memory: memory with a project and a policy ends with the auto: line, memory-urls also lists the window's PRs past --last
+summary.mjs memory: memory-line on a continue's reused PR sums each landed segment's review, a rerun of one replacing its own; one unreviewed segment makes the row unreviewed
 summary.mjs memory: memory-line writes the review's fields into the facts row and the rules row, each tier's counts from its own ids; an unreviewed summary's rows have none
 summary.mjs memory: memoryState reads unchanged, edited, closed and open from gh's fields
 summary.mjs memory: memoryView prints the tier in each line and one tally line per tier, a row without tier a facts row
