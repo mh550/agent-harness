@@ -11,6 +11,21 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-09-memory-reviewer.md` (R1) and `journal/decisions/2026-11-09-memory-graduation.md` (R2).
 
+### 2026-11-10 02:13 · R2-02 · passes
+
+harness memory: held/failed columns (unreviewed for old rows or a review none), overrides (memoryOverride: merged against a fail / closed against a hold), review: tally, auto: line via graduation (8 PRs, 10 ops, 90 %, ≤1 override, revisit <80 % on auto); memreview.mjs line + heldFailed, noted once after both PR notes; fails_dropped; decision, docs.
+
+- **Files:** lib/summary.mjs, lib/memreview.mjs, lib/memory.sh, lib/record.sh, bin/harness, tests/unit/summary.test.mjs, tests/unit/memreview.test.mjs, tests/checks/memory-review.sh, tests/checks/memory-branch.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, journal/decisions/2026-11-09-memory-graduation.md, +3 more
+- **Verified:** unit tier 586/586; bash tests/run.sh memory-review memory-branch 61/61 (memory-review 28/28 120.8 s, memory-branch 32/32 129.4 s); a mutation run (note removed, overrides off) turned the two new stub checks red (26/28); fast tier green 1122; git diff --stat -- lib/notify.mjs empty
+- **Tests:** 1992 → 1999
+- **Discovery** (affects R2-03): memory.json and the facts row gain fails_dropped (true when auto's landing dropped the failed facts by verdict): a hand merge of such a PR is no override (review I2)
+- **Discovery** (affects R2-03): memreview.mjs line prints nothing for reviewed 0 (memory_json writes review 'nothing to review' there, not ok); the note goes only on the path that reaches memory_json at memory_pr's end
+- **Discovery** (affects R2-03): memory-review.sh now 120.8 s with memory-branch beside it (4 jobs); its tiers-table row (115.4) wants a re-time alone in R2-03
+- **Discovery** (affects R2-03): harness memory <path> reads the policy via harness_config in a subshell; a bare name (no /) reads the user's config alone
+- **Question for Michael:** Defaults recorded in decisions/2026-11-09-memory-graduation: the auto window must hold a full 8 reviewed facts PRs before earned; a review none reads unreviewed; an edited PR's override line reads 'closed against a hold' (the spec's two words); any declined row of the run exempts a closed PR of either tier; the rules tier's failed count shows in the memory: line only when one failed. Keep them? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-1/journal/decisions/2026-11-09-memory-graduation.md
+- **Proposed change:** R2-03 step 1's `grep -rn 'held ·' lib/` will also show record.sh's R1-02 counts note (`memory review: N reviewed · H held · F failed`, bash): heldFailed in memreview.mjs is the one JS renderer; the bash note stays by R2-02 step 3 (R1-02's counts note stays first)
+- *05-R2-02 · claude-opus-5-5*
+
 ### 2026-11-10 01:49 · R2-01 · passes
 
 memory.json gains review_cost_usd, review_s, review_model, reviewed_ids, failed_ids (facts/2:q2; verdicts now carry q); summary carries them; Memory row ends `review 3 held · 0 failed · $0.42 · 4 min`; run.log's memory review is a session, memory-review after curator in Spend by role/Time; memory.jsonl rows per tier; over-the-curator note; STUB_MEMORY_REVIEW_COST; decision, docs.
