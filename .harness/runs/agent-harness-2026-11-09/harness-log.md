@@ -1,1 +1,3 @@
 - 2026-11-09 22:58 · test count: parsed (generic)
+- 2026-11-09 23:05 · feature list written: 0/6 passing
+- 2026-11-09 23:05 · lint: 2 findings (review-small: 2); the list is not edited — first: R1-03 step - review-small
