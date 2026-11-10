@@ -11,6 +11,21 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-09-memory-reviewer.md` (R1) and `journal/decisions/2026-11-09-memory-graduation.md` (R2).
 
+### 2026-11-10 01:06 · R1-03 · passes
+
+R1 review: 0 Critical, 3 Important, 8 Minor. Fixed: auto merges only this segment's own commit (trailer was forgeable, I1); a hook/filter-changed commit is never pushed (I2); timeout-after-file check (I3); M2 M3 M4 M7; verdicts-only spawn. M5, M6 listed. Docs, decisions, tiers row (115.4 s) level.
+
+- **Files:** lib/record.sh, lib/driver.sh, lib/curator.mjs, prompts/memory-review.md, tests/stub-claude.sh, tests/checks/memory-review.sh, tests/checks/memory-branch.sh, tests/unit/curator.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/plans/2026-11-09-R1-review.md, docs/architecture.md, +4 more
+- **Verified:** Red first: the hook check and the timeout loop failed on the old code; the replaced mw3 check failed with HEAD's record.sh (the forged held commit merged); the curator body unit test failed. Then bash tests/run.sh memory-review curator-run memory-branch: 68/68 checks passed; memory-review alone (TEST_JOBS=1) 115.4 s, 22/22; check.sh --fast green, 1116 tests; bash -n / node --check clean.
+- **Tests:** 1983 → 1985
+- **Dead end:** STUB_MEMORY_REVIEW=hold-exit as a plain exit 1 — no result line plus exit 1 under 120 s reads as MET limit (no result after <n> s), so it never reached driver.sh's exit branch; exit 124 (the driver's timeout) does
+- **Discovery** (affects R2-01, R2-02, run): Under auto a facts PR merges only when its one commit past MEM_MAIN is this segment's; the Memory-review: held trailer is gone (R1-03, I1)
+- **Discovery** (affects R2-01, R2-02): memory.json review can read 'the landing differs from the dry apply' (the sums guard's refusal) besides ok and the no-review reasons
+- **Discovery** (affects project): a stub exit 1 with no result line under 120 s reads as MET limit; only exit 124 reaches a role's failed-exit branch (agent-harness-2026-11-09 2026-11-10)
+- **Question for Michael:** Default taken (I1): under MEMORY_POLICY=auto the driver now merges a facts PR only when its one commit past main is the commit this segment pushed, so N2-02's continue (a reused PR whose body refresh failed) no longer merges the earlier commit with its own and waits for you. Keep that, or have the next segment's reviewer also read the earlier commit's diff as a carried/<sha12> item so it can merge? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-0/journal/decisions/2026-11-09-memory-reviewer.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-0/docs/plans/2026-11-09-R1-review.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-09/slot-0/lib/record.sh
+- **Proposed change:** A backlog item for the review's M5: give each memory-review item the gate's union cap reading (both PRs) so Q3 does not fail an eviction the union made due
+- *03-R1-03 · claude-opus-5-5*
+
 ### 2026-11-10 00:30 · R1-02 · passes
 
 memreview validate/verdicts/render, evidenceTable (renderEntry byte-identical), apply --verdicts (failed facts dropped at the write, held ones replayed and capped), body --review; ## Review in both bodies and memory.md, notes, memory.json keys; auto lands held facts only and merges only Memory-review: held commits; inputs summed around the session.
