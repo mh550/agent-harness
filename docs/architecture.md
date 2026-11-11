@@ -101,7 +101,7 @@ view of the plan's usage limit. When a queue ends, one read-only **debrief** ses
 | `prompts/desk.md` | ~80 | The desk's instructions (a run block and a debrief block): read `COLUMNS=60 harness needs`/status/INBOX/progress, check safely, one numbered brief, `harness answer` and the continue only after Michael's yes, the never-list |
 | `skills/harness-answer/SKILL.md` | ~45 | The answer desk's instructions for an interactive session Michael opens (§17); installed by a symlink into `~/.claude/skills/` |
 | `templates/user/config.sh` | ~15 | The documented `~/.config/harness/config.sh` (every line commented) |
-| `templates/user/{settings.permissions.json,CLAUDE.md,config.merge-policy.sh}` | | The permissions policy (`decisions/2026-10-24-permissions-policy`): the user settings, the `~/.claude/CLAUDE.md` section that is its one home, and `MERGE_POLICY=auto` |
+| `templates/user/{settings.permissions.json,CLAUDE.md,config.merge-policy.sh}` | | The permissions policy (`decisions/2026-10-24-permissions-policy`): the user settings, the `~/.claude/CLAUDE.md` section (what every conversation may do: the allows, the denies and what they protect, a roster of the gated and live projects; nothing a project's own `CLAUDE.md` or a prompt says: `decisions/2026-11-11-user-file-homes`), and `MERGE_POLICY=auto` |
 | `setup/apply-2026-10-24.sh` | ~110 | Installs those three (`--dry-run` shows every diff; backs up to `~/projects/backups/`) and moves the n8n MCP servers to n8n-home's `.mcp.json`; Michael runs it, the harness never does |
 | `prompts/resolve.md` | ~55 | The resolve session's instructions: keep both sides' intent, edit and `git add` only the conflicted files, no marker left, only the suite's subset for those files, never commit; end `RESOLVED: <file>: <how>` per file or `UNRESOLVED: <why>`. *This session* names the milestone, its features, what merged in, the conflicted files and each side's commits touching them |
 | `prompts/curator.md` | ~45 | The curator session's instructions: read `entries.jsonl` with `jq` (each entry's `project` discoveries and `proposed_changes`, a later `resolved` retiring one) and the base texts in `{{MEMORY_BASE}}` (`CLAUDE.md`, `.claude/CLAUDE.md` and `.harness/project.md`, each when present: an op's `file` is one of the three, `.claude/rules/` guarded but never a target); write one file, `{{RUN_DIR}}/memory-ops.json`, the ops with their `from`; the cap checked per op (deletes, replaces, anchored adds, plain adds; an add past 15 Gotchas or 120 lines dropped alone, an anchored add that fits appended with its anchor kept); tier 1 (`## Gotchas`) applied on `harness-memory/<run>`, tier 2 (every other section) a diff on its own `harness-rules/<run>` branch in a `memory rules: <run>` PR that Michael merges or closes, never the driver; the protected headings tier 3, proposals only, in both PR bodies; edit nothing else, and no push or `gh` (the driver denies both) |
@@ -658,7 +658,10 @@ worktree is untrusted). The harness never writes either, and agents can't (the a
 and worktrees, `docker compose`) and the closed deny list live in `~/.claude/CLAUDE.md` § "Git, merges and
 permissions" and the user settings, installed from `templates/user/` by `setup/apply-2026-10-24.sh`. A project file
 holds only its own gates and the narrow allows its runs need (portfolio_site's deploy gate, n8n-home's and
-dj-crate-streaming's live protocols, rane-one-mixxx's hardware); the others have none.
+dj-crate-streaming's live protocols, rane-one-mixxx's hardware); the others have none. The user file carries only what
+is true of every conversation (`decisions/2026-11-11-user-file-homes`): how a change lands (the session merges and
+cleans up; the harness in a run) is each project's `CLAUDE.md` `## Where things go` (`templates/project/CLAUDE.md`),
+and the run-time rules (stay in the worktree, the harness merges, no secrets, the live protocol) are the prompts'.
 
 ## 11. Measurement and the improvement loop
 

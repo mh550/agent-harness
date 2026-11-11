@@ -360,7 +360,10 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   harness-requests.path harness-requests.service`; the request files stay (decisions/2026-10-22-request-inbox).
 - **Permissions:** the policy (agents merge, push and clean up; only the irreversible is denied; production is gated
   per project) lives in `~/.claude/CLAUDE.md` § "Git, merges and permissions" and the user settings. Install or
-  refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`.
+  refresh both from `templates/user/` with `bash setup/apply-2026-10-24.sh --dry-run`, then without `--dry-run`. The
+  user file says only what holds in every conversation (the allows, the denies, which projects are gated or live); how a
+  change lands is each project's `CLAUDE.md` § Where things go, and a run's rules are its prompt
+  (`decisions/2026-11-11-user-file-homes`).
 - **Answering from the phone:** install the skill once, `ln -s ~/projects/agent-harness/skills/harness-answer ~/.claude/skills/`.
   Ask a Claude session "answer the harness": it runs `harness needs`, checks what it safely can (variable names, never
   values), proposes, and runs `harness answer` only after your yes. When another run of the same project is alive it
