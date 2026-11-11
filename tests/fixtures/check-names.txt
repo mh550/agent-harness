@@ -67,6 +67,7 @@ a declined request's stderr is dropped: the spawn says it, once
 a deps dir gc can't measure or delete is said and gc goes on; a symlinked deps dir is never followed
 a desk that cannot start never changes the run
 a driver killed with SIGTERM: its EXIT trap and the lanes' leave no helper
+a driver that gets a hangup ends with the hangup reason through the EXIT trap: ended, harness-log.md, exit 129
 a failed or hung runner gc is logged (killed at HARNESS_GC_TIMEOUT) and never stops the debrief
 a failed park post is noted and committed at once
 a failed post is noted and the run goes on
@@ -144,6 +145,7 @@ a session that dies at startup: failed, and no usage-limit window for the box
 a session that leaves a process gets the left-1-process note (STUB_LEAVE_PROCESS=1)
 a session whose entry says passes with the list at false is a claim gap, named with the id
 a session's edits to the journal are restored (E4 review F1)
+a session's environment carries no TMUX or TMUX_PANE while the driver's does (the initializer's and the coding session's recorded)
 a spec check that fails without a line parks with a reason, never an empty one
 a stale green marker is caught at verify: M1 red, not tagged
 a stdin-fed call never lets main read the request pipe: the next ask is answered by the same helper; empty stdin leaves the file
@@ -1202,6 +1204,7 @@ needs card verify_recheck: from its fixture, every field filled (why of 2-4 sent
 needs card verify_red: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card verify_thin: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card: a run driver_crash with an end_reason fact takes it as headline and title; without one the default stays
 needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
 needs cards: 17 fixtures, one per reason, and a reason without a template is exit 1
 needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md
@@ -1831,6 +1834,7 @@ the driver's and a lane's EXIT traps kill their helper by name (SIGTERM's check 
 the driver's continuation after a session cap is automatic
 the given-up card says the re-check sent it back and the told retry did not set passes
 the given-up card's why carries the re-check and the claim gap in place of "its entries say what failed"
+the hangup opens driver_crash whose card carries the hangup reason: headline, title and harness needs, needs.md committed
 the helper killed between two calls: the next call is a spawn (+1), the spawn's bytes, one helper restarted: line
 the helper note is the coordinator's at its named ends (before each summary build of finish, harness merge's end): never helper_failed's, which only writes run.log, and never the EXIT trap's
 the init and the sessions see HARNESS_CACHE (XDG_CACHE_HOME/harness/<project>), created
