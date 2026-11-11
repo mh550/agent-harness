@@ -1,0 +1,2 @@
+[{"id":"verify-question-noise","title":"Class recorded questions as info vs blocking so default-taken notes don't pile up as needs","evidence":"3 of 7 sessions (V2-01, V2-03, V2-04) recorded 'Default taken: … keep?' questions on passing features"},
+{"id":"suite-time-budget","title":"Warn when a session runs the full suite more than once","evidence":"V2-01 and V2-03 each ran the suite 2x (267 s, 275 s) despite the fast-tier-once rule"}]
