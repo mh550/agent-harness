@@ -57,3 +57,6 @@
 - 2026-11-11 00:12 · run ended (done): 7/7 passing · 10 sessions (10 real) · 7 features passed · $34.38 · 2.8 h · by kind: init 1 ($3.94), coding 7 ($26.42), verify 2 ($4.02) · by model: claude-fable-5-1 1 ($3.94), claude-opus-5-5 9 ($30.44)
 - 2026-11-11 00:12 · services stopped (done)
 - 2026-11-11 00:12 · services stopped (done)
+- 2026-11-11 00:13 · curator: session denied Bash(git push:*), Bash(gh:*)
+- 2026-11-11 00:13 · memory: 1 ops · 1 facts · 0 rules · 0 dropped · 0 proposals
+- 2026-11-11 00:13 · memory: evicted "- ask and its spawn can both fail, so an .mjs answer may be empty: give the bash" for add ## Gotchas
