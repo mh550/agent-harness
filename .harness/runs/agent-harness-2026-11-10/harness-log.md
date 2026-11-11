@@ -19,3 +19,6 @@
 - 2026-11-10 21:37 · context.md for V1-03: 7243 bytes
 - 2026-11-10 21:53 · V1-03: suite ran 1x (133 s) in the session
 - 2026-11-10 21:53 · V1-03 · claude-opus-5-5 · passes=true · 15 min · 3/7 passing
+- 2026-11-10 21:53 · merged main into harness-lane/agent-harness-2026-11-10/V1
+- 2026-11-10 21:53 · verify V1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-10 22:06 · context.md for V1: 10186 bytes
