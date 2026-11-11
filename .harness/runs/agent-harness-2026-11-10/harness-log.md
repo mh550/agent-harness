@@ -69,3 +69,6 @@
 - 2026-11-11 00:14 · memory: facts 0 held · 1 failed (facts/1: 4 files: docs/architecture.md:81, lib/record.sh:499, tests/unit/curator.test.mjs:215, tests/checks/no-answer.sh:5, q2) · rules 0 held · PR https://github.com/mh550/agent-harness/pull/181 · rules PR none
 - 2026-11-11 00:14 · summary.json and report.md kept in the state dir (harness report reads them after gc)
 - 2026-11-11 00:14 · record PR merged into main · https://github.com/mh550/agent-harness/pull/182
+- 2026-11-11 00:14 · backlog: 0 new, 2 seen again
+- 2026-11-11 00:14 · ledger: memory PR https://github.com/mh550/agent-harness/pull/181 in memory.jsonl (1 applied · 0 dropped · 0 proposals)
+- 2026-11-11 00:14 · scratch removed: /tmp/harness/agent-harness/agent-harness-2026-11-10 (in the state dir: init.out check-last.out)
