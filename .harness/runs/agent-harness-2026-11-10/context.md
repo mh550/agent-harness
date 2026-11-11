@@ -1,9 +1,14 @@
-# Context pack for `V2-01`
+# Context pack for `V2-02`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
+- Discovery (V2-01, affects V2-02): requests.sh one()'s ok branch runs every verb but answer as a continue: V2-02's v2 branch must come before it; today v2 never reaches ok there because --memory is not passed → entries.jsonl:6
+- Discovery (V2-01, affects V2-02): validate prints for a v2 request: pr, review (the row's review, - when none), why 1|0, after run; the why is in <out>/why; result --pr <url|-> makes the result v2 (--state merged|closed|-) → entries.jsonl:6
+- Discovery (V2-01, affects V2-02, V2-03): request fixtures v2 use run r1, facts PR https://example.test/pr/1, rules PR /pr/2 (stub-gh URLs); memory-requests.sh builds ledger/proj/r1/memory-result.json via curator.mjs apply on corrected.* (no rules[]: V2-02 needs a rules op) → entries.jsonl:6
+- Discovery (V2-01, affects V2): request-files.sh's v2 answer case now expects 'v 2 carries merge or close' (the old 'v is not 1 (this harness reads request v1)' is gone) → entries.jsonl:6
+- Discovery (V2-01, affects V2-04, V2-02): V2-04: a run-level decline is not tied to a facts row of ledger/memory.jsonl, and declinedRuns matches by run, so it also excuses a closed rules PR of that run (spec design; review M2) → entries.jsonl:6
 - Discovery (V1, affects run): feature_list V1-02 step 1 says the record's memory-event.json equals the POSTed body and step 2 says Title '1 held · 1 failed': the built design is memory-event.json == body.memory and '2 held · 1 failed' (rules/1 counted); V2 steps reading either should use the built shape → entries.jsonl:5
 - Discovery (V1-03, affects V2): M1 left in code: memory-event.json in the record is removed only at memory_pr's start; a fix belongs beside finish's memory.json rm (driver.sh), a finish edit → entries.jsonl:4
 - Discovery (V1-03, affects V2): notify.mjs ROUTED/ROUTED_V2 are mirrored by notify.sh's case arms; notify.test.mjs's ROUTED test parses that line by regex: keep its shape or update the regex → entries.jsonl:4
@@ -24,26 +29,21 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## What it builds on
 
-- 2026-11-10 21:09 · V1-01 · passes: notify.mjs: KINDS gains memory, ROUTED_V2 exported, buildEvent v2 (14th key memory, v 2) for kind=memory only, memory= refused elsewhere; memreview.mjs card and title (pure, CLI). v2 fixture made from the stub-run files (command in notify.test.mjs, bytes pinned); v1 fixture untouched, v1 kinds' bytes pinned by sha256. Docs, decision file.; tests 1123 → 1130; files lib/notify.mjs, lib/memreview.mjs, tests/unit/notify.test.mjs, tests/unit/memreview.test.mjs, tests/fixtures/n8n-event-v2-memory.json, … → entries.jsonl:2
-- 2026-11-10 21:37 · V1-02 · passes: memory_pr ends with memory_event when a PR exists and the memory: line is non-empty: memreview.mjs card → memory-event.json in the record, one notify kind=memory. notify.sh routes memory only with EVENT_URL and EVENT_V2=1 (v2, no bundle), else ntfy, no note. EVENT_V2 in config and template; stub curl 422; card survives a failed input. memory-event.sh (8 runs, 7 checks), docs, decision rows.; tests 1130 → 1131; files lib/notify.sh, lib/record.sh, lib/config.sh, lib/memreview.mjs, templates/user/config.sh, … → entries.jsonl:3
-- 2026-11-10 21:53 · V1-03 · passes: Opus review of V1 (docs/plans/2026-11-10-V1-review.md): 0 Critical, 0 Important, 4 Minor; five invariants hold. Fixed: docs level (memory-event.json lifecycle, memory_event writer, sizes, F3d tense), EVENT_V2 '1 exactly', ROUTED unit test now reads notify.sh's routing arms (renamed, failed on a mutation first), notify.mjs event CLI uses buildEvent's refusals. V1 checks +15 ~1 −0 recorded.; tests 1131 → 1131; files docs/plans/2026-11-10-V1-review.md, docs/architecture.md, journal/decisions/2026-11-10-review-surface-event.md, lib/notify.mjs, lib/notify.sh, … → entries.jsonl:4
+- 2026-11-10 22:42 · V2-01 · passes: requests.mjs v2: merge/close on a ledger/memory.jsonl PR of the request run (--memory read in node), pr URL shape first, close why ≤300 one line, merge why refused; 12-key result (pr, state), pr= in requests.log, validate pr/review/why lines. Run-level decline: harness memory decline <run> --why (n/key null); latestAnswers keeps it, apply ignores it, answersText renders it. Docs, decision.; tests 1135 → 1149; files lib/requests.mjs, lib/memory.mjs, lib/memory.sh, lib/curator.mjs, bin/harness, … → entries.jsonl:6
 
 ## Lately in the run
 
 - 2026-11-10 22:25 · verify V1 · passes: V1-01, V1-02, V1-03 hold. Full suite 2019/2019 (823 s), fast tier 1135/1135, event-hook event-run memory-event memory-review 59/59. v1 bytes: origin/main's buildEvent and this branch's give the same sha256 over the ten v1 kinds; v2 fixture remade from its comment command is cmp-equal; real curl 8.5.0's 422 on loopback is curl-event-422.out. Two step wordings differ from the design (noted in rows). → entries.jsonl:5
+- 2026-11-10 21:53 · V1-03 · passes: Opus review of V1 (docs/plans/2026-11-10-V1-review.md): 0 Critical, 0 Important, 4 Minor; five invariants hold. Fixed: docs level (memory-event.json lifecycle, memory_event writer, sizes, F3d tense), EVENT_V2 '1 exactly', ROUTED unit test now reads notify.sh's routing arms (renamed, failed on a mutation first), notify.mjs event CLI uses buildEvent's refusals. V1 checks +15 ~1 −0 recorded.; tests 1131 → 1131; files docs/plans/2026-11-10-V1-review.md, docs/architecture.md, journal/decisions/2026-11-10-review-surface-event.md, lib/notify.mjs, lib/notify.sh, … → entries.jsonl:4
 
 ## Current rules
 
 - A session's environment carries no TMUX; a driver's hangup names itself → journal/decisions/2026-11-10-session-env-no-tmux.md
+- The card's verbs: request v2 `merge` and `close` on a memory PR the ledger knows, a close with a reason as a decline → journal/decisions/2026-11-10-review-surface-verbs.md
 - The memory event: v2 of the n8n contract on the `memory` kind alone, its object from the record, its title → journal/decisions/2026-11-10-review-surface-event.md
 - The thin verify names its missing steps; a comment line is not a Gotcha → journal/decisions/2026-11-09-thin-verify-and-comment-lines.md
 - The memory reviewer: one read-only session on what would land, four questions per operation, under the curator's deny list → journal/decisions/2026-11-09-memory-reviewer.md
 - The memory reviewer counted: its cost and time beside its verdict, the ledger's rows by tier, and the rule that earns `auto` → journal/decisions/2026-11-09-memory-graduation.md
 - The curator's write gate and its prompt say one rule: words may be left out after the first 40 characters, never added → journal/decisions/2026-11-09-curator-gate-words.md
-- A claim that never reached the list is named, retried once told, and given up with its reason → journal/decisions/2026-11-09-claim-gap.md
-- The memory session and the answers: a denied curator, an `auto` that keeps its body, answers the next curator reads → journal/decisions/2026-11-08-memory-session-and-answers.md
-- The tiers and the files: tier 2 is a PR, the twins are guarded, the cap is per operation → journal/decisions/2026-11-08-memory-rules-pr.md
-- The memory curator: itemized operations, a tier the driver derives, a protected list that is fixed → journal/decisions/2026-11-07-memory-tiers.md
-- The gate replaces the lint: `memlint-self` retired, `MEMORY_POLICY`, and the curator's acceptance counted → journal/decisions/2026-11-07-memory-policy.md
 
-_101 older rules: journal/decisions._
+_106 older rules: journal/decisions._
