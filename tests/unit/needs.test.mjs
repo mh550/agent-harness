@@ -277,3 +277,15 @@ test("the given-up card's why carries the re-check and the claim gap in place of
   assert.deepEqual({ ...both, why: plain.why }, plain);   // nothing else of the card moves
   assert.doesNotMatch(JSON.stringify(both), /undefined|NaN|\[object/);
 });
+
+// ---- session-env.sh ----
+test("needs card: a run driver_crash with an end_reason fact takes it as headline and title; without one the default stays", () => {
+  const why = "the driver got a hangup (its tmux server or terminal went away); state is kept: harness continue r";
+  const f = { run: "r", project: "p", subject: "run", features: [] };
+  assert.equal(N.card("driver_crash", { ...f, end_reason: why }).headline, why);
+  assert.equal(N.card("driver_crash", f).headline, "the driver stopped without an end");
+  const it = N.record({ ...f, reason: "driver_crash", seq: 1, end_reason: why }, 0);
+  assert.equal(it.title, `[r] ended: ${why}`);
+  assert.equal(N.record({ ...f, reason: "driver_crash", seq: 1 }, 0).title, "[r] ended: the driver stopped without an end");
+  assert.equal(N.card("driver_crash", { ...f, subject: "M2", end_reason: why }).headline, "lane M2 exited unexpectedly");   // a lane's: not the run's end
+});

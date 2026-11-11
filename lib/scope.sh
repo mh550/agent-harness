@@ -38,8 +38,12 @@ dur_s() { [[ $1 =~ ^([0-9]+)([smhd]?)$ ]] || return 1; local n=${BASH_REMATCH[1]
 # SCOPE_BARE says why a call with the probe passed still ran bare (empty when scoped), for the caller's note.
 # OOMPolicy=continue: a cap kill takes only its victim, so the wrapper lives to record the peak and pass the 137 on.
 # --description: otherwise systemd describes the unit by its whole command line (a session's prompt) in the journal.
+# The command never sees the driver's tmux: TMUX and TMUX_PANE go (bare or scoped), since tmux follows $TMUX over
+# TMUX_TMPDIR and a session's `tmux kill-server` against its own throwaway server took the driver's pane with it
+# (decisions/2026-11-10-session-env-no-tmux). Every session, init and suite the driver or a lane starts comes through here.
 scope_run() {
   local unit=$1 high=$2 max=$3 dir rc; shift 3; SCOPE_BARE=""
+  set -- env -u TMUX -u TMUX_PANE "$@"
   scope_available || { "$@"; return; }
   dir=$(scope_dir); mkdir -p "$dir"; rm -f "$dir/$unit.started" "$dir/$unit.show"
   local props=(-p "MemoryMax=$max" -p "MemorySwapMax=${SESSION_SWAP_MAX:-1G}" -p OOMPolicy=continue)

@@ -61,15 +61,21 @@ rm -f "$STATE"/waited-* "$STATE"/lanes/*/waited-*   # a restart inside a usage-l
 # `harness status` reads these: alive while driver.pid names a live process; why it ended in "ended".
 echo $$ > "$STATE/driver.pid"; rm -f "$STATE/ended"
 END_REASON="driver exited unexpectedly (see run.log)"
+# A HUP (the tmux server or the terminal went away: decisions/2026-11-10-session-env-no-tmux) ends the driver as before,
+# but ended and the driver_crash card say so and what to do, where the default reason only sends Michael to run.log.
+HANGUP_REASON="the driver got a hangup (its tmux server or terminal went away); state is kept: harness continue $RUN_ID"
+trap '[[ $BASHPID == "$$" ]] || exit 129; [[ $END_REASON == "driver exited unexpectedly (see run.log)" ]] && END_REASON=$HANGUP_REASON; exit 129' HUP   # finish's reason, once set, stands
 # A TERM runs this at once while the session goes on: its scope stops first, so claude can't work on unread meanwhile.
 # It may now take minutes (the teardown): a second TERM/HUP (tmux closing) must not cut it short. Its note is committed
 # (that file only, not pushed): a dirty worktree would keep gc from removing it
 # A forked child (lane_wait's sleep, killed before its exec) inherits it and must not run it (P2 review 1).
 # Lanes first: each stops its own session and services; fd 9 closed so none waits on a lock this process holds.
-# An end no finish named (a TERM, an error) is a driver_crash record; it and the note are committed (not pushed).
+# An end no finish named (a TERM, an error, a hangup) is a driver_crash record; it and the note are committed (not
+# pushed). A hangup's card carries its reason (end_reason: the headline and the title), and the log says it.
 exit_record() {
   local f=("$REC/harness-log.md")
-  [[ $END_REASON == "driver exited unexpectedly (see run.log)" ]] && needs_open driver_crash run log="$STATE/run.log" > /dev/null
+  if [[ $END_REASON == "driver exited unexpectedly (see run.log)" ]]; then needs_open driver_crash run log="$STATE/run.log" > /dev/null
+  elif [[ $END_REASON == "$HANGUP_REASON" ]]; then note "$END_REASON"; needs_open driver_crash run log="$STATE/run.log" end_reason="$END_REASON" > /dev/null; fi
   [[ -f $REC/needs.md ]] && git -C "$RWT" add -- "$REC/needs.md" 2> /dev/null && f+=("$REC/needs.md")
   git -C "$RWT" commit -q -m "HARNESS: driver exited" -- "${f[@]}" > /dev/null 2>&1
 }

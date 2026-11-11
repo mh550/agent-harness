@@ -294,7 +294,9 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   supervisor window closes, the driver window's scrollback goes to `<state>/tmux-driver.txt` (its last 2000 lines, tmux's `history-limit`;
   `run.log` beside it has everything), and the session `h-<run>`
   closes after `TMUX_KEEP_HOURS` (24; `0` = at once), or sooner: `harness gc <project>` and the queue runner, as it
-  exits, kill the sessions of ended runs.
+  exits, kill the sessions of ended runs. A session the driver starts has no `TMUX`/`TMUX_PANE` (a `tmux kill-server` in it can't reach
+  the driver's server); a driver that still gets a hangup ends `the driver got a hangup (its tmux server or terminal went away); state
+  is kept: harness continue <run>`, and its needs card says the same.
 - **What a session reads:** `context.md` first (a bounded pack the driver writes before each coding and verify session: your answers, the feature's earlier dead ends and open questions (a later entry's `resolved` drops one), facts to promote into `## Gotchas` (until a line there or a later `resolved` carries them), recent entries, and last the decisions store's current rules, newest first; a verify's pack is larger, `CONTEXT_PACK_BYTES_VERIFY`, its failed rows first); the `--brief` (and `--spec` paths) go into every session's prompt; `CLAUDE.md` is loaded by
   Claude Code itself (the prompt names it in one line, it doesn't paste it), so a rule edited on the run branch reaches
   the next session. Each session's prompt is kept beside its transcript (`logs/*.prompt.md`).
