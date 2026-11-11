@@ -50,3 +50,10 @@
 - 2026-11-10 23:50 · context.md for V2: 15300 bytes
 - 2026-11-11 00:12 · V2: checks +28 ~2 −0 against a budget of 25 (over budget: V2 adds 28 names (+28 ~3 -0) against check_budget 25: V2-02's spec step names twelve stub-gh behaviours and V2-01's every refusal, each its own check so a red one names the rule; V2-04's one is the r…)
 - 2026-11-11 00:12 · V2 verified and tagged run/agent-harness-2026-11-10/V2
+- 2026-11-11 00:12 · V2 merged into main · https://github.com/mh550/agent-harness/pull/180
+- 2026-11-11 00:12 · lane V2 closed (V2 merged)
+- 2026-11-11 00:12 · lane V2: branch harness-lane/agent-harness-2026-11-10/V2 deleted (merged)
+- 2026-11-11 00:12 · every feature passes
+- 2026-11-11 00:12 · run ended (done): 7/7 passing · 10 sessions (10 real) · 7 features passed · $34.38 · 2.8 h · by kind: init 1 ($3.94), coding 7 ($26.42), verify 2 ($4.02) · by model: claude-fable-5-1 1 ($3.94), claude-opus-5-5 9 ($30.44)
+- 2026-11-11 00:12 · services stopped (done)
+- 2026-11-11 00:12 · services stopped (done)
