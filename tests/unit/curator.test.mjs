@@ -583,6 +583,24 @@ test("curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>
   assert.equal(apply([rule], T(MD), ENTRIES, RUN, { answers: [ans({ key: itemKey({ op: "delete", anchor: PROPOSAL }) })] }).rules.length, 1);
 });
 
+// the run-level decline (V2-01): the facts PR of a run closed with a why, a row with n and key null
+const runAns = o => ans({ n: null, tier: 1, file: null, section: null, text: null, key: null, why: "these facts are stale", ...o });
+test("curator.mjs answers: a run-level declined row reads `- the facts PR of <run>, closed: <why>` under Michael declined, newest first with the rest", () => {
+  assert.equal(answersText([runAns()], "p"), "Michael declined (never propose again):\n- the facts PR of r0, closed: these facts are stale");
+  const rows = [ans({ text: "old declined", at: "2026-11-01T00:00:00Z" }), runAns({ run: "r9", at: "2026-11-09T00:00:00Z" })];
+  assert.equal(answersText(rows, "p").split("\n").slice(1).join("\n"), "- the facts PR of r9, closed: these facts are stale\n- old declined (r0/1): the suite runs itself");
+  assert.equal(answersText([runAns({ why: undefined })], "p").split("\n")[1], "- the facts PR of r0, closed");
+});
+
+test("curator.mjs apply: a run-level declined row drops no op: a null key matches nothing, not even an op of that run", () => {
+  const rule = op({ section: "## Code rules", text: PROPOSAL, tier: 2 });
+  const r = apply([op(), rule], T(MD), ENTRIES, RUN, { answers: [runAns(), runAns({ run: RUN })] });
+  assert.equal(`${r.applied.length} ${r.rules.length} ${r.dropped.length}`, "1 1 0");
+  // a hand-edited run-level row that carries the rule's text still names no line: its key is null
+  const h = apply([rule], T(MD), ENTRIES, RUN, { answers: [runAns({ text: PROPOSAL })] });
+  assert.equal(`${h.rules.length} ${h.dropped.length}`, "1 0");
+});
+
 test("curator.mjs main: apply --answers <file> --project <p> drops the project's answered rule; answers <file> <project> renders the prompt's block", () => {
   const d = mkdtempSync(join(tmpdir(), "curator-"));
   try {

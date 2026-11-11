@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # harness requests: the request inbox (<state>/requests/*.json, from n8n), each one under flock, oldest first: answer →
-# harness answer, continue → queue add --continue and queue start (never 03:15–04:30); a result in done/<id>.json.   requests.sh
+# harness answer, continue → queue add --continue and queue start (never 03:15–04:30), v2's merge and close → gh on a
+# memory PR of the ledger; a result in done/<id>.json.   requests.sh
 #
 # The contract is docs/specs/2026-10-22-n8n-events.md §A3 (v1, fixed: n8n-home writes the requests and reads the
-# results); docs/plans/2026-11-07-A3-request-inbox.md §2 is how. lib/requests.mjs parses and judges every file, so no
-# JSON is parsed here, and a request's text and brief reach a command only as quoted argv elements, never through a shell.
-# Writes only under requests/: done/ (results and claimed requests), rejected/, requests.log, .lock; never a run's record.
+# results); docs/plans/2026-11-07-A3-request-inbox.md §2 is how; v2 is docs/specs/2026-11-10-review-surface.md §V2.
+# lib/requests.mjs parses and judges every file, so no JSON is parsed here, and a request's text, brief and why reach a
+# command only as quoted argv elements, never through a shell. Writes only under requests/: done/ (results and claimed
+# requests), rejected/, requests.log, .lock; never a run's record. A close with a why writes its decline rows through
+# harness memory decline (the ledger's memory-answers.jsonl, under the ledger lock).
 set -uo pipefail
 : "${HARNESS_HOME:?harness requests runs from bin/harness}"
 [[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 STATE_ROOT=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}
 R=$STATE_ROOT/requests H=$HARNESS_HOME/bin/harness MJS=$HARNESS_HOME/lib/requests.mjs
+LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger} GH=${HARNESS_GH:-gh}
 ID_RULE='^[A-Za-z0-9-]{8,64}$'
 
 # The path unit's PATH has no nvm directory (lib/debrief.sh's lines): node for the CLIs, the rest for queue start's runner
@@ -59,7 +63,8 @@ start_runner() {
 # <file name>: one request, judged and run
 one() {
   local f=$1 p=$R/$1 k v verdict="" name=- id=- verb=- run=- window=0 reason="" text brief out rc started=0 more=() args so
-  rm -f "$tmp/text" "$tmp/brief"; : > "$tmp/out"
+  local pr=- review=- hasw=0 v2=()
+  rm -f "$tmp/text" "$tmp/brief" "$tmp/why"; : > "$tmp/out"
   if [[ -L $p || ! -f $p ]]; then   # never read: mv moves the link, never its target (*default*: n8n writes plain files)
     [[ ${f%.json} =~ $ID_RULE ]] && name=${f%.json}
     move "$p" "$(free "$R/rejected" "$f")" && { nrej=$(( nrej + 1 )); result "$name" - - 0 - 0 --refused "the request is not a regular file"; }
@@ -71,14 +76,16 @@ one() {
     return
   fi
   while read -r k v; do case $k in verdict) verdict=$v ;; name) name=$v ;; id) id=$v ;; verb) verb=$v ;; run) run=$v ;;
-    window) window=$v ;; reason) reason=$v ;; esac; done < <(node "$MJS" validate "$p" --runs "$runs" --done "$R/done" --now "$now" --out "$tmp")
+    window) window=$v ;; reason) reason=$v ;; pr) pr=$v v2=(--pr "$v") ;; review) review=$v ;; why) hasw=$v ;; esac
+  done < <(node "$MJS" validate "$p" --runs "$runs" --done "$R/done" --now "$now" --out "$tmp" --memory "$LEDGER/memory.jsonl")
   [[ $name == - || $name =~ $ID_RULE ]] || name=-   # a name only ever becomes a path under done/ when it passes the id rule
   case $verdict in
     wait) nwait=$(( nwait + 1 )); waited=1 ;;
-    rejected|duplicate) move "$p" "$(free "$R/rejected" "$f")" && { nrej=$(( nrej + 1 )); result "$name" "$verb" "$run" 0 - 0 --refused "$reason"; } ;;
+    rejected|duplicate) move "$p" "$(free "$R/rejected" "$f")" && { nrej=$(( nrej + 1 )); result "$name" "$verb" "$run" 0 - 0 ${v2[@]+"${v2[@]}"} --refused "$reason"; } ;;
     ok)
       [[ $name != - ]] || { echo "requests: $f: no name" >&2; bad=1; return; }
       move "$p" "$R/done/$name.request.json" || return   # the claim: a pass that dies after it never runs the request again
+      if [[ $verb == merge || $verb == close ]]; then pr_verb; return; fi
       if [[ $verb == answer ]]; then
         text=$(cat -- "$tmp/text"; printf x); text=${text%x}   # $(…) would drop trailing newlines; NULs are refused
         out=$("$H" answer "$run" "$text" 2>&1); rc=$?
@@ -96,6 +103,43 @@ one() {
       result "$name" "$verb" "$run" "$(( rc == 0 ))" "$rc" "$started" ${more[@]+"${more[@]}"} ;;
     *) echo "requests: $f: no verdict from lib/requests.mjs (left for the next call)" >&2; nwait=$(( nwait + 1 )); bad=1 ;;
   esac
+}
+
+# one()'s v2 merge or close, after the claim (its locals in scope): the ledger rule ran in node; then gh's state, the
+# review rule (a merge only), the gh call, and after a close with a why its decline rows
+pr_verb() {
+  local st state=- why="" refusal="" items item d
+  st=$("$GH" pr view "$pr" --json state -q .state 2>&1 < /dev/null); rc=$?
+  if (( rc != 0 )) || [[ ! $st =~ ^(OPEN|MERGED|CLOSED)$ ]]; then   # unread: it ran, so not a refusal (the card's Try again, a new id, may find GitHub back)
+    printf '%s' "$st" > "$tmp/out"; ndone=$(( ndone + 1 ))
+    result "$name" "$verb" "$run" 0 "$rc" 0 --pr "$pr" --state -; return
+  fi
+  case $st in MERGED) refusal="pr $pr is already merged" ;; CLOSED) refusal="pr $pr is already closed" ;; esac
+  # *default*, the rules PR too: the card shows a verdict, so a one-tap merge of a PR with none is GitHub's button's
+  local rw=$review; [[ $rw == - ]] && rw="its ledger row has no review"
+  [[ -z $refusal && $verb == merge && $review != ok ]] && refusal="the review did not run for $pr ($rw): merge it on GitHub if you mean to"
+  if [[ -n $refusal ]]; then   # the claim goes to rejected/, as every refusal's request
+    move "$R/done/$name.request.json" "$(free "$R/rejected" "$f")"; nrej=$(( nrej + 1 ))
+    result "$name" "$verb" "$run" 0 - 0 --pr "$pr" --state - --refused "$refusal"; return
+  fi
+  if [[ $verb == merge ]]; then args=(pr merge "$pr" --merge)   # no --match-head-commit: the card is Michael's hand, as GitHub's button
+  else args=(pr close "$pr")   # never --delete-branch: the branch is the record of what was proposed
+    (( hasw )) && { why=$(cat -- "$tmp/why"; printf x); why=${why%x}; args+=(--comment "$why"); }
+  fi
+  out=$("$GH" "${args[@]}" 2>&1 < /dev/null); rc=$?
+  (( rc == 0 )) && state=$([[ $verb == merge ]] && echo merged || echo closed)
+  # a close with a why is a decline: the run-level row for the facts PR, one per rules/<n> for the rules PR; one that
+  # fails is a line of the output and the close stands (*default*: the close is what was asked; the row can be written by hand)
+  if [[ $state == closed && -n $why ]]; then
+    if items=$(node "$MJS" declines --memory "$LEDGER/memory.jsonl" --pr "$pr" --ledger "$LEDGER" 2>&1); then
+      while IFS= read -r item; do
+        if d=$("$H" memory decline "$item" --why "$why" 2>&1 < /dev/null); then out+=$'\n'"memory: $item declined"
+        else out+=$'\n'"memory decline $item failed, the close stands: ${d%%$'\n'*}"; fi
+      done <<< "$items"
+    else out+=$'\n'"memory decline $run failed, the close stands: ${items%%$'\n'*}"; fi
+  fi
+  printf '%s' "$out" > "$tmp/out"; ndone=$(( ndone + 1 ))
+  result "$name" "$verb" "$run" "$(( rc == 0 ))" "$rc" 0 --pr "$pr" --state "$state"
 }
 
 # A claim with no result: a call killed between the two (the claim stands, so the request never runs again). Its result

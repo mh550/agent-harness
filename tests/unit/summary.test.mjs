@@ -638,7 +638,7 @@ const rv = (run, o = {}) => ({ run, project: "p", tier: "facts", url: `https://e
   reviewed: 2, held: 2, failed: 0, review: "ok", failed_ids: [], merged_by: null, review_cost_usd: 0.1, at: `2026-11-0${o.day ?? 1}T10:00:00Z`, ...o });
 const ghOf = (run, s) => (s === "merged unchanged" ? ghPr("MERGED", `memory: ${run}: 2 facts`) : s === "merged edited" ? ghPr("MERGED", `memory: ${run}: 2 facts`, "edit")
   : s === "closed" ? ghPr("CLOSED") : ghPr("OPEN"));
-test("summary.mjs memoryView: held and failed columns, unreviewed for an old row or a review none, the two overrides from the row and gh's state, and the review: tally line", () => {
+test("summary.mjs memoryView: held and failed columns, unreviewed for an old row or a review none, the two overrides from the row and gh's state, the review: tally line, and a run-level declined row is no override either", () => {
   const rows = [rv("f1", { held: 1, failed: 1, failed_ids: ["facts/2:q2"], day: 8 }), rv("f2", { held: 1, failed: 1, merged_by: "driver", day: 7 }), rv("f3", { day: 6 }),
     rv("f4", { reviewed: 1, held: 1, day: 5 }), rv("f5", { reviewed: 1, held: 1, day: 4 }), { ...rv("f6", { day: 3 }), reviewed: undefined, held: undefined, failed: undefined, review: undefined },
     { ...rv("f7", { day: 2 }), tier: "rules", rules: 1, sections: ["## Code rules"], reviewed: 1, held: 1 }, rv("f8", { held: 0, review: "the reviewer failed (exit 124)", day: 1 })];
@@ -661,6 +661,12 @@ test("summary.mjs memoryView: held and failed columns, unreviewed for an old row
   const fd = rv("fd", { held: 1, failed: 1, fails_dropped: true });
   assert.equal(memoryView([fd], { [fd.url]: ghOf("fd", "merged unchanged") }, 10)[0], `fd · p · facts · 2/0/0 · held 1 · failed 1 · ${u("fd")} · merged unchanged`);
   assert.equal(memoryView(rows.slice(5, 6), {}, 10).at(-1), "review: held 0 · failed 0 · overrides 0 (merged against a fail 0 · edited or closed against a hold 0) · unreviewed 1");
+  // the facts PR closed from the card with a why: its run's only declined row is run-level (V2-01), and that is no override either
+  const runLevel = [{ run: "f4", project: "p", n: null, tier: 1, verdict: "declined", why: "a duplicate run", file: null, section: null, text: null, key: null, at: "2026-11-05T11:00:00Z" }];
+  const rl = memoryView(rows, gh, 10, "", runLevel);
+  assert.equal(rl[3], out[3], "the same line as a numbered decline's");
+  assert.equal(memoryOverride(rows[3], "closed", new Set(["f4"])), null);
+  assert.equal(rl.slice(8).join("\n"), out.slice(8).join("\n"));
   const withP = memoryView(rows, gh, 10, "p", declined);
   assert.equal(withP.length, out.length + 1); assert.match(withP.at(-1), /^auto: not yet \(.* · window 8\)$/);
   assert.equal(memoryView(rows, gh, 10, "none").join("\n"), "(none)");

@@ -54,7 +54,7 @@ req dup-0001.json answer '.text = "the duplicate text"'
 "$H" requests > "$T/r5.out" 2>&1; r5_rc=$?
 REJ=("rej-0001-verb|verb is not answer or continue" "rej-0002-norun|no run 'nosuch' (see: harness status)"
   "rej-0003-dots|run does not match ^[A-Za-z0-9._-]+\$" "rej-0004-long|text must be 1-4000 characters for answer"
-  "rej-0005-vtwo|v is not 1 (this harness reads request v1)")
+  "rej-0005-vtwo|v 2 carries merge or close")   # a v2 answer: v 2 carries merge or close alone (V2-01)
 rejected_each() { local e ok=0; for e in "${REJ[@]}"; do
     [[ -f $R/rejected/${e%%|*}.json && ! -e $R/${e%%|*}.json ]] && jq -e --arg w "${e#*|}" '.ok == false and .exit == null and .refused == $w and .output == ""' "$R/done/${e%%|*}.json" > /dev/null || ok=1
   done; return $ok; }
