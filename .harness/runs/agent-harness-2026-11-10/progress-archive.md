@@ -11,6 +11,23 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-10-review-surface-event.md` (V1) and `journal/decisions/2026-11-10-review-surface-verbs.md` (V2). The one live step (appending `EVENT_V2=1` to the user config after the n8n-home deploy) is written out in the V2-03 checklist for you; no session runs it.
 
+### 2026-11-10 22:42 · V2-01 · passes
+
+requests.mjs v2: merge/close on a ledger/memory.jsonl PR of the request run (--memory read in node), pr URL shape first, close why ≤300 one line, merge why refused; 12-key result (pr, state), pr= in requests.log, validate pr/review/why lines. Run-level decline: harness memory decline <run> --why (n/key null); latestAnswers keeps it, apply ignores it, answersText renders it. Docs, decision.
+
+- **Files:** lib/requests.mjs, lib/memory.mjs, lib/memory.sh, lib/curator.mjs, bin/harness, tests/checks/memory-requests.sh, tests/checks/request-files.sh, tests/unit/requests.test.mjs, tests/unit/memory.test.mjs, tests/unit/curator.test.mjs, tests/unit/summary.test.mjs, tests/fixtures/requests/merge.json, +9 more
+- **Verified:** unit: requests/memory/curator/summary 120/120 (9 requests and 5 memory/curator/summary tests red first); memory-requests 2/2 (red on HEAD's memory.sh/memory.mjs first), request-files 18/18; fast tier 1149/1149 (check.sh --fast, 134 s).; Opus review 0 Critical, 0 Important, 5 Minor: 3 fixed (apply test now red without its filter, why refuses control/line-separator chars, a ledger run failing RUN_RULE never quoted), 2 left (below)
+- **Tests:** 1135 → 1149
+- **Discovery** (affects V2-02): requests.sh one()'s ok branch runs every verb but answer as a continue: V2-02's v2 branch must come before it; today v2 never reaches ok there because --memory is not passed
+- **Discovery** (affects V2-02): validate prints for a v2 request: pr, review (the row's review, - when none), why 1|0, after run; the why is in <out>/why; result --pr <url|-> makes the result v2 (--state merged|closed|-)
+- **Discovery** (affects V2-02, V2-03): request fixtures v2 use run r1, facts PR https://example.test/pr/1, rules PR /pr/2 (stub-gh URLs); memory-requests.sh builds ledger/proj/r1/memory-result.json via curator.mjs apply on corrected.* (no rules[]: V2-02 needs a rules op)
+- **Discovery** (affects V2): request-files.sh's v2 answer case now expects 'v 2 carries merge or close' (the old 'v is not 1 (this harness reads request v1)' is gone)
+- **Discovery** (affects V2-04, V2-02): V2-04: a run-level decline is not tied to a facts row of ledger/memory.jsonl, and declinedRuns matches by run, so it also excuses a closed rules PR of that run (spec design; review M2)
+- **Discovery** (affects V2-04): prompts/memory-review.md Q4 greps memory-answers.jsonl declined rows; a run-level row (text null) could be cited as <run>/null: one clause once V2-02 writes them
+- **Question for Michael:** Default taken: a v2 pr must match ^https://<host>/<path>$ (≤200 chars) before any refusal quotes it; keep, or quote any string? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/lib/requests.mjs, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/journal/decisions/2026-11-10-review-surface-verbs.md
+- **Proposed change:** V2-01 step 1: the existing 'verb merge is rejected' test already covers v1 with merge; and tests/checks/request-files.sh's v2-answer reason must change with this feature (not named in the steps)
+- *04-V2-01 · claude-opus-5-5*
+
 ### 2026-11-10 22:25 · verify V1 · passes
 
 V1-01, V1-02, V1-03 hold. Full suite 2019/2019 (823 s), fast tier 1135/1135, event-hook event-run memory-event memory-review 59/59. v1 bytes: origin/main's buildEvent and this branch's give the same sha256 over the ten v1 kinds; v2 fixture remade from its comment command is cmp-equal; real curl 8.5.0's 422 on loopback is curl-event-422.out. Two step wordings differ from the design (noted in rows).
