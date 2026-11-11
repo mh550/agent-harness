@@ -1,14 +1,31 @@
-# Context pack for `V2-04`
+# Context pack for `V2`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
+## This feature's earlier attempts
+
+- Dead end (V2-04, 07-V2-04): the reviewer's simplification 1 as written (the facts line carries 3 answered) — harness memory prints the rules row first and that line carries the mark; kept the rules alternative alone (read from a KEEP=1 run) → entries.jsonl:9
+- Dead end (V2-03, 06-V2-03): the checklist at docs/plans/ as the spec names it, read by the check — check-key.sh's CHECK_KEY_IGNORE lint and key-map-lint fail: docs/plans is outside the cache key, so the check would not rerun when only the checklist changes → entries.jsonl:8
+- Dead end (V2-02, 05-V2-02): writing requests into requests/ before any harness requests call — the directory does not exist yet: req's redirect fails and the pass sees none pending; the check runs harness requests once first → entries.jsonl:7
+- Question (V2-04): Default taken (review I1): the card retries a failed action with a new id (the attempt in the hash) and shows no actions until the ledger's memory.md exists; the harness still refuses an unknown-PR request of a live run rather than leaving it pending. Keep that? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/2026-11-10-review-surface-n8n-home.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/plans/2026-11-10-V2-review.md → entries.jsonl:9
+- Question (V2-03): Default taken: the n8n-home checklist lives at docs/2026-11-10-review-surface-n8n-home.md, not the spec's docs/plans/ path, because docs/plans is outside the suite's cache key and the check-key lint refuses a check reading it; a pointer file stays at the spec's path. Keep it there, or would you rather drop docs/plans from CHECK_KEY_IGNORE's reach for this one file some other way? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/2026-11-10-review-surface-n8n-home.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/journal/decisions/2026-11-10-review-surface-verbs.md:70 → entries.jsonl:8
+- Question (V2-01): Default taken: a v2 pr must match ^https://<host>/<path>$ (≤200 chars) before any refusal quotes it; keep, or quote any string? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/lib/requests.mjs, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/journal/decisions/2026-11-10-review-surface-verbs.md → entries.jsonl:6
+- 2026-11-10 23:36 · V2-04 · passes: V2 review (Opus): 0 Critical, 1 Important, 4 Minor. I1 fixed test-first: the checklist's card shows no actions until the ledger's memory.md and its id hashes an attempt with Try again (a handled id never reruns). M4: ledgerRow (findLast) in validate/declines, unit test first. M1/M2 decision and README text, M3 architecture rows; both simplifications; V2 checks +28 ~3 vs budget 25.; tests 1162 → 1163; files docs/plans/2026-11-10-V2-review.md, docs/2026-11-10-review-surface-n8n-home.md, lib/requests.mjs, lib/requests.sh, tests/checks/memory-requests.sh, … → entries.jsonl:9
+- 2026-11-10 23:17 · V2-03 · passes: The n8n-home checklist (intake v2 rule, workflow 42 memory card, the two request JSON shapes, the deploy order, Michael's EVENT_V2 step and undo, five must-nots) at docs/2026-11-10-review-surface-n8n-home.md (default: docs/plans is outside the suite key; a pointer stays there), one fast check, READMEs, decision lines.; tests 1161 → 1162; files docs/2026-11-10-review-surface-n8n-home.md, docs/plans/2026-11-10-review-surface-n8n-home.md, tests/checks/memory-requests.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, … → entries.jsonl:8
+- 2026-11-10 23:06 · V2-02 · passes: harness requests runs v2 merge/close: ledger rule in node, then gh pr view state (merged/closed refused, claim to rejected/), the review rule on merge, then gh pr merge <url> --merge or gh pr close <url> [--comment why] as argv; a close with a why writes decline rows via harness memory decline (requests.mjs declineItems/declines). Stub gh by-URL merge/close; 11 checks, 1 unit test; docs.; tests 1149 → 1161; files lib/requests.sh, lib/requests.mjs, tests/stub-gh.sh, tests/checks/memory-requests.sh, tests/unit/requests.test.mjs, … → entries.jsonl:7
+- 2026-11-10 22:42 · V2-01 · passes: requests.mjs v2: merge/close on a ledger/memory.jsonl PR of the request run (--memory read in node), pr URL shape first, close why ≤300 one line, merge why refused; 12-key result (pr, state), pr= in requests.log, validate pr/review/why lines. Run-level decline: harness memory decline <run> --why (n/key null); latestAnswers keeps it, apply ignores it, answersText renders it. Docs, decision.; tests 1135 → 1149; files lib/requests.mjs, lib/memory.mjs, lib/memory.sh, lib/curator.mjs, bin/harness, … → entries.jsonl:6
+
 ## Discoveries for this feature
 
+- Discovery (V2-04, affects run): every request outcome writes done/<id>.json, so a same-id retry is a duplicate: the n8n card retries with a new id (attempt in the hash); the harness rule is unchanged → entries.jsonl:9
 - Discovery (V2-03, affects V2-04): the checklist is docs/2026-11-10-review-surface-n8n-home.md, not docs/plans/ (a pointer stays there): V2-04 reads it there → entries.jsonl:8
 - Discovery (V2-03, affects V2-04): memreview.mjs card's state is only open|merged (merged = the driver merged the facts PR under auto); q and section may be null → entries.jsonl:8
 - Discovery (V2-02, affects V2-04, V2-03): requests.sh's v2 refusals after the claim (already merged/closed, review did not run) move done/<id>.request.json to rejected/; validate's --memory is <ledger>/memory.jsonl → entries.jsonl:7
 - Discovery (V2-02, affects V2-04): requests.mjs declines --memory --pr --ledger prints the harness memory decline items (facts: <run>; rules: <run>/<n> per rules[] n of the ledger's memory-result.json) → entries.jsonl:7
 - Discovery (V2-02, affects V2-03, V2-04): memory-requests.sh builds memory.jsonl via summary.mjs memory-line over event-memory.json (r1 facts pr/1 + rules pr/2 all held, r2 pr/3 review none) and resets the stub PRs per part → entries.jsonl:7
+- Discovery (V2-01, affects V2-02): requests.sh one()'s ok branch runs every verb but answer as a continue: V2-02's v2 branch must come before it; today v2 never reaches ok there because --memory is not passed → entries.jsonl:6
+- Discovery (V2-01, affects V2-02): validate prints for a v2 request: pr, review (the row's review, - when none), why 1|0, after run; the why is in <out>/why; result --pr <url|-> makes the result v2 (--state merged|closed|-) → entries.jsonl:6
+- Discovery (V2-01, affects V2-02, V2-03): request fixtures v2 use run r1, facts PR https://example.test/pr/1, rules PR /pr/2 (stub-gh URLs); memory-requests.sh builds ledger/proj/r1/memory-result.json via curator.mjs apply on corrected.* (no rules[]: V2-02 needs a rules op) → entries.jsonl:6
 - Discovery (V2-01, affects V2): request-files.sh's v2 answer case now expects 'v 2 carries merge or close' (the old 'v is not 1 (this harness reads request v1)' is gone) → entries.jsonl:6
 - Discovery (V2-01, affects V2-04, V2-02): V2-04: a run-level decline is not tied to a facts row of ledger/memory.jsonl, and declinedRuns matches by run, so it also excuses a closed rules PR of that run (spec design; review M2) → entries.jsonl:6
 - Discovery (V2-01, affects V2-04): prompts/memory-review.md Q4 greps memory-answers.jsonl declined rows; a run-level row (text null) could be cited as <run>/null: one clause once V2-02 writes them → entries.jsonl:6
@@ -26,20 +43,32 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 - Discovery (init, affects run): V1-01 has no stub run yet: the v2 fixture is made from notify.mjs event's own stdout over memreview.mjs card's, and V1-02's memory-event.sh check cmp's it against a stub run's event.json with placeholders; re-make it there if they differ (agent-harness-2026-11-10 2026-11-10) → entries.jsonl:1
 - Discovery (init, affects run): the request fixtures (tests/fixtures/requests/*.json) were written by n8n-home's buildRequest, which has no v2 branch yet: V2-01's three v2 request files come from one node command recorded in that README, and n8n-home builds to them (agent-harness-2026-11-10 2026-11-10) → entries.jsonl:1
 
-## Promote to Gotchas
-
-- A check may not read docs/plans or docs/specs (CHECK_KEY_IGNORE, check-key.sh): a doc a check keeps true lives under docs/ or tests/ (agent-harness-2026-11-10 2026-11-10) → entries.jsonl:8
-- gh 2.45's pr close/merge message formats are readable offline: strings $(command -v gh) | grep 'Closed pull request' (agent-harness-2026-11-10 2026-11-10) → entries.jsonl:7
-- a lane's .harness/runs/ is git-ignored by the state dir's exclude file: feature_list.json and entry.json never show in git status there (agent-harness-2026-11-10 2026-11-10) → entries.jsonl:3
-
-## What it builds on
-
-- 2026-11-10 22:42 · V2-01 · passes: requests.mjs v2: merge/close on a ledger/memory.jsonl PR of the request run (--memory read in node), pr URL shape first, close why ≤300 one line, merge why refused; 12-key result (pr, state), pr= in requests.log, validate pr/review/why lines. Run-level decline: harness memory decline <run> --why (n/key null); latestAnswers keeps it, apply ignores it, answersText renders it. Docs, decision.; tests 1135 → 1149; files lib/requests.mjs, lib/memory.mjs, lib/memory.sh, lib/curator.mjs, bin/harness, … → entries.jsonl:6
-- 2026-11-10 23:06 · V2-02 · passes: harness requests runs v2 merge/close: ledger rule in node, then gh pr view state (merged/closed refused, claim to rejected/), the review rule on merge, then gh pr merge <url> --merge or gh pr close <url> [--comment why] as argv; a close with a why writes decline rows via harness memory decline (requests.mjs declineItems/declines). Stub gh by-URL merge/close; 11 checks, 1 unit test; docs.; tests 1149 → 1161; files lib/requests.sh, lib/requests.mjs, tests/stub-gh.sh, tests/checks/memory-requests.sh, tests/unit/requests.test.mjs, … → entries.jsonl:7
-- 2026-11-10 23:17 · V2-03 · passes: The n8n-home checklist (intake v2 rule, workflow 42 memory card, the two request JSON shapes, the deploy order, Michael's EVENT_V2 step and undo, five must-nots) at docs/2026-11-10-review-surface-n8n-home.md (default: docs/plans is outside the suite key; a pointer stays there), one fast check, READMEs, decision lines.; tests 1161 → 1162; files docs/2026-11-10-review-surface-n8n-home.md, docs/plans/2026-11-10-review-surface-n8n-home.md, tests/checks/memory-requests.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, … → entries.jsonl:8
-
 ## Current rules
 
 - A session's environment carries no TMUX; a driver's hangup names itself → journal/decisions/2026-11-10-session-env-no-tmux.md
+- The card's verbs: request v2 `merge` and `close` on a memory PR the ledger knows, a close with a reason as a decline → journal/decisions/2026-11-10-review-surface-verbs.md
+- The memory event: v2 of the n8n contract on the `memory` kind alone, its object from the record, its title → journal/decisions/2026-11-10-review-surface-event.md
+- The thin verify names its missing steps; a comment line is not a Gotcha → journal/decisions/2026-11-09-thin-verify-and-comment-lines.md
+- The memory reviewer: one read-only session on what would land, four questions per operation, under the curator's deny list → journal/decisions/2026-11-09-memory-reviewer.md
+- The memory reviewer counted: its cost and time beside its verdict, the ledger's rows by tier, and the rule that earns `auto` → journal/decisions/2026-11-09-memory-graduation.md
+- The curator's write gate and its prompt say one rule: words may be left out after the first 40 characters, never added → journal/decisions/2026-11-09-curator-gate-words.md
+- A claim that never reached the list is named, retried once told, and given up with its reason → journal/decisions/2026-11-09-claim-gap.md
+- The memory session and the answers: a denied curator, an `auto` that keeps its body, answers the next curator reads → journal/decisions/2026-11-08-memory-session-and-answers.md
+- The tiers and the files: tier 2 is a PR, the twins are guarded, the cap is per operation → journal/decisions/2026-11-08-memory-rules-pr.md
+- The memory curator: itemized operations, a tier the driver derives, a protected list that is fixed → journal/decisions/2026-11-07-memory-tiers.md
+- The gate replaces the lint: `memlint-self` retired, `MEMORY_POLICY`, and the curator's acceptance counted → journal/decisions/2026-11-07-memory-policy.md
+- One writer for project memory: a coding session's `CLAUDE.md` edit is reverted, a fact goes in the entry → journal/decisions/2026-11-07-memory-one-writer.md
+- Supervised efforts for every project: one user-level skill, one dispatch list per effort, plain names throughout → journal/decisions/2026-11-05-supervised-efforts.md
+- The suite's shape: check files named for what they test, no name part of another's, two cuts that need no replay, a tier on every line → journal/decisions/2026-11-05-suite-shape.md
+- A merge survives an origin outage: bounded retries, a card past them, a tag that isn't claimed, gc holds verified work → journal/decisions/2026-11-04-origin-retries.md
+- No run ends on a clock unless asked to: `HOURS` defaults to none, and the night leaves the docs → journal/decisions/2026-11-04-no-default-end-time.md
+- A red verify opens a fix round, not a card: at most `MAX_FIX_ROUNDS` per milestone, each one counted → journal/decisions/2026-11-04-fix-rounds.md
+- The unit tier: node evals become `node:test` files in one process, reported as the suite's PASS/FAIL lines → journal/decisions/2026-11-03-unit-tier.md
+- The trim: 22 checks removed, each with the check that makes its assertions now; five gaps closed; no covered line lost → journal/decisions/2026-11-03-trim.md
+- The suite's tiers: every check file declares `fast` or `slow` on line 2, and `tests/run.sh --tier` runs one tier → journal/decisions/2026-11-03-suite-tiers.md
+- The trace switch: `HARNESS_XTRACE=<dir>` traces every harness process, off unless set → journal/decisions/2026-11-03-suite-coverage.md
+- The resident helper: one warm node process per driver and lane answers the `.mjs` questions over a coproc → journal/decisions/2026-11-03-resident-helper.md
+- The purity moves: the bash decision tables become pure functions with a unit test per branch; no note text changes → journal/decisions/2026-11-03-purity.md
+- The fast gate: `check.sh --fast` runs the fast tier, marks `fast-<key>`, and a fast-green is never read as a green → journal/decisions/2026-11-03-fast-gate.md
 
-_112 older rules: journal/decisions._
+_88 older rules: journal/decisions._
