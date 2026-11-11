@@ -110,13 +110,14 @@ one() {
 pr_verb() {
   local st state=- why="" refusal="" items item d
   st=$("$GH" pr view "$pr" --json state -q .state 2>&1 < /dev/null); rc=$?
-  if (( rc != 0 )) || [[ ! $st =~ ^(OPEN|MERGED|CLOSED)$ ]]; then   # unread: it ran, so not a refusal (the next tap may find GitHub back)
+  if (( rc != 0 )) || [[ ! $st =~ ^(OPEN|MERGED|CLOSED)$ ]]; then   # unread: it ran, so not a refusal (the card's Try again, a new id, may find GitHub back)
     printf '%s' "$st" > "$tmp/out"; ndone=$(( ndone + 1 ))
     result "$name" "$verb" "$run" 0 "$rc" 0 --pr "$pr" --state -; return
   fi
   case $st in MERGED) refusal="pr $pr is already merged" ;; CLOSED) refusal="pr $pr is already closed" ;; esac
   # *default*, the rules PR too: the card shows a verdict, so a one-tap merge of a PR with none is GitHub's button's
-  [[ -z $refusal && $verb == merge && $review != ok ]] && refusal="the review did not run for $pr ($([[ $review == - ]] && echo "its ledger row has no review" || echo "$review")): merge it on GitHub if you mean to"
+  local rw=$review; [[ $rw == - ]] && rw="its ledger row has no review"
+  [[ -z $refusal && $verb == merge && $review != ok ]] && refusal="the review did not run for $pr ($rw): merge it on GitHub if you mean to"
   if [[ -n $refusal ]]; then   # the claim goes to rejected/, as every refusal's request
     move "$R/done/$name.request.json" "$(free "$R/rejected" "$f")"; nrej=$(( nrej + 1 ))
     result "$name" "$verb" "$run" 0 - 0 --pr "$pr" --state - --refused "$refusal"; return

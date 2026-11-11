@@ -55,7 +55,9 @@ Top to bottom:
 5. `<project> · <run> · <policy> · <held> held · <failed> failed`.
 6. Links to both PRs: the event's `click` (the facts PR) and `actions` (`view, Facts PR, <url>; view, Rules PR, <url>`).
 7. The actions, each labelled with its PR: for `memory.pr`, **Merge** and **Close**; the same pair for `memory.rules_pr`
-   when it is set. Close has a one-line note field, "why: the next curator reads it" (empty means the close counts as
+   when it is set. **no actions until** `HARNESS_LEDGER_DIR/<project>/<run>/memory.md` exists (item 4's file): until
+   then "the actions come when the run's record is in the ledger". The harness checks a `pr` against the ledger row it
+   writes with that copy, so a tap before it is refused, and that id's result stands for good. Close has a one-line note field, "why: the next curator reads it" (empty means the close counts as
    an override of the reviewer).
    - `state` `merged`: the facts PR shows "merged by the driver" and no buttons (the driver merges the facts PR alone,
      under `auto`); the rules PR keeps its pair.
@@ -67,8 +69,10 @@ The ntfy follows D9 as every card: `Tap to open the card` on the public topic, t
 ## 3. The two actions' request JSON (`buildRequest`'s v2 branch)
 
 Written as 41 writes answers: one write of `JSON.stringify(request) + "\n"` to `HARNESS_REQUESTS_DIR/<id>.json`, the id
-D25's `1-<h>`, `h` the first 40 hex of a SHA-256 of the event id, the verb, the PR and the note, so a double tap writes
-the same name and the harness ignores an id it has handled. The key order is the fixtures'
+D25's `1-<h>`, `h` the first 40 hex of a SHA-256 of the event id, the verb, the PR, the note and the attempt (1 at
+first), so a double tap writes the same name and the harness ignores an id it has handled. A handled id is never run
+again, so the result page offers **Try again** (the attempt plus one, a new id) when the result is `ok` false with
+`refused` null (gh ran and failed: GitHub may be back) or refused `pr <url> is not a memory PR the ledger knows …`. The key order is the fixtures'
 (`v,id,at,verb,run,pr[,why],source,event`); each line below is `tests/fixtures/requests/merge.json` and
 `tests/fixtures/requests/close-why.json` with the values made placeholders:
 

@@ -894,6 +894,7 @@ requests.mjs: the validate CLI takes --memory and prints pr, review and why as l
 requests.mjs: unparsable text waits at 5 s and is rejected at 11 s
 requests.mjs: v 2 with answer is rejected, v 3 is not 1 or 2
 requests.mjs: verb merge is rejected
+requests.mjs: with two ledger rows for one PR, validate and declines read the last, as memory-line keeps it
 restrict memory: CLAUDE.md, .harness/project.md, .claude/CLAUDE.md and .claude/rules/ go back, added, edited or deleted; .claude/settings.json, docs/CLAUDE.md, lib/ and .harness/config.sh stay
 resume reloads config merged from main
 retro edits reverted
@@ -1064,7 +1065,7 @@ the helper killed between two calls: the next call is a spawn (+1), the spawn's 
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value
 the lock freed: the helper answers again (no start)
-the n8n-home checklist names the v2 event, request and result fixtures by path, and every tests/fixtures path it names exists
+the n8n-home checklist names the v2 fixtures by path, every tests/fixtures path it names exists, and it holds the card's no actions before the ledger and Try again
 the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …
 the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
 the queue starts no run past the weekly budget

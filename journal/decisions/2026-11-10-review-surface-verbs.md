@@ -41,14 +41,19 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
 - **Choice (V2-02, `harness requests` runs them):**
   - **gh's state first** (*default*): after the claim, `$HARNESS_GH pr view <url> --json state`; `MERGED` and `CLOSED`
     are refusals (`pr <url> is already merged`, `… already closed`, the claimed request moved to `rejected/`), an
-    unreadable answer is `ok` false with gh's text as the output and no refusal (it ran; the next tap may find GitHub
-    back).
+    unreadable answer is `ok` false with gh's text as the output and no refusal (it ran; the card's **Try again**, a
+    new id, may find GitHub back: a handled id is never run again, so the same tap would stand on this result).
   - **The review rule for both PRs** (*default*): a `merge` whose row's `review` is not `ok` is refused `the review did
     not run for <url> (<the row's review>): merge it on GitHub if you mean to` (`its ledger row has no review` for a row
     before the reviewer); the card shows a verdict, and a one-tap merge of a PR with none is what invariant 3 was written
     against. A close has no review rule.
   - **No `--match-head-commit`** (*default*): `gh pr merge <url> --merge`; the card is Michael's hand, as GitHub's
-    button, which has no such guard; a commit added after the event reads as `merged edited`, as for the button.
+    button, which has no such guard; a commit of Michael's or anyone's added after the event reads as `merged edited`,
+    as for the button. A later segment's driver commit (`memory: <run>: <n> facts`, a continue's) is the driver's own,
+    so it rides along unseen and the merge reads `merged unchanged` until that segment's `ledger()` sums its ops into
+    the row (then a failed op of it reads `merged against a fail`); before that, the row's `review` is still the earlier
+    segment's (V2-04's review, M1: left as is, a refusal of a card older than the run's newest memory event is a rule of
+    its own).
   - **`--comment` with the why** (*default*): `gh pr close <url> --comment "<why>"`, so the ledger and the PR say the
     same; **never `--delete-branch`** (*default*): the branch is the record of what was proposed, as `record_pr`.
   - **A close with a why is a decline:** after the close succeeded, `harness memory decline <run> --why` for the facts
@@ -57,7 +62,10 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
     rules PR), each under the ledger lock as the hand command takes it. **A failed decline leaves the close standing**
     (*default*): one line of the result's `output` (`memory decline <item> failed, the close stands: …`); the row can be
     written by hand. The output names the item declined, never the why. A close without a why writes no row: `harness
-    memory` reads it as `closed against a hold` when every op held.
+    memory` reads it as `closed against a hold` when every op held. **A continue's earlier rules are not declined**:
+    each segment's curation overwrites the ledger's `memory-result.json`, so a close of the rules PR with a why declines
+    the last segment's `rules/<n>` only (as `harness memory proposals` lists them); an earlier segment's rule on the same
+    PR is declined by hand (V2-04's review, M2).
   - **Both PRs on the card** (*default*): the `merge` verb takes any row's PR, facts or rules, under the same review
     rule. Invariant 3 holds: `memory_merge` and `merged_by: driver` are the driver's and untouched; a card merge is
     `harness requests`' call on Michael's request, and `harness memory` reads it as his (`merged_by` null).
@@ -75,6 +83,16 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
   in the spec, which names `docs/plans/`): `docs/plans` is in `CHECK_KEY_IGNORE`, so a check reading it fails
   `tests/checks/check-key.sh` (a main moved only there merges without a re-base, and a tree changed only there stays
   cached green): the check would not run when the checklist changes. A one-paragraph pointer stays at the spec's path.
+- **Choice (V2-04, the review's fixes):**
+  - **The card's retry is a new id** (*default*, review I1): a handled id is never run again (D25's duplicate rule),
+    and every outcome writes `done/<id>.json`, so the checklist's id hashes the attempt too (1 at first) and the result
+    page offers **Try again** (attempt + 1) when gh ran and failed (`ok` false, `refused` null) or the PR was not in the
+    ledger yet; and the card shows **no actions until** the ledger's `<project>/<run>/memory.md` exists, since the event
+    leaves at the curator step and `ledger()` writes the `memory.jsonl` row with that copy, minutes later. The
+    harness's rules are unchanged: leaving an unknown-PR request of a live run pending would be a rule of its own.
+  - **The last ledger row for a PR** (*default*, review M4): `validate` and `declines` read `ledgerRow` (`findLast`), as
+    `summary.mjs memory-line` keeps one row per url, so after a hand edit an older `review: ok` row lets no merge past
+    a newer one.
 - **Rejected:**
   - `--match-head-commit` on the card's merge (GitHub's button has none; the card is the same hand);
   - a facts-only merge (§12's direction is hands-off for code rules, and the rules PR two taps away on GitHub while the
@@ -94,3 +112,11 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
   not 1 or 2`; `summary.mjs memoryView: held and failed columns, … and the review: tally line` → `…, the review: tally
   line, and a run-level declined row is no override either`. `tests/checks/request-files.sh`'s v2 answer now expects
   `v 2 carries merge or close` (its name unchanged: v 2 is still rejected there).
+- **Checks (V2-02, `+12 ~0 −0`; V2-03, `+1`; V2-04, `+1 ~1 −0`):** V2-04's review replaced V2-03's `the n8n-home checklist
+  names the v2 event, request and result fixtures by path, and every tests/fixtures path it names exists` → `the n8n-home
+  checklist names the v2 fixtures by path, every tests/fixtures path it names exists, and it holds the card's no actions
+  before the ledger and Try again`, and added `requests.mjs: with two ledger rows for one PR, validate and declines read
+  the last, as memory-line keeps it`. **The milestone: +28 ~3 −0 against a `check_budget` of 25**, three over: the
+  spec's V2-02 step 1 names twelve stub-gh behaviours (each refusal, the decline rows per PR, gh's own refusal, the argv
+  bytes) and V2-01's names every refusal reason, each its own check so a red one names the rule; V2-04's one is the
+  review's M4, a unit test.

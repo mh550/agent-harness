@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { cli } from "./cli-same.mjs";
-import { BACKUP_REFUSAL, declineItems, inBackupWindow, logLine, resultJson, resultName, validateRequest } from "../../lib/requests.mjs";
+import { BACKUP_REFUSAL, declineItems, inBackupWindow, ledgerRow, logLine, resultJson, resultName, validateRequest } from "../../lib/requests.mjs";
 
 // the requests n8n-home's own buildRequest wrote (tests/fixtures/requests/README.md): every shape here is one of them
 const FX = fileURLToPath(new URL("../fixtures/requests/", import.meta.url));
@@ -269,6 +269,13 @@ test("requests.mjs: a v2 merge and close on a known PR of the request's run are 
   // the row's review is the request's to carry: requests.sh refuses a merge of an unreviewed PR (V2-02)
   assert.equal(v2(MERGE, {}, { memory: [{ ...LEDGER[0], review: "nothing to review" }] }).review, "nothing to review");
   assert.equal(v2(MERGE, {}, { memory: [{ ...LEDGER[0], review: undefined }] }).review, null);
+});
+
+test("requests.mjs: with two ledger rows for one PR, validate and declines read the last, as memory-line keeps it", () => {
+  const old = { ...LEDGER[0], review: "ok", n: 1 }, cur = { ...LEDGER[0], review: "the reviewer hit a limit", n: 2 };
+  assert.equal(ledgerRow([old, LEDGER[1], cur], FACTS_PR)?.n, 2);
+  assert.equal(ledgerRow([old], OTHER_PR), undefined);
+  assert.equal(v2(MERGE, {}, { memory: [old, cur] }).review, "the reviewer hit a limit", "an older ok row lets no merge past a newer one");
 });
 
 test("requests.mjs: a v2 pr no ledger row has, or of another run, is refused naming the PR", () => {

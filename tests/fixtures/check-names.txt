@@ -1553,6 +1553,7 @@ requests.mjs: the validate CLI takes --memory and prints pr, review and why as l
 requests.mjs: unparsable text waits at 5 s and is rejected at 11 s
 requests.mjs: v 2 with answer is rejected, v 3 is not 1 or 2
 requests.mjs: verb merge is rejected
+requests.mjs: with two ledger rows for one PR, validate and declines read the last, as memory-line keeps it
 resolve fallbacks: a lane's sync_main hands its conflict to resolve: refused is 2 with no record, unresolved the main_conflict record with tried
 resolve fallbacks: a refused session is deferred: no needs record, rebase-M2 back, then it re-bases and merges after the wait
 resolve fallbacks: a session that gives up counts as escalated in summary.json and report.md's Conflicts row
@@ -1874,7 +1875,7 @@ the limit window is shared
 the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value
 the lock freed: the helper answers again (no start)
 the memo writes nothing to disk (no file outside the check's own) and nothing to stderr
-the n8n-home checklist names the v2 event, request and result fixtures by path, and every tests/fixtures path it names exists
+the n8n-home checklist names the v2 fixtures by path, every tests/fixtures path it names exists, and it holds the card's no actions before the ledger and Try again
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
 the park notification is the record's: body PARKED: first, the question, the card's do commands, the answer line; Click needs.md

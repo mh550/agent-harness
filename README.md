@@ -351,8 +351,9 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   [--comment <why>]`; the result carries `pr` and `state`. The merge is yours, as GitHub's button: `harness memory`
   counts a merge over a fail as your override. A close with a why is a decline: the next curator reads it under
   *Michael declined* (the facts PR: `harness memory decline <run> --why`; the rules PR: one `decline <run>/<n>` per
-  rule), and it is no override; a close without one is `closed against a hold` when every op held. Closed on GitHub
-  with a reason the curator should read: `harness memory decline <run> --why "<text>"` by hand. The card itself is
+  rule of the last segment's curation: a continue's earlier rules on that PR are declined by hand), and it is no override; a close without one is `closed against a hold` when every op held. Closed on GitHub
+  with a reason the curator should read: `harness memory decline <run> --why "<text>"` by hand. A failed action (gh down, or a tap before the run's record is in the ledger) is tried again with the card's **Try
+  again**, a new request id: a handled id is never run twice. The card itself is
   n8n-home's, built there from `docs/2026-11-10-review-surface-n8n-home.md` (the intake's v2 rule, workflow 42,
   the request JSON, the deploy order); its last step is yours: `EVENT_V2=1` in your config, after that deploy.
   After a unit file changes in git, `systemctl --user daemon-reload`. Undo: `systemctl --user disable --now

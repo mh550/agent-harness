@@ -114,7 +114,7 @@ check "harness requests: a v2 close of the rules PR with a why writes one declin
   && jq -se --arg w "$WHY" "map(select(.n != null)) | map([.run, .n, .tier, .verdict, .why == \$w]) == [[\"r1\", 1, 2, \"declined\", true], [\"r1\", 2, 2, \"declined\", true]]" "$L/memory-answers.jsonl" > /dev/null \
   && grep -xF "r1/1 · rules · CLAUDE.md · ## Code rules · ${RT[0]} · declined: $WHY" "$T/c2-proposals.out" > /dev/null \
   && grep -xF "r1/2 · rules · CLAUDE.md · ## Code rules · ${RT[1]} · declined: $WHY" "$T/c2-proposals.out" > /dev/null \
-  && grep -E "^r1 · proj · rules · .* · closed · 3 answered$|^r1 · proj · (facts|rules) · .* · 3 answered$" "$T/c2-memory.out" > /dev/null'
+  && grep -E "^r1 · proj · rules · .* · closed · 3 answered$" "$T/c2-memory.out" > /dev/null'
 check "harness requests: a why holding a backtick, \$( and a quote reaches gh pr close --comment byte for byte, and lib/requests.sh holds no eval or bash -c" \
   'cmp <(printf %s "$WHY") <(printf %s "$(cat "$P/pr-2.comment")") && [[ $(grep -c "eval\|bash -c" "$RQ") == 0 ]] && ! grep -F "rm -rf" "$R/requests.log" > /dev/null'
 
@@ -152,7 +152,9 @@ for f in n8n-event-v2-memory.json requests/merge.json requests/close.json reques
   grep -F "tests/fixtures/$f" "$CL" > /dev/null 2>&1 || need+=("$f"); done
 while read -r f; do [[ -e $HERE/fixtures/${f#tests/fixtures/} ]] || gone+=("$f"); done < <(grep -oE 'tests/fixtures/[A-Za-z0-9_./-]+' "$CL" 2>/dev/null)
 nf=$(grep -cE 'tests/fixtures/[A-Za-z0-9_./-]+' "$CL" 2>/dev/null)
-check "the n8n-home checklist names the v2 event, request and result fixtures by path, and every tests/fixtures path it names exists" \
-  '[[ -f $CL && ${#need[@]} == 0 && ${#gone[@]} == 0 ]] && (( ${nf:-0} >= 5 ))'
+# a handled id is never run again, so a tap before the ledger row, or gh down once, needs a new id: the card's retry rules
+check "the n8n-home checklist names the v2 fixtures by path, every tests/fixtures path it names exists, and it holds the card's no actions before the ledger and Try again" \
+  '[[ -f $CL && ${#need[@]} == 0 && ${#gone[@]} == 0 ]] && (( ${nf:-0} >= 5 )) \
+  && grep -F "no actions until" "$CL" > /dev/null && grep -F "the note and the attempt" "$CL" > /dev/null && grep -F "**Try again**" "$CL" > /dev/null'
 
 suite_end
