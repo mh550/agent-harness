@@ -1,3 +1,7 @@
 - 2026-11-10 19:34 · test count: parsed (generic)
 - 2026-11-10 19:41 · feature list written: 0/7 passing
 - 2026-11-10 19:41 · lint: 1 finding (review-small: 1); the list is not edited — first: V1-03 step - review-small
+- 2026-11-10 19:41 · lane V1 opened (slot 0, port 7837, from c778a57)
+- 2026-11-10 19:41 · context.md for V1-01: 4985 bytes
+- 2026-11-10 19:44 · lane V1: stopped (the driver is exiting)
+- 2026-11-10 19:44 · services stopped (driver exited)
