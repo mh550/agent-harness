@@ -1,10 +1,12 @@
 // lib/notify.mjs: the body cap, ntfy's actions header, GitHub URLs and the INBOX question.   node --test tests/unit/notify.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sameAsCli } from "./cli-same.mjs";
+import { sameAsCli, sameBytes } from "./cli-same.mjs";
 import { trimBody, actionsHeader as a, githubUrls as g, inboxQuestion as q } from "../../lib/notify.mjs";
 
 test("notify.mjs: trimBody caps at 3500 bytes with …", () => {
@@ -70,9 +72,20 @@ test("notify.mjs: main's trim with an io that has no stdin throws without readin
 const v1Keys = () => Object.keys(JSON.parse(readFileSync(new URL("../fixtures/n8n-event-v1.json", import.meta.url), "utf8"))).join(" ");
 const evf = { kind: "park", run: "r1", project: "p", feature: "B", title: "t", body: "b", priority: "high", click: "", actions: "" };
 
-test("notify.mjs event: buildEvent's keys are the v1 fixture's, in order", async () => {
-  const { buildEvent } = await import("../../lib/notify.mjs");
-  assert.equal(Object.keys(buildEvent(evf)).join(" "), v1Keys());
+// every v1 kind's bytes before v2 (2026-11-10, the fixed now and uuid below): node -e 'import("./lib/notify.mjs").then(…)'
+// over KINDS, each JSON.stringify(buildEvent({...evf, kind}, now, uuid)) joined by "\n", sha256
+const V1_SHA = "84b98d33b04cba8490838428646a0a9a2ce67cc9180aebc5dd7b131e925a7c7f";
+const NOW = new Date("2026-11-07T12:00:00Z"), UUID = () => "00000000-0000-4000-8000-000000000000";
+test("notify.mjs event: every kind but memory is the v1 fixture's 13 keys in order with v 1, the bytes before v2", async () => {
+  const { buildEvent, KINDS } = await import("../../lib/notify.mjs");
+  const v1 = KINDS.filter(k => k !== "memory");
+  assert.equal(v1.join(" "), "park needs_michael blocked ended debrief verified merged started limit other");
+  for (const kind of v1) {
+    const e = buildEvent({ ...evf, kind, memory: undefined }, NOW, UUID);
+    assert.equal(`${e.v} ${Object.keys(e).join(" ")}`, `1 ${v1Keys()}`, kind);
+  }
+  const s = v1.map(kind => JSON.stringify(buildEvent({ ...evf, kind }, NOW, UUID))).join("\n");
+  assert.equal(createHash("sha256").update(s).digest("hex"), V1_SHA);
 });
 
 test("notify.mjs event: v is 1, id a uuid, at an ISO time", async () => {
@@ -132,4 +145,58 @@ test("notify.mjs event: a given id= is the event's id", async () => {
   assert.equal(buildEvent({ ...evf, id }).id, id);   // the bundle's events/<id>/ is the event's
   for (const bad of ["", "short", "../x/../y-zzzz", "a".repeat(65), "has space 123"])
     assert.match(buildEvent({ ...evf, id: bad }).id, /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, bad);
+});
+
+// ---- v2: the memory kind alone (docs/specs/2026-11-10-review-surface.md §V1-01; tests/fixtures/n8n-event-v2-memory.json) ----
+// the v2 fixture is this stdout over tests/fixtures/memory/event-card.json (itself `node lib/memreview.mjs card event-verdicts.json event-memory.json event-input.json pr` on that directory's stub-run files), with the id, at and both PR URLs put back as placeholders:
+// M=tests/fixtures/memory c=$M/event-card.json f=$(jq -r .pr $c) r=$(jq -r .rules_pr $c); node lib/notify.mjs event kind=memory run=mev project=proj feature= title="$(node lib/memreview.mjs title $c mev)" body="$(node lib/memreview.mjs line $M/event-verdicts.json $M/event-memory.json)" priority= click="$f" actions="$(node lib/notify.mjs actions "Facts PR" "$f" "Rules PR" "$r")" context= memory=$c | jq -c --arg f "$f" --arg r "$r" '.id = "<uuid>" | .at = "<ISO 8601>" | walk(if type == "string" then split($f) | join("<facts PR url>") | split($r) | join("<rules PR url>") else . end)' > tests/fixtures/n8n-event-v2-memory.json
+const v2 = () => JSON.parse(readFileSync(new URL("../fixtures/n8n-event-v2-memory.json", import.meta.url), "utf8"));
+const MEM = new URL("../fixtures/memory/event-card.json", import.meta.url).pathname;
+
+test("notify.mjs event: ROUTED is v1's four and ROUTED_V2 is it plus memory, the kinds notify.sh's routing arms name", async () => {
+  const { ROUTED, ROUTED_V2, KINDS } = await import("../../lib/notify.mjs");
+  assert.equal(JSON.stringify(ROUTED), '["park","needs_michael","blocked","debrief"]');
+  assert.equal(JSON.stringify(ROUTED_V2), '["park","needs_michael","blocked","debrief","memory"]');
+  assert.ok(KINDS.includes("memory"));
+  // notify.sh's case line is what routes: its EVENT_URL arm names ROUTED, its EVENT_URL-and-EVENT_V2 arm the rest of ROUTED_V2
+  const sh = readFileSync(new URL("../../lib/notify.sh", import.meta.url), "utf8"), arms = { v1: [], v2: [] };
+  for (const m of sh.matchAll(/([a-z_|]+)\) \[\[ -n \$\{EVENT_URL:-\}( && \$\{EVENT_V2:-\} == 1)? \]\] && notify_event && return 0/g))
+    arms[m[2] ? "v2" : "v1"].push(...m[1].split("|"));
+  assert.equal(JSON.stringify(arms.v1), JSON.stringify(ROUTED));
+  assert.equal(JSON.stringify(arms.v2), JSON.stringify(ROUTED_V2.filter(k => !ROUTED.includes(k))));
+});
+
+test("notify.mjs event: the memory kind with memory=<file> is v 2, the v2 fixture's 14 keys in order, the file's object under memory", async () => {
+  const { cli } = await import("./cli-same.mjs");
+  const { line, title } = await import("../../lib/memreview.mjs");
+  const fx = n => JSON.parse(readFileSync(new URL(`../fixtures/memory/event-${n}.json`, import.meta.url), "utf8")), c = fx("card");
+  const argv = ["event", "kind=memory", "run=mev", "project=proj", "feature=", `title=${title(c, "mev")}`, `body=${line(fx("verdicts"), fx("memory"))}`,
+    "priority=", `click=${c.pr}`, `actions=${a([{ label: "Facts PR", url: c.pr }, { label: "Rules PR", url: c.rules_pr }])}`, "context=", `memory=${MEM}`];
+  const r = cli("notify.mjs", argv);
+  assert.equal(r.rc, 0);
+  assert.equal(r.out.split("\n").length, 2, r.out);
+  const e = JSON.parse(r.out);
+  assert.equal(Object.keys(e).join(" "), Object.keys(v2()).join(" "));
+  assert.equal(Object.keys(e).slice(0, 13).join(" "), v1Keys());
+  assert.equal(JSON.stringify([e.v, e.kind, e.feature, e.priority, e.context]), '[2,"memory",null,"",null]');
+  assert.equal(JSON.stringify(e.memory), JSON.stringify(JSON.parse(readFileSync(MEM, "utf8"))));
+  assert.equal(Object.keys(e.memory).join(" "), Object.keys(v2().memory).join(" "));
+  const placed = JSON.stringify({ ...e, id: "<uuid>", at: "<ISO 8601>" }).split(c.pr).join("<facts PR url>").split(c.rules_pr).join("<rules PR url>");
+  sameBytes(`${placed}\n`, readFileSync(new URL("../fixtures/n8n-event-v2-memory.json", import.meta.url), "utf8"), "the v2 fixture");
+  const m = await sameAsCli("notify.mjs", argv.map(a => (a.startsWith("memory=") ? "memory=/nonexistent/m.json" : a)));
+  assert.equal(`${m.rc} ${JSON.stringify(m.out)}`, '2 ""', "an unreadable memory= file");
+});
+
+test("notify.mjs event: memory= on a v1 kind, and the memory kind without it, print nothing and exit 2; an empty memory= is none", async () => {
+  const { cli } = await import("./cli-same.mjs");
+  const { buildEvent } = await import("../../lib/notify.mjs");
+  const a = spawnSync(process.execPath, [new URL("../../lib/notify.mjs", import.meta.url).pathname, "event", "kind=park", "title=t", `memory=${MEM}`]);
+  assert.equal(`${a.status} ${JSON.stringify(a.stdout.toString())}`, '2 ""');
+  assert.match(a.stderr.toString(), /memory= is the memory kind's/);
+  const b = cli("notify.mjs", ["event", "kind=memory", "title=t"]);
+  assert.equal(`${b.rc} ${JSON.stringify(b.out)}`, '2 ""');
+  const c = cli("notify.mjs", ["event", "kind=park", "title=t", "memory="]);   // notify_event's call passes it empty
+  assert.equal(`${c.rc} ${JSON.parse(c.out).v} ${Object.keys(JSON.parse(c.out)).join(" ")}`, `0 1 ${v1Keys()}`);
+  assert.throws(() => buildEvent({ ...evf, memory: {} }), /memory= is the memory kind's/);
+  assert.throws(() => buildEvent({ ...evf, kind: "memory" }), /needs memory=/);
 });

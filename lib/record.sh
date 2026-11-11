@@ -483,7 +483,8 @@ memory_json() {
 # branch's tree is never touched, so record_pr's guard holds. Each outcome one note; memory.json the counts
 memory_pr() {
   local why n w=$SCRATCH/memory r=$SCRATCH/memory-result.json url="" rurl="" fhead="" fbody=0 o a rl d p rd x f files=() rfiles=() rb=()
-  rm -f "$r" "$REC/memory-review.json" "$REC/memory-review-input.json" "$SCRATCH/memory-review.json" "$SCRATCH/memory-verdicts.json" "$SCRATCH/memory-review.md"   # an earlier segment's review never sits beside this one's ops
+  rm -f "$r" "$REC/memory-review.json" "$REC/memory-review-input.json" "$SCRATCH/memory-review.json" "$SCRATCH/memory-verdicts.json" "$SCRATCH/memory-review.md" \
+    "$REC/memory-event.json" "$SCRATCH/memory-event.json"   # an earlier segment's review and card never sit beside this one's ops
   REVIEWED="" REVIEW_NONE="" REVIEW_HELD=0 REVIEW_FAILED=0 MERGED_BY="" AFTER_REVIEW="" FAILS_DROPPED="" REVIEW_COST=0 REVIEW_S=0 REVIEW_MODEL=""; local la vf=() past=() c; [[ -n $RULES_STOP ]] || rb=("$SCRATCH/memory-rules-base")
   [[ -z $RULES_STOP && -d $SCRATCH/memory-rules-mb ]] && rb+=("$SCRATCH/memory-rules-mb" "$SCRATCH/memory-main")
   why=$(node "$HARNESS_HOME/lib/curator.mjs" validate "$SCRATCH/memory-ops.json" 2> /dev/null) || {
@@ -594,9 +595,23 @@ memory_pr() {
   memory_record "$r"
   memory_wt_gone
   memory_json "$o" "$a" "$rl" "$d" "$p" "${url:-$MEM_URL}" "${rurl:-$RULES_URL}"
-  # after both PR notes, the one line the F3d card will carry (memreview.mjs line: nothing when nothing was reviewed)
+  # after both PR notes, the one line the memory event carries as its body (memreview.mjs line: nothing when nothing was reviewed)
   x=$(node "$HARNESS_HOME/lib/memreview.mjs" line "$SCRATCH/memory-verdicts.json" "$STATE/memory.json" 2>> "$STATE/run.log") && [[ -n $x ]] && note "$x"
+  [[ ($url == http* || $rurl == http*) && -n $x ]] && memory_event "$x"
   return 0
+}
+# <the memory: line> → the memory event (docs/specs/2026-11-10-review-surface.md §V1-02), once per segment that reached a
+# PR: memreview.mjs card's object in the record as memory-event.json, then one notify (n8n as v2 with EVENT_V2=1, else
+# the ntfy line); its click the facts PR, else the rules PR
+memory_event() {
+  local c=$SCRATCH/memory-event.json f q t a
+  node "$HARNESS_HOME/lib/memreview.mjs" card "$SCRATCH/memory-verdicts.json" "$STATE/memory.json" "$SCRATCH/memory-review-input.json" "$MEMORY_POLICY" > "$c" 2>> "$STATE/run.log" \
+    && [[ -s $c ]] || { rm -f "$c"; note "memory: the memory event's card failed (see run.log); no memory notification"; return 0; }
+  cp "$c" "$REC/memory-event.json"
+  f=$(jq -r '.pr // ""' "$c") q=$(jq -r '.rules_pr // ""' "$c")   # one each: a tab-split read folds an empty .pr
+  t=$(node "$HARNESS_HOME/lib/memreview.mjs" title "$c" "$RUN_ID" 2>> "$STATE/run.log")
+  a=$(node "$HARNESS_HOME/lib/notify.mjs" actions "Facts PR" "$f" "Rules PR" "$q" 2>> "$STATE/run.log")
+  notify "$1" title="$t" body="$1" click="${f:-$q}" actions="$a" kind=memory memory="$c" priority=""
 }
 # <dry result> <after-facts dir> <after-rules dir> → one sum per file the landing reads or compares against: the ops,
 # the dry result and its texts, the bases, the review's input and Michael's answers (each sorted by path)
