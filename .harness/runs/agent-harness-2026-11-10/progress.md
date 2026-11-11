@@ -11,6 +11,21 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-10-review-surface-event.md` (V1) and `journal/decisions/2026-11-10-review-surface-verbs.md` (V2). The one live step (appending `EVENT_V2=1` to the user config after the n8n-home deploy) is written out in the V2-03 checklist for you; no session runs it.
 
+### 2026-11-10 23:06 · V2-02 · passes
+
+harness requests runs v2 merge/close: ledger rule in node, then gh pr view state (merged/closed refused, claim to rejected/), the review rule on merge, then gh pr merge <url> --merge or gh pr close <url> [--comment why] as argv; a close with a why writes decline rows via harness memory decline (requests.mjs declineItems/declines). Stub gh by-URL merge/close; 11 checks, 1 unit test; docs.
+
+- **Files:** lib/requests.sh, lib/requests.mjs, tests/stub-gh.sh, tests/checks/memory-requests.sh, tests/unit/requests.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/architecture.md, README.md, journal/decisions/2026-11-10-review-surface-verbs.md, journal/decisions/2026-11-03-suite-tiers.md
+- **Verified:** check.sh --fast green 1161 tests (133 s); the 11 new memory-requests checks failed against HEAD's requests.sh (2/13) and pass now (13/13, 3.6 s alone at TEST_JOBS=4); memory-review memory-branch lanes-record-pr memory-requests request-files 103/103; requests.test.mjs 30/30; grep -c 'eval\|bash -c' lib/requests.sh 0; git diff origin/main -- lib/record.sh has no memory_merge line
+- **Tests:** 1149 → 1161
+- **Dead end:** writing requests into requests/ before any harness requests call — the directory does not exist yet: req's redirect fails and the pass sees none pending; the check runs harness requests once first
+- **Discovery** (affects V2-04, V2-03): requests.sh's v2 refusals after the claim (already merged/closed, review did not run) move done/<id>.request.json to rejected/; validate's --memory is <ledger>/memory.jsonl
+- **Discovery** (affects V2-04): requests.mjs declines --memory --pr --ledger prints the harness memory decline items (facts: <run>; rules: <run>/<n> per rules[] n of the ledger's memory-result.json)
+- **Discovery** (affects project): gh 2.45's pr close/merge message formats are readable offline: strings $(command -v gh) | grep 'Closed pull request' (agent-harness-2026-11-10 2026-11-10)
+- **Discovery** (affects V2-03, V2-04): memory-requests.sh builds memory.jsonl via summary.mjs memory-line over event-memory.json (r1 facts pr/1 + rules pr/2 all held, r2 pr/3 review none) and resets the stub PRs per part
+- **Proposed change:** V2-02 step 1's 'a second merge of a merged PR moves to requests/rejected/' means the claimed request is moved there after gh's state answers MERGED: the built order is claim, view, then move; V2-04 may read it
+- *05-V2-02 · claude-opus-5-5*
+
 ### 2026-11-10 22:42 · V2-01 · passes
 
 requests.mjs v2: merge/close on a ledger/memory.jsonl PR of the request run (--memory read in node), pr URL shape first, close why ≤300 one line, merge why refused; 12-key result (pr, state), pr= in requests.log, validate pr/review/why lines. Run-level decline: harness memory decline <run> --why (n/key null); latestAnswers keeps it, apply ignores it, answersText renders it. Docs, decision.
