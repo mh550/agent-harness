@@ -1064,6 +1064,7 @@ the helper killed between two calls: the next call is a spawn (+1), the spawn's 
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value
 the lock freed: the helper answers again (no start)
+the n8n-home checklist names the v2 event, request and result fixtures by path, and every tests/fixtures path it names exists
 the prompts ask every question for a Files: line and an INBOX question below the comment block, headed ### <id>: …
 the queue runner and attach target their tmux sessions exactly (=h-queue, =h-<run>), never by prefix
 the queue starts no run past the weekly budget

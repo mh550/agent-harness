@@ -1874,6 +1874,7 @@ the limit window is shared
 the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value
 the lock freed: the helper answers again (no start)
 the memo writes nothing to disk (no file outside the check's own) and nothing to stderr
+the n8n-home checklist names the v2 event, request and result fixtures by path, and every tests/fixtures path it names exists
 the next debrief covers what the failed and killed ones missed
 the park goes out after the run branch is pushed (the link shows the question)
 the park notification is the record's: body PARKED: first, the question, the card's do commands, the answer line; Click needs.md

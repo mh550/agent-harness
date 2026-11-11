@@ -31,7 +31,9 @@ n8n-home's `buildRequest` has no v2 branch yet, so these are made here and n8n-h
 will write for a memory PR's two actions, in the key order `v,id,at,verb,run,pr[,why],source,event`, written
 `JSON.stringify(request) + "\n"` in one write as above. `tests/unit/requests.test.mjs` runs the block below into an empty
 directory and compares the bytes, so a fixture and its command never differ. A test that needs another shape changes a
-value (`id`, `run`, `pr`, `why`, `v`, `verb`) with jq or a spread, never a hand-typed shape.
+value (`id`, `run`, `pr`, `why`, `v`, `verb`) with jq or a spread, never a hand-typed shape. Their reader outside this
+repo is n8n-home: `docs/2026-11-10-review-surface-n8n-home.md`, the checklist its session builds the card from,
+names the three requests and `result-v2.json` by path (`tests/checks/memory-requests.sh` keeps every path it names real).
 
 - `merge.json` · `{ v: 2, verb: "merge", run: "r1", pr: "https://example.test/pr/1", source: "n8n-card", event: null, at: "2026-11-10T00:00:00.000Z" }`, id `req-0101-merge`: run r1's facts PR, as tests/stub-gh.sh names a PR
 - `close.json` · `{ v: 2, verb: "close", run: "r1", pr: "https://example.test/pr/2", source, event, at }`, id `req-0102-close`: its rules PR, no why

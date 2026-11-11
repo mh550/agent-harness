@@ -352,7 +352,9 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   counts a merge over a fail as your override. A close with a why is a decline: the next curator reads it under
   *Michael declined* (the facts PR: `harness memory decline <run> --why`; the rules PR: one `decline <run>/<n>` per
   rule), and it is no override; a close without one is `closed against a hold` when every op held. Closed on GitHub
-  with a reason the curator should read: `harness memory decline <run> --why "<text>"` by hand.
+  with a reason the curator should read: `harness memory decline <run> --why "<text>"` by hand. The card itself is
+  n8n-home's, built there from `docs/2026-11-10-review-surface-n8n-home.md` (the intake's v2 rule, workflow 42,
+  the request JSON, the deploy order); its last step is yours: `EVENT_V2=1` in your config, after that deploy.
   After a unit file changes in git, `systemctl --user daemon-reload`. Undo: `systemctl --user disable --now
   harness-requests.path harness-requests.service`; the request files stay (decisions/2026-10-22-request-inbox).
 - **Permissions:** the policy (agents merge, push and clean up; only the irreversible is denied; production is gated

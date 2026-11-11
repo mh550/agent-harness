@@ -66,6 +66,15 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
     comment as `pr-N.comment` and prints `✓ Closed pull request #N (<title>)` on stderr, an already closed PR `!
     Pull request #N (<title>) is already closed` (exit 0) and a merged one `X Pull request #N (<title>) can't be closed
     because it was already merged` (exit 1): the formats read from the 2.45.0 binary on this box, no live call.
+- **Choice (V2-03, the n8n-home half):** a checklist in this repo, built there (*default*):
+  `docs/2026-11-10-review-surface-n8n-home.md`, read by a session in n8n-home under its live-staged protocol,
+  with the card its own sub-workflow, **42 memory card**, no LLM call (40's card is a question Claude words; this one
+  is a verdict with two fixed actions); this run changes nothing in n8n-home, and a fast check
+  (`tests/checks/memory-requests.sh`) keeps every fixture path the checklist names real. Michael's one step,
+  `EVENT_V2=1`, is the checklist's last, after that deploy. **It lives in `docs/`, not `docs/plans/`** (*default*, not
+  in the spec, which names `docs/plans/`): `docs/plans` is in `CHECK_KEY_IGNORE`, so a check reading it fails
+  `tests/checks/check-key.sh` (a main moved only there merges without a re-base, and a tree changed only there stays
+  cached green): the check would not run when the checklist changes. A one-paragraph pointer stays at the spec's path.
 - **Rejected:**
   - `--match-head-commit` on the card's merge (GitHub's button has none; the card is the same hand);
   - a facts-only merge (§12's direction is hands-off for code rules, and the rules PR two taps away on GitHub while the
@@ -77,7 +86,10 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
   - a why on a merge kept in a row (the merge's reason is the override the count already reads);
   - a run-level row with a key (`run:<run>`): a key is what `apply` matches, so a made-up one could match a line;
   - numbering the facts PR's ops so a close declines each (`tier 1 is not numbered`: a fact is never Michael's to
-    decline, and the curator would read each fact as refused for good).
+    decline, and the curator would read each fact as refused for good);
+  - building n8n-home's half from this run (another project's checkout, and a live one: its own session owns it);
+  - the checklist in `docs/plans/` with its check (the check would be stale whenever only the checklist changed);
+  - the memory card as a branch of 40 (40 asks Claude to word a question; every word of this card is the event's).
 - **Checks (V2-01, `+14 ~2 −0`):** `requests.mjs: v 2 is rejected` → `requests.mjs: v 2 with answer is rejected, v 3 is
   not 1 or 2`; `summary.mjs memoryView: held and failed columns, … and the review: tally line` → `…, the review: tally
   line, and a run-level declined row is no override either`. `tests/checks/request-files.sh`'s v2 answer now expects

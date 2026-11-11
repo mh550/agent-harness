@@ -146,4 +146,13 @@ check "harness requests: gh refusing a v2 merge gives ok false with gh's GraphQL
   '(( g1 == 0 )) && res req-0111-gref ".ok == false and .exit == 1 and .refused == null and .state == null and (.output | contains(\"GraphQL: Head branch was modified.\"))" \
   && [[ ! -e $R/rejected/req-0111-gref.json && -f $R/done/req-0111-gref.request.json && ! -e $P/pr-1.merged ]] && logl req-0111-gref | grep -E " pr=$U1 failed exit=1$" > /dev/null'
 
+# ---- the n8n-home half (V2-03): the checklist a session there builds from names this repo's fixtures, and each is real ----
+CL=$HERE/../docs/2026-11-10-review-surface-n8n-home.md need=() gone=()
+for f in n8n-event-v2-memory.json requests/merge.json requests/close.json requests/close-why.json requests/result-v2.json; do
+  grep -F "tests/fixtures/$f" "$CL" > /dev/null 2>&1 || need+=("$f"); done
+while read -r f; do [[ -e $HERE/fixtures/${f#tests/fixtures/} ]] || gone+=("$f"); done < <(grep -oE 'tests/fixtures/[A-Za-z0-9_./-]+' "$CL" 2>/dev/null)
+nf=$(grep -cE 'tests/fixtures/[A-Za-z0-9_./-]+' "$CL" 2>/dev/null)
+check "the n8n-home checklist names the v2 event, request and result fixtures by path, and every tests/fixtures path it names exists" \
+  '[[ -f $CL && ${#need[@]} == 0 && ${#gone[@]} == 0 ]] && (( ${nf:-0} >= 5 ))'
+
 suite_end
