@@ -77,3 +77,43 @@ test("memory.mjs: a continue's renumbered item is another item: its answer never
   assert.equal(rows.map(r => `${r.n}:${r.verdict}`).join(), "1:declined,1:accepted");
   assert.equal(answersTally(rows), "answers: accepted 1 · declined 1");
 });
+
+// ---- the run-level decline (V2-01, docs/specs/2026-11-10-review-surface.md §V2-02 3): the facts PR closed with a why ----
+const RUN_ROW = { run: "mp", project: "proj", n: null, tier: 1, verdict: "declined", why: "these facts are stale", file: null, section: null, text: null, key: null, at: AT };
+
+test("memory.mjs: answerRow without n is the run-level row {run, project, n: null, tier: 1, verdict: declined, why, …: null, at}; upsert replaces an earlier one of its run and leaves its numbered rows", () => {
+  const { row } = answerRow(RESULT, { run: "mp", project: "proj", verdict: "declined", why: "these facts are stale", at: AT });
+  assert.equal(JSON.stringify(row), JSON.stringify(RUN_ROW));
+  assert.equal(JSON.stringify(answerRow(null, { run: "mp", project: "proj", n: null, verdict: "declined", why: "these facts are stale", at: AT }).row), JSON.stringify(RUN_ROW), "no result needed");
+  assert.equal(answerRow(RESULT, { run: "mp", project: "proj", verdict: "accepted", why: "x", at: AT }).why, "a run alone takes decline only: accept names <run>/<n>");
+  for (const why of ["a\nb", "a\u2028b", "a\u001b[2Jb"]) assert.equal(answerRow(RESULT, { run: "mp", project: "proj", verdict: "declined", why, at: AT }).why, "--why must be one non-blank line of at most 300 characters");
+  const numbered = answerRow(RESULT, { run: "mp", project: "proj", n: 1, verdict: "declined", why: "x", at: AT }).row;
+  let rows = upsert([numbered], RUN_ROW);
+  rows = upsert(rows, { ...RUN_ROW, why: "second thoughts" });
+  rows = upsert(rows, { ...RUN_ROW, run: "mo" });
+  assert.equal(rows.map(r => `${r.run}/${r.n}:${r.why}`).join(), "mp/1:x,mp/null:second thoughts,mo/null:these facts are stale");
+});
+
+test("memory.mjs: proposalsView and answersTally count a run-level row as one declined answer of its run", () => {
+  assert.equal(answersTally([RUN_ROW]), "answers: accepted 0 · declined 1");
+  assert.equal(answersTally([RUN_ROW, { ...RUN_ROW, why: "again" }]), "answers: accepted 0 · declined 1", "replaced, counted once");
+  assert.equal(answersTally([RUN_ROW], ["mo"]), "answers: accepted 0 · declined 0");
+  assert.equal(proposalsView(RESULT, "mp", [RUN_ROW]).join("\n"), [`mp/1 · rules · CLAUDE.md · ## Code rules · ${RULE.text}`,
+    `mp/2 · proposal · CLAUDE.md · ## Live system · ${PROP.text}`, "mp · the facts PR · declined: these facts are stale"].join("\n"));
+  assert.equal(proposalsView({ ...RESULT, rules: [], proposed: [] }, "mp", [RUN_ROW]).join("\n"), "mp: no numbered rules or proposals\nmp · the facts PR · declined: these facts are stale");
+  assert.equal(proposalsView(RESULT, "mo", [RUN_ROW]).length, 2, "another run's row is not this one's");
+});
+
+test("memory.mjs main: answer with - for <n> writes the run-level row beside the run's numbered ones and prints its line", () => {
+  const d = mkdtempSync(join(tmpdir(), "memory-"));
+  try {
+    const res = join(d, "memory-result.json"), file = join(d, "memory-answers.jsonl");
+    writeFileSync(res, JSON.stringify(RESULT));
+    main(["answer", file, res, "proj", "mp", "1", "declined", "x"], { env: {} });
+    const one = main(["answer", file, res, "proj", "mp", "-", "declined", "these facts are stale"], { env: {} });
+    assert.equal(`${one.rc} ${one.out}`, "0 memory: mp declined · the facts PR · these facts are stale\n");
+    const rows = readFileSync(file, "utf8").trim().split("\n").map(l => JSON.parse(l));
+    assert.equal(rows.map(x => `${x.n}:${x.tier}:${x.key}`).join(), "1:2:" + itemKey(RULE) + ",null:1:null");
+    assert.equal(main(["answer", file, res, "proj", "mp", "-", "accepted", "x"], { env: {} }).rc, 1);
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});

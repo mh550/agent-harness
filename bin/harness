@@ -33,6 +33,8 @@
 #   harness memory accept|decline <run>/<n> --why "<text>"
 #                                                Michael's verdict on one, a row of ledger/memory-answers.jsonl (a ledger
 #                                                commit): the next curator is told it and never proposes that line again
+#   harness memory decline <run> --why "<text>"  the run's facts PR declined (closed) with a reason: one run-level row
+#                                                the next curator reads; harness memory counts the close as no override
 #   harness status [-a|--all] [--since <d>] [-p|--project <p>] [-v] [--json]
 #                                                one screen: NEEDS YOU, RUNNING, QUEUED, FINISHED (the last 24h,
 #                                                STATUS_SINCE or --since; 3 to 10) and how to see the older runs;

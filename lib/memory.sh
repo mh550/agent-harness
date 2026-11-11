@@ -5,15 +5,16 @@
 # Michael's verdicts and one of the review, and for a project the `auto:` line last (decisions/2026-11-09-memory-graduation). `proposals <run>` lists a
 # run's numbered rules and proposals (<ledger>/<project>/<run>/memory-result.json); `accept|decline <run>/<n> --why`
 # is Michael's verdict on one, a row of <ledger>/memory-answers.jsonl written under the ledger lock and, with
-# LEDGER_COMMIT=1, one ledger commit of that file (as `harness backlog set`); lib/memory.mjs does the work.
+# LEDGER_COMMIT=1, one ledger commit of that file (as `harness backlog set`); `decline <run> --why` is the run-level row
+# (the facts PR closed with a reason, docs/specs/2026-11-10-review-surface.md §V2-02); lib/memory.mjs does the work.
 # decisions/2026-11-07-memory-policy, decisions/2026-11-08-memory-rules-pr, decisions/2026-11-08-memory-session-and-answers.
-#   memory.sh [--last <n>] [<project name or path>] | proposals <run> | accept|decline <run>/<n> --why "<text>"
+#   memory.sh [--last <n>] [<project name or path>] | proposals <run> | accept|decline <run>/<n> --why "<text>" | decline <run> --why "<text>"
 set -uo pipefail
 : "${HARNESS_HOME:?}"
 [[ -z ${HARNESS_XTRACE:-} ]] || source "$HARNESS_HOME/lib/xtrace.sh"   # the coverage trace, off unless set (lib/xtrace.sh)
 LEDGER=${HARNESS_LEDGER:-$HARNESS_HOME/ledger} S=$HARNESS_HOME/lib/summary.mjs M=$HARNESS_HOME/lib/memory.mjs GH=${HARNESS_GH:-gh}
 ANS=$LEDGER/memory-answers.jsonl
-USAGE="usage: harness memory [--last <n>] [<project>] | proposals <run> | accept|decline <run>/<n> --why \"<text>\""
+USAGE="usage: harness memory [--last <n>] [<project>] | proposals <run> | accept|decline <run>/<n> --why \"<text>\" | decline <run> --why \"<text>\""
 die() { echo "memory: $*" >&2; exit 1; }
 
 # <run> → RES, its memory-result.json in the ledger's copy of the run record, and PROJ, the project it is under
@@ -32,12 +33,17 @@ case ${1:-} in
     result_of "$2"; exec node "$M" proposals "$RES" "$2" "$ANS" ;;
   accept|decline)
     v=$1 why="" hasw="" verdict=${1/%accept/accepted}; verdict=${verdict/%decline/declined}; shift
-    [[ ${1:-} =~ ^([A-Za-z0-9._-]+)/([1-9][0-9]*)$ ]] || die "usage: harness memory $v <run>/<n> --why \"<text>\""
-    run=${BASH_REMATCH[1]} n=${BASH_REMATCH[2]}; shift
+    use="usage: harness memory $v <run>/<n> --why \"<text>\""; [[ $v == decline ]] && use+=" | decline <run> --why \"<text>\""
+    # decline <run>: the run-level row (n -), the facts PR closed with a reason; accept always names an item
+    if [[ $v == decline && ${1:-} =~ ^([A-Za-z0-9._-]+)$ ]]; then run=${BASH_REMATCH[1]} n=- item=$run
+    elif [[ ${1:-} =~ ^([A-Za-z0-9._-]+)/([1-9][0-9]*)$ ]]; then run=${BASH_REMATCH[1]} n=${BASH_REMATCH[2]} item=$run/$n
+    else die "$use"; fi
+    shift
     while (( $# )); do
-      case $1 in --why) (( $# >= 2 )) || break; why=$2 hasw=1; shift 2 ;; *) die "usage: harness memory $v <run>/<n> --why \"<text>\"" ;; esac
+      case $1 in --why) (( $# >= 2 )) || break; why=$2 hasw=1; shift 2 ;; *) die "$use" ;; esac
     done
-    [[ -n $hasw ]] || die "$v $run/$n needs --why \"<text>\" (one line, at most 300 characters: what the next curator reads)"
+    # the run-level form has no item to name, so its missing why is the usage line
+    [[ -n $hasw ]] || { [[ $n == - ]] && die "$use"; die "$v $item needs --why \"<text>\" (one line, at most 300 characters: what the next curator reads)"; }
     result_of "$run"
     # shellcheck source=lib/config.sh
     source "$HARNESS_HOME/lib/config.sh"; harness_config /nonexistent   # LEDGER_COMMIT
@@ -48,7 +54,7 @@ case ${1:-} in
       out=$(node "$M" answer "$ANS" "$RES" "$PROJ" "$run" "$n" "$verdict" "$why" 2>&1) || { echo "memory: ${out%%$'\n'*}" >&2; exit 1; }
       echo "$out"
       if [[ $LEDGER_COMMIT == 1 ]] && git -C "$LEDGER" rev-parse --show-toplevel > /dev/null 2>&1; then
-        git -C "$LEDGER" add -- memory-answers.jsonl && git -C "$LEDGER" commit -q -m "ledger: memory $v $run/$n" -- memory-answers.jsonl \
+        git -C "$LEDGER" add -- memory-answers.jsonl && git -C "$LEDGER" commit -q -m "ledger: memory $v $item" -- memory-answers.jsonl \
           || echo "memory: ledger commit skipped" >&2
       fi
       exit 0

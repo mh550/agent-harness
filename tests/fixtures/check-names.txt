@@ -408,8 +408,10 @@ coverage: shScan keeps a multi-line array and a quoted string inside a $( ) insi
 coverage: shScan leaves out comments, closing words, a case's bare pattern, a function's header and a comment's quote or backslash
 coverage: subsets names each check file whose lines all lie in another's, smallest superset first; equal sets name each other; an empty set is no subset
 coverage: two processes' V8 documents add up: a character ran when it did in either
+curator.mjs answers: a run-level declined row reads `- the facts PR of <run>, closed: <why>` under Michael declined, newest first with the rest
 curator.mjs answers: declined then accepted, newest first, (none yet) for none, cut at --max-bytes naming how many were left out
 curator.mjs apply: --verdicts drops a failed fact at its write with review: <reason> (<id>), after every other step; without verdicts nothing is dropped by verdict; the rules keep every op
+curator.mjs apply: a run-level declined row drops no op: a null key matches nothing, not even an op of that run
 curator.mjs apply: an answered tier-2 or tier-3 op is dropped naming <run>/<n>; a tier-1 op and a different sentence never match, not even one sharing its 40-character key
 curator.mjs apply: in the --verdicts landing a held add that a failed replace leaves a duplicate of is dropped, never written twice
 curator.mjs apply: the landing with --verdicts is the dry run's texts minus the failed ops' writes; a held op the failed one made room for is dropped over the cap
@@ -720,6 +722,8 @@ harness gc reaps only the ended runs' tmux sessions (h-queue, the desk, a live d
 harness gc stops the units of this project's runs with no live driver; --dry-run stops none
 harness memlint: a project (or a directory in it) prints the same three findings, exit 0; no argument or no repo is one error line
 harness memory accept|decline: an <n> the run has not, no --why or an unknown run is one error line, exit 1, and no row
+harness memory decline <run> --why: one run-level row in memory-answers.jsonl and one ledger commit
+harness memory decline <run> without --why: one usage: line on stderr, exit 1, no row written
 harness memory decline: one memory-answers.jsonl row and one ledger commit, its line printed; harness memory tallies it and marks the run
 harness memory proposals: a run's numbered rules and proposals, each <run>/<n> with its tier, file, section and text, then its verdict
 harness memory: a facts PR merged unchanged over a failed op is merged against a fail, in its line, the review: tally and the auto: line; the driver's auto merge over one is none
@@ -1111,9 +1115,12 @@ memory rules PR: a rule Michael declined is dropped by a later run with his why 
 memory rules PR: a rules branch with a commit the driver would not write stops the rules half with one note; the facts half lands
 memory rules PR: the workflow line is one commit on harness-rules/<run>, absent from harness-memory/<run>, in a PR left for Michael, each body naming the other PR
 memory.mjs main: answer appends the row (an earlier one for that <run>/<n> replaced) and prints its line; a bad <n> or a torn line in the file is one line, exit 1
+memory.mjs main: answer with - for <n> writes the run-level row beside the run's numbered ones and prints its line
 memory.mjs: a continue's renumbered item is another item: its answer never replaces the first one's, nor shows its verdict
 memory.mjs: a row replaces an earlier one for the same <run>/<n>; the answers: tally counts a replaced verdict once
 memory.mjs: answerRow is {run, project, n, tier, verdict, why, file, section, text, key, at} from the result's item
+memory.mjs: answerRow without n is the run-level row {run, project, n: null, tier: 1, verdict: declined, why, …: null, at}; upsert replaces an earlier one of its run and leaves its numbered rows
+memory.mjs: proposalsView and answersTally count a run-level row as one declined answer of its run
 memory.mjs: proposalsView lists each numbered item with its tier, section and text, and its verdict
 memory: a coding session's .claude/CLAUDE.md and .claude/rules/ files are reverted the same way, one note each
 memory: a coding session's .harness/project.md edit is reverted the same way
@@ -1510,6 +1517,10 @@ requests.mjs: a brief of 2001 characters is rejected, 2000 is ok
 requests.mjs: a brief that is one option word is refused, so no queue or continue loop reads it as a flag
 requests.mjs: a run not among the real runs is rejected with state_of's words
 requests.mjs: a run with a parent-directory segment is rejected by its pattern before any lookup
+requests.mjs: a v2 merge and close on a known PR of the request's run are ok with pr, and the close's why
+requests.mjs: a v2 pr no ledger row has, or of another run, is refused naming the PR
+requests.mjs: a v2 request passes v1's id, NUL, grace and duplicate rules
+requests.mjs: a v2 why of two lines or 301 characters, a blank one and any why on a merge are refused, the reason never quoting it
 requests.mjs: a valid answer is ok and keeps its text byte for byte
 requests.mjs: a valid continue is ok with and without a brief, and an empty brief is none
 requests.mjs: an array, a string and null are not a request object
@@ -1517,6 +1528,8 @@ requests.mjs: an empty text and a text of 4001 characters are rejected, 4000 is 
 requests.mjs: an id already in done is a duplicate
 requests.mjs: an id of 7 characters or with a slash is rejected and named nowhere
 requests.mjs: logLine names id, verb, run, the status and exit and never the text
+requests.mjs: merge.json, close.json and close-why.json are the README's make-v2.mjs bytes, keys v,id,at,verb,run,pr[,why],source,event
+requests.mjs: resultJson for a v2 request has twelve keys, v 2, pr and state, runner_started false, a v1 result its ten; logLine carries pr= after run= and never the why
 requests.mjs: resultJson has the contract's ten keys in order and cuts output at 2000 bytes on a character boundary
 requests.mjs: resultName is the id, else the file name when it passes the id rule, else none
 requests.mjs: the backup window holds 03:15:00 and 04:29:59 local, not 03:14:59 or 04:30:00
@@ -1524,8 +1537,9 @@ requests.mjs: the result CLI prints the result JSON and appends its log line, an
 requests.mjs: the result CLI's --backup-window 1 gives the backup refusal
 requests.mjs: the validate CLI prints labelled lines and writes text and brief byte for byte
 requests.mjs: the validate CLI rejects a symlink unread, whatever it points at
+requests.mjs: the validate CLI takes --memory and prints pr, review and why as labelled lines, the why to --out's why file; the result CLI's --pr and --state give the v2 result
 requests.mjs: unparsable text waits at 5 s and is rejected at 11 s
-requests.mjs: v 2 is rejected
+requests.mjs: v 2 with answer is rejected, v 3 is not 1 or 2
 requests.mjs: verb merge is rejected
 resolve fallbacks: a lane's sync_main hands its conflict to resolve: refused is 2 with no record, unresolved the main_conflict record with tried
 resolve fallbacks: a refused session is deferred: no needs record, rebase-M2 back, then it re-bases and merges after the wait
@@ -1761,7 +1775,7 @@ summary.mjs memory: memoryView prints the tier in each line and one tally line p
 summary.mjs memory: report prints the Memory row, zeros and PR none for a curator that wrote nothing
 summary.mjs memory: run.log's memory review line is its session; Spend by role and Time list memory-review after curator
 summary.mjs memoryView: an answers: tally line after the tiers' and `· n answered` on a listed run's first line; none or no answers file still lists
-summary.mjs memoryView: held and failed columns, unreviewed for an old row or a review none, the two overrides from the row and gh's state, and the review: tally line
+summary.mjs memoryView: held and failed columns, unreviewed for an old row or a review none, the two overrides from the row and gh's state, the review: tally line, and a run-level declined row is no override either
 summary.mjs: cause and rework read the log by exact id (E1 review)
 summary.mjs: checksDiff counts the names a tip adds and removes against a base; a removed and an added name in one hunk of the sorted file pair as replaced; an order mismatch pairs nothing
 summary.mjs: checksLine prints +a ~b −c with each milestone and its budget (over marked), the suite's count for a project without the fixture, not counted for none; build sums the lanes' checks-<m> files, else the test counts; the Checks row after Suite runs, none for an older summary

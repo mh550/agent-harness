@@ -1,9 +1,10 @@
-// lib/requests.mjs: the request inbox's rules (v1): validation, the backup window, the result JSON and the log line.   node --test tests/unit/requests.test.mjs
+// lib/requests.mjs: the request inbox's rules (v1 and v2): validation, the backup window, the result JSON and the log line.   node --test tests/unit/requests.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { cli } from "./cli-same.mjs";
 import { BACKUP_REFUSAL, inBackupWindow, logLine, resultJson, resultName, validateRequest } from "../../lib/requests.mjs";
@@ -12,8 +13,14 @@ import { BACKUP_REFUSAL, inBackupWindow, logLine, resultJson, resultName, valida
 const FX = fileURLToPath(new URL("../fixtures/requests/", import.meta.url));
 const fx = n => JSON.parse(readFileSync(join(FX, `${n}.json`), "utf8"));
 const ANSWER = fx("answer"), CONTINUE = fx("continue"), BRIEF = fx("continue-brief");
+// v2 (V2-01): the card's merge and close, made by the README's make-v2.mjs (n8n-home's buildRequest has no v2 yet)
+const MERGE = fx("merge"), CLOSE = fx("close"), CLOSE_WHY = fx("close-why");
+// ledger/memory.jsonl's rows as validate reads them: run r1's facts and rules PRs, and one of another run
+const FACTS_PR = "https://example.test/pr/1", RULES_PR = "https://example.test/pr/2", OTHER_PR = "https://example.test/pr/3";
+const LEDGER = [{ run: "r1", project: "p", tier: "facts", url: FACTS_PR, review: "ok" }, { run: "r1", project: "p", tier: "rules", url: RULES_PR, review: "ok" },
+  { run: "r2", project: "p", tier: "facts", url: OTHER_PR, review: "ok" }];
 const text = (base, change = {}) => `${JSON.stringify({ ...base, ...change })}\n`;
-const RUNS = new Set(["parked", "stopped", "x"]);
+const RUNS = new Set(["parked", "stopped", "x", "r1", "r2"]);
 const ctx = (o = {}) => ({ runs: RUNS, done: new Set(), ageSeconds: 30, ...o });
 const check = (base, change, o) => validateRequest(text(base, change), ctx(o));
 const refused = (r, reason) => {
@@ -44,8 +51,10 @@ test("requests.mjs: a valid continue is ok with and without a brief, and an empt
   assert.equal(check(BRIEF, { brief: "" }).brief, null);
 });
 
-test("requests.mjs: v 2 is rejected", () => {
-  refused(check(ANSWER, { v: 2 }), "v is not 1 (this harness reads request v1)");
+test("requests.mjs: v 2 with answer is rejected, v 3 is not 1 or 2", () => {
+  refused(check(ANSWER, { v: 2 }), "v 2 carries merge or close");
+  refused(check(ANSWER, { v: 3 }), "v is not 1 or 2");
+  refused(check(ANSWER, { v: "1" }), "v is not 1 or 2");
 });
 
 test("requests.mjs: an array, a string and null are not a request object", () => {
@@ -69,7 +78,8 @@ test("requests.mjs: an id already in done is a duplicate", () => {
 });
 
 test("requests.mjs: verb merge is rejected", () => {
-  const r = check(ANSWER, { verb: "merge" });
+  const r = check(ANSWER, { verb: "merge" });   // v 1: merge is v 2's
+  assert.equal(check(MERGE, { v: 1 }, { memory: LEDGER }).reason, "verb is not answer or continue");
   refused(r, "verb is not answer or continue");
   assert.equal(r.verb, null);
 });
@@ -241,5 +251,127 @@ test("requests.mjs: the result CLI's --backup-window 1 gives the backup refusal"
     assert.equal(r.rc, 0);
     assert.equal(JSON.parse(r.out).refused, BACKUP_REFUSAL);
     assert.match(readFileSync(log, "utf8"), new RegExp(` why=${BACKUP_REFUSAL}\n$`));
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+// ---- v2 (V2-01, docs/specs/2026-11-10-review-surface.md): merge and close on a memory PR the ledger knows ----
+const v2 = (base, change, o) => check(base, change, { memory: LEDGER, ...o });
+
+test("requests.mjs: a v2 merge and close on a known PR of the request's run are ok with pr, and the close's why", () => {
+  const m = v2(MERGE);
+  assert.equal([m.verdict, m.id, m.verb, m.run, m.pr, m.why, m.text, m.review].map(String).join(","), `ok,${MERGE.id},merge,r1,${FACTS_PR},null,null,ok`);
+  const c = v2(CLOSE);
+  assert.equal([c.verdict, c.verb, c.pr, c.why, c.text].map(String).join(","), `ok,close,${RULES_PR},null,null`);
+  const w = v2(CLOSE_WHY);
+  assert.equal([w.verdict, w.pr, w.why].join(","), `ok,${FACTS_PR},${CLOSE_WHY.why}`);
+  assert.equal(v2(CLOSE_WHY, { why: "" }).why, null, "an empty why is none");
+  assert.equal(v2(CLOSE_WHY, { why: "w".repeat(300) }).verdict, "ok");
+  // the row's review is the request's to carry: requests.sh refuses a merge of an unreviewed PR (V2-02)
+  assert.equal(v2(MERGE, {}, { memory: [{ ...LEDGER[0], review: "nothing to review" }] }).review, "nothing to review");
+  assert.equal(v2(MERGE, {}, { memory: [{ ...LEDGER[0], review: undefined }] }).review, null);
+});
+
+test("requests.mjs: a v2 pr no ledger row has, or of another run, is refused naming the PR", () => {
+  refused(v2(MERGE, { pr: "https://example.test/pr/9" }), "pr https://example.test/pr/9 is not a memory PR the ledger knows (ledger/memory.jsonl)");
+  refused(v2(MERGE, {}, { memory: [] }), `pr ${FACTS_PR} is not a memory PR the ledger knows (ledger/memory.jsonl)`);
+  refused(v2(CLOSE, { pr: OTHER_PR }), `pr ${OTHER_PR} belongs to run r2, not r1`);
+  // a ledger row whose run fails the run rule (a hand edit) is never quoted
+  refused(v2(CLOSE, {}, { memory: [{ ...LEDGER[1], run: "x y\nz" }] }), `pr ${RULES_PR} belongs to another run, not r1`);
+  refused(v2(CLOSE, {}, { memory: [{ ...LEDGER[1], run: undefined }] }), `pr ${RULES_PR} belongs to another run, not r1`);
+  // a pr that is no URL is never quoted (a reason never holds a value that failed its rule)
+  for (const pr of [7, "", "ftp://x/1", "https://example.test/pr/1 x", "https://example.test/pr/1\nwhy=x", `https://example.test/${"a".repeat(300)}`]) {
+    const r = v2(MERGE, { pr });
+    refused(r, "pr is not a PR URL (https://<host>/<path>, at most 200 characters)");
+    assert.equal(r.pr, null);
+  }
+});
+
+test("requests.mjs: a v2 why of two lines or 301 characters, a blank one and any why on a merge are refused, the reason never quoting it", () => {
+  const bad = "why must be one line of at most 300 characters";
+  for (const why of ["first\nsecond", "w".repeat(301), "   ", 7, "a\u2028b", "a\u0085b", "a\u001b[2Jb", "a\tb"]) {
+    const r = v2(CLOSE_WHY, { why });
+    refused(r, bad);
+    assert.equal(r.why, null);
+  }
+  refused(v2(MERGE, { why: "merged anyway" }), "a merge takes no why");
+  const secret = "SECRET-WHY-TEXT";
+  for (const r of [v2(CLOSE_WHY, { why: `${secret}\n` }), v2(MERGE, { why: secret }), v2(CLOSE_WHY, { why: secret.repeat(30) })])
+    assert.ok(!String(r.reason).includes(secret), r.reason);
+});
+
+test("requests.mjs: a v2 request passes v1's id, NUL, grace and duplicate rules", () => {
+  refused(v2(MERGE, { id: "short" }), "id does not match ^[A-Za-z0-9-]{8,64}$");
+  refused(v2(CLOSE_WHY, { why: "a\u0000b" }), "the request holds a NUL byte");
+  refused(v2(MERGE, { run: "nosuch" }), "no run 'nosuch' (see: harness status)");
+  assert.equal(validateRequest("{\"v\":2,", ctx({ ageSeconds: 5, memory: LEDGER })).verdict, "wait");
+  const d = v2(MERGE, {}, { done: new Set([MERGE.id]) });
+  assert.equal(`${d.verdict} ${d.reason}`, `duplicate duplicate id: done/${MERGE.id}.json already exists`);
+});
+
+test("requests.mjs: resultJson for a v2 request has twelve keys, v 2, pr and state, runner_started false, a v1 result its ten; logLine carries pr= after run= and never the why", () => {
+  const r = resultJson({ v: 2, id: MERGE.id, verb: "merge", run: "r1", ok: true, exit: 0, output: "merged", runnerStarted: true, pr: FACTS_PR, state: "merged", now: 0 });
+  assert.equal(Object.keys(r).join(","), "v,id,at,verb,run,ok,exit,output,runner_started,refused,pr,state");
+  assert.equal([r.v, r.runner_started, r.pr, r.state].join(","), `2,false,${FACTS_PR},merged`);
+  const n = resultJson({ v: 2, id: MERGE.id, now: 0 });
+  assert.equal([n.pr, n.state].map(String).join(","), "null,null");
+  assert.equal(Object.keys(resultJson({ id: MERGE.id, pr: FACTS_PR, state: "merged", now: 0 })).length, 10);
+  const now = new Date(2026, 10, 10, 0, 0, 0).getTime() / 1000;
+  assert.equal(logLine({ now, name: MERGE.id, verb: "merge", run: "r1", pr: FACTS_PR, ok: true, exit: 0 }),
+    `2026-11-10 00:00:00 id=${MERGE.id} verb=merge run=r1 pr=${FACTS_PR} ok exit=0`);
+  assert.equal(logLine({ now, name: MERGE.id, verb: "-", run: null, pr: null, ok: false, exit: null, refused: "v 2 carries merge or close" }),
+    `2026-11-10 00:00:00 id=${MERGE.id} verb=- run=- pr=- refused exit=- why=v 2 carries merge or close`);
+  const line = logLine({ now, name: CLOSE_WHY.id, verb: "close", run: "r1", pr: FACTS_PR, ok: true, exit: 0, why: CLOSE_WHY.why });
+  assert.ok(!line.includes(CLOSE_WHY.why), line);
+});
+
+test("requests.mjs: the validate CLI takes --memory and prints pr, review and why as labelled lines, the why to --out's why file; the result CLI's --pr and --state give the v2 result", () => {
+  const T = mkdtempSync(join(tmpdir(), "requests-"));
+  try {
+    const done = join(T, "done"), out = join(T, "out"), mem = join(T, "memory.jsonl"), mtime = 1_800_000_000;
+    mkdirSync(done); mkdirSync(out);
+    writeFileSync(mem, `${LEDGER.map(r => JSON.stringify(r)).join("\n")}\n`);
+    const why = "it's `x` $(rm -rf /) \"q\"";
+    const put = (n, base, change = {}) => { const f = join(T, `${n}.json`); writeFileSync(f, text(base, change)); utimesSync(f, mtime, mtime); return f; };
+    const run = (f, more = ["--memory", mem]) => cli("requests.mjs", ["validate", f, "--runs", "r1,r2", "--done", done, "--now", String(mtime + 30), "--out", out, ...more]);
+    const c = run(put("c", CLOSE_WHY, { why }));
+    assert.equal(c.rc, 0);
+    assert.equal(c.out, `verdict ok\nname ${CLOSE_WHY.id}\nid ${CLOSE_WHY.id}\nverb close\nrun r1\npr ${FACTS_PR}\nreview ok\nwhy 1\nwindow 0\n`);
+    assert.equal(readFileSync(join(out, "why"), "utf8"), why);
+    assert.ok(!c.out.includes("rm -rf"), "the why is never on stdout");
+    rmSync(join(out, "why"));
+    const m = run(put("m", MERGE));
+    assert.equal(m.out, `verdict ok\nname ${MERGE.id}\nid ${MERGE.id}\nverb merge\nrun r1\npr ${FACTS_PR}\nreview ok\nwhy 0\nwindow 0\n`);
+    assert.equal(existsSync(join(out, "why")), false);
+    const u = run(put("u", MERGE), []);   // no --memory: no row is known
+    assert.equal(u.out, `verdict rejected\nname ${MERGE.id}\nid ${MERGE.id}\nverb merge\nrun r1\npr -\nreview -\nwhy 0\nwindow 0\nreason pr ${FACTS_PR} is not a memory PR the ledger knows (ledger/memory.jsonl)\n`);
+    // the result CLI with --pr and --state: the v2 result and its log line's pr=
+    const log = join(T, "requests.log"), output = join(T, "out.txt"), now = Date.UTC(2026, 10, 10) / 1000;
+    writeFileSync(output, "");
+    const r = cli("requests.mjs", ["result", "--id", MERGE.id, "--verb", "merge", "--run", "r1", "--ok", "1", "--exit", "0", "--output", output,
+      "--runner-started", "0", "--pr", FACTS_PR, "--state", "merged", "--now", String(now), "--log", log]);
+    assert.equal(r.rc, 0);
+    // the result fixture is this run's stdout (tests/fixtures/requests/README.md)
+    assert.equal(r.out, readFileSync(join(FX, "result-v2.json"), "utf8"));
+    assert.match(readFileSync(log, "utf8"), new RegExp(` id=${MERGE.id} verb=merge run=r1 pr=${FACTS_PR} ok exit=0\n$`));
+    const n = cli("requests.mjs", ["result", "--id", MERGE.id, "--verb", "-", "--run", "-", "--ok", "0", "--exit", "-", "--runner-started", "0",
+      "--pr", "-", "--refused", "v 2 carries merge or close", "--now", String(now), "--log", log]);
+    assert.equal([JSON.parse(n.out).v, JSON.parse(n.out).pr, JSON.parse(n.out).state].map(String).join(","), "2,null,null");
+    assert.equal(cli("requests.mjs", ["result", "--id", MERGE.id, "--ok", "1", "--pr", FACTS_PR, "--state", "open", "--now", String(now), "--log", log]).rc, 2);
+  } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test("requests.mjs: merge.json, close.json and close-why.json are the README's make-v2.mjs bytes, keys v,id,at,verb,run,pr[,why],source,event", () => {
+  const T = mkdtempSync(join(tmpdir(), "requests-"));
+  try {
+    const readme = readFileSync(join(FX, "README.md"), "utf8"), code = /```js\n(\/\/ node make-v2\.mjs <out>\n[\s\S]*?)```/.exec(readme)?.[1];
+    assert.ok(code, "README.md holds the make-v2.mjs block");
+    writeFileSync(join(T, "make-v2.mjs"), code);
+    mkdirSync(join(T, "out"));
+    const r = spawnSync(process.execPath, [join(T, "make-v2.mjs"), join(T, "out")], { encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr);
+    for (const n of ["merge", "close", "close-why"]) {
+      assert.equal(readFileSync(join(T, "out", `${n}.json`), "utf8") === readFileSync(join(FX, `${n}.json`), "utf8"), true, n);
+      assert.equal(Object.keys(fx(n)).join(","), n === "close-why" ? "v,id,at,verb,run,pr,why,source,event" : "v,id,at,verb,run,pr,source,event", n);
+    }
   } finally { rmSync(T, { recursive: true, force: true }); }
 });
