@@ -93,5 +93,5 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
 - stub runs in one check file share origin main: update-ref it between runs; `git log --all` sees all runs' commits (agent-harness-2026-10-29-2 2026-10-29)
 - stub-claude.sh is set -e, which holds in a `[[ … ]] && { … }` block: a stub step that may fail runs in `( set +e; … )` (agent-harness-2026-11-03 2026-11-03)
 - a check that sources lib/*.sh needs `HARNESS_HOME=$HH`: a run's session inherits its driver's, so a missing one fails only in a plain shell (2026-10-29)
-- ask and its spawn can both fail, so an .mjs answer may be empty: give the bash a safe branch (tests/checks/no-answer.sh) (agent-harness-2026-11-07 2026-11-07)
+- A check may not read docs/plans or docs/specs: a doc a check keeps true lives under docs/ or tests/ (agent-harness-2026-11-10 2026-11-10)
 - key-map-lint reads a node import string "'"$HH"'/lib/x.mjs" as a repo-root read: use "'$HERE'/../lib/x.mjs" (agent-harness-2026-11-03 2026-11-03)
