@@ -40,3 +40,8 @@
 - 2026-11-10 23:17 · V2-03: a project fact is 170 characters, over 160
 - 2026-11-10 23:17 · V2-03: 1 question(s) for Michael recorded (harness needs)
 - 2026-11-10 23:17 · V2-03 · claude-opus-5-5 · passes=true · 11 min · 6/7 passing
+- 2026-11-10 23:17 · review V2-04: 1020 changed lines, at or over 0; opus
+- 2026-11-10 23:17 · context.md for V2-04: 7974 bytes
+- 2026-11-10 23:36 · V2-04: suite ran 1x (132 s) in the session
+- 2026-11-10 23:36 · V2-04: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 23:36 · V2-04 · claude-opus-5-5 · passes=true · 19 min · 7/7 passing

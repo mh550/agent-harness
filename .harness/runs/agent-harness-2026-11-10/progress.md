@@ -11,6 +11,20 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-10-review-surface-event.md` (V1) and `journal/decisions/2026-11-10-review-surface-verbs.md` (V2). The one live step (appending `EVENT_V2=1` to the user config after the n8n-home deploy) is written out in the V2-03 checklist for you; no session runs it.
 
+### 2026-11-10 23:36 · V2-04 · passes
+
+V2 review (Opus): 0 Critical, 1 Important, 4 Minor. I1 fixed test-first: the checklist's card shows no actions until the ledger's memory.md and its id hashes an attempt with Try again (a handled id never reruns). M4: ledgerRow (findLast) in validate/declines, unit test first. M1/M2 decision and README text, M3 architecture rows; both simplifications; V2 checks +28 ~3 vs budget 25.
+
+- **Files:** docs/plans/2026-11-10-V2-review.md, docs/2026-11-10-review-surface-n8n-home.md, lib/requests.mjs, lib/requests.sh, tests/checks/memory-requests.sh, tests/unit/requests.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/architecture.md, README.md, journal/decisions/2026-11-10-review-surface-verbs.md
+- **Verified:** the renamed checklist check red then green; the ledgerRow unit test red (missing export) then green, requests.test.mjs 31/31; bash tests/run.sh memory-requests request-files memory-review 61/61; check.sh --fast green in 132 s, 1163 tests
+- **Tests:** 1162 → 1163
+- **Dead end:** the reviewer's simplification 1 as written (the facts line carries 3 answered) — harness memory prints the rules row first and that line carries the mark; kept the rules alternative alone (read from a KEEP=1 run)
+- **Discovery** (affects project): KEEP=1 bash tests/checks/<f>.sh keeps the file's $T (under /tmp/tmp.*) to read a check's outputs; rm it after (agent-harness-2026-11-10 2026-11-10)
+- **Discovery** (affects run): every request outcome writes done/<id>.json, so a same-id retry is a duplicate: the n8n card retries with a new id (attempt in the hash); the harness rule is unchanged
+- **Question for Michael:** Default taken (review I1): the card retries a failed action with a new id (the attempt in the hash) and shows no actions until the ledger's memory.md exists; the harness still refuses an unknown-PR request of a live run rather than leaving it pending. Keep that? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/2026-11-10-review-surface-n8n-home.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/plans/2026-11-10-V2-review.md
+- **Proposed change:** docs/specs/2026-11-10-review-surface.md §V2-02.1 says 'the next tap may find GitHub back'; with D25's duplicate rule the retry is a new id (Try again): the spec line could get an Updated in place note (Michael's file)
+- *07-V2-04 · claude-opus-5-5*
+
 ### 2026-11-10 23:17 · V2-03 · passes
 
 The n8n-home checklist (intake v2 rule, workflow 42 memory card, the two request JSON shapes, the deploy order, Michael's EVENT_V2 step and undo, five must-nots) at docs/2026-11-10-review-surface-n8n-home.md (default: docs/plans is outside the suite key; a pointer stays there), one fast check, READMEs, decision lines.

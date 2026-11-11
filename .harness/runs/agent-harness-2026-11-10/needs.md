@@ -41,3 +41,24 @@ harness needs done agent-harness-2026-11-10/2 --why "<answer>"
 ```sh
 harness needs done agent-harness-2026-11-10/3 --why "<answer>"
 ```
+
+## ⚠ V2-04 asked: Default taken (review I1): the card retries a failed action…
+
+`agent-harness-2026-11-10/4` · since 2026-11-11T04:36:37.916Z
+
+**blocked** nothing waits on it; V2-04's session took the default its question names
+
+**cost** the default stands until you answer
+
+**question** [entries.jsonl:9](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-10/.harness/runs/agent-harness-2026-11-10/entries.jsonl?plain=1#L9)
+
+> Default taken (review I1): the card retries a failed action with a new id (the attempt in the hash) and shows no actions until the ledger's memory.md exists; the harness still refuses an unknown-PR request of a live run rather than leaving it pending. Keep that? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/2026-11-10-review-surface-n8n-home.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/plans/2026-11-10-V2-review.md
+
+**where** [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/2026-11-10-review-surface-n8n-home.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-10/V2/docs/2026-11-10-review-surface-n8n-home.md) · [/home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/plans/2026-11-10-V2-review.md](https://github.com/mh550/agent-harness/blob/harness-lane/agent-harness-2026-11-10/V2/docs/plans/2026-11-10-V2-review.md) · [/home/mh550/worktrees/agent-harness/agent-harness-2026-11-10/.harness/runs/agent-harness-2026-11-10/entries.jsonl:9](https://github.com/mh550/agent-harness/blob/harness/agent-harness-2026-11-10/.harness/runs/agent-harness-2026-11-10/entries.jsonl?plain=1#L9)
+
+- (a) record the answer (in the decision file it names), then harness needs done **(recommended: the default stands until you do)**
+- (b) the default is right: harness needs done --why "default stands"
+
+```sh
+harness needs done agent-harness-2026-11-10/4 --why "<answer>"
+```
