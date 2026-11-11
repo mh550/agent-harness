@@ -11,6 +11,21 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-10-review-surface-event.md` (V1) and `journal/decisions/2026-11-10-review-surface-verbs.md` (V2). The one live step (appending `EVENT_V2=1` to the user config after the n8n-home deploy) is written out in the V2-03 checklist for you; no session runs it.
 
+### 2026-11-10 23:17 · V2-03 · passes
+
+The n8n-home checklist (intake v2 rule, workflow 42 memory card, the two request JSON shapes, the deploy order, Michael's EVENT_V2 step and undo, five must-nots) at docs/2026-11-10-review-surface-n8n-home.md (default: docs/plans is outside the suite key; a pointer stays there), one fast check, READMEs, decision lines.
+
+- **Files:** docs/2026-11-10-review-surface-n8n-home.md, docs/plans/2026-11-10-review-surface-n8n-home.md, tests/checks/memory-requests.sh, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, tests/fixtures/requests/README.md, README.md, journal/decisions/2026-11-10-review-surface-verbs.md
+- **Verified:** check written first, red (14/15), then green 15/15; red again with one fixture path renamed in the checklist; jq -c keys_unsorted of the two JSON blocks equals merge.json and close-why.json, values differ only in id/at/run/pr/why/event placeholders; /srv only in the protocol's flock commands; memory-requests key-map-lint check-key 32/32; fast tier green, 1162 tests
+- **Tests:** 1161 → 1162
+- **Dead end:** the checklist at docs/plans/ as the spec names it, read by the check — check-key.sh's CHECK_KEY_IGNORE lint and key-map-lint fail: docs/plans is outside the cache key, so the check would not rerun when only the checklist changes
+- **Discovery** (affects V2-04): the checklist is docs/2026-11-10-review-surface-n8n-home.md, not docs/plans/ (a pointer stays there): V2-04 reads it there
+- **Discovery** (affects V2-04): memreview.mjs card's state is only open|merged (merged = the driver merged the facts PR under auto); q and section may be null
+- **Discovery** (affects project): A check may not read docs/plans or docs/specs (CHECK_KEY_IGNORE, check-key.sh): a doc a check keeps true lives under docs/ or tests/ (agent-harness-2026-11-10 2026-11-10)
+- **Question for Michael:** Default taken: the n8n-home checklist lives at docs/2026-11-10-review-surface-n8n-home.md, not the spec's docs/plans/ path, because docs/plans is outside the suite's cache key and the check-key lint refuses a check reading it; a pointer file stays at the spec's path. Keep it there, or would you rather drop docs/plans from CHECK_KEY_IGNORE's reach for this one file some other way? Files: /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/docs/2026-11-10-review-surface-n8n-home.md, /home/mh550/worktrees/agent-harness/lanes/agent-harness-2026-11-10/slot-1/journal/decisions/2026-11-10-review-surface-verbs.md:70
+- **Proposed change:** V2-03's description and steps 1-2 should name docs/2026-11-10-review-surface-n8n-home.md (docs/plans is CHECK_KEY_IGNORE'd, so a check may not read it)
+- *06-V2-03 · claude-opus-5-5*
+
 ### 2026-11-10 23:06 · V2-02 · passes
 
 harness requests runs v2 merge/close: ledger rule in node, then gh pr view state (merged/closed refused, claim to rejected/), the review rule on merge, then gh pr merge <url> --merge or gh pr close <url> [--comment why] as argv; a close with a why writes decline rows via harness memory decline (requests.mjs declineItems/declines). Stub gh by-URL merge/close; 11 checks, 1 unit test; docs.
