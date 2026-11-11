@@ -1,0 +1,19 @@
+[
+  {
+    "id": "facts/1",
+    "op": "add",
+    "file": "CLAUDE.md",
+    "section": "## Gotchas",
+    "anchor": "ask and its spawn can both fail, so an .mjs answer may be empty: give the bash a safe branch (tests/checks/no-answer.sh) (agent-harness-2026-11-07 2026-11-07)",
+    "text": "A check may not read docs/plans or docs/specs: a doc a check keeps true lives under docs/ or tests/ (agent-harness-2026-11-10 2026-11-10)",
+    "why": "A check reading docs/plans or docs/specs breaks the check key; this run had to move a doc for it, and the evicted line is one module's narrow case.",
+    "from": "entries.jsonl:8",
+    "evicted": "- ask and its spawn can both fail, so an .mjs answer may be empty: give the bash a safe branch (tests/checks/no-answer.sh) (agent-harness-2026-11-07 2026-11-07)",
+    "base": "/tmp/harness/agent-harness/agent-harness-2026-11-10/memory-base/CLAUDE.md",
+    "after": "/tmp/harness/agent-harness/agent-harness-2026-11-10/memory-after-facts/CLAUDE.md",
+    "cap": {
+      "gotchas": 15,
+      "lines": 97
+    }
+  }
+]
