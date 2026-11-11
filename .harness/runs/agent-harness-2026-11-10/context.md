@@ -1,14 +1,13 @@
-# Context pack for `V2-02`
+# Context pack for `V2-03`
 
 Chosen by the harness from entries.jsonl in a fixed order; each item names its line. The full record is entries.jsonl / progress-archive.md.
 
 ## Discoveries for this feature
 
-- Discovery (V2-01, affects V2-02): requests.sh one()'s ok branch runs every verb but answer as a continue: V2-02's v2 branch must come before it; today v2 never reaches ok there because --memory is not passed → entries.jsonl:6
-- Discovery (V2-01, affects V2-02): validate prints for a v2 request: pr, review (the row's review, - when none), why 1|0, after run; the why is in <out>/why; result --pr <url|-> makes the result v2 (--state merged|closed|-) → entries.jsonl:6
+- Discovery (V2-02, affects V2-04, V2-03): requests.sh's v2 refusals after the claim (already merged/closed, review did not run) move done/<id>.request.json to rejected/; validate's --memory is <ledger>/memory.jsonl → entries.jsonl:7
+- Discovery (V2-02, affects V2-03, V2-04): memory-requests.sh builds memory.jsonl via summary.mjs memory-line over event-memory.json (r1 facts pr/1 + rules pr/2 all held, r2 pr/3 review none) and resets the stub PRs per part → entries.jsonl:7
 - Discovery (V2-01, affects V2-02, V2-03): request fixtures v2 use run r1, facts PR https://example.test/pr/1, rules PR /pr/2 (stub-gh URLs); memory-requests.sh builds ledger/proj/r1/memory-result.json via curator.mjs apply on corrected.* (no rules[]: V2-02 needs a rules op) → entries.jsonl:6
 - Discovery (V2-01, affects V2): request-files.sh's v2 answer case now expects 'v 2 carries merge or close' (the old 'v is not 1 (this harness reads request v1)' is gone) → entries.jsonl:6
-- Discovery (V2-01, affects V2-04, V2-02): V2-04: a run-level decline is not tied to a facts row of ledger/memory.jsonl, and declinedRuns matches by run, so it also excuses a closed rules PR of that run (spec design; review M2) → entries.jsonl:6
 - Discovery (V1, affects run): feature_list V1-02 step 1 says the record's memory-event.json equals the POSTed body and step 2 says Title '1 held · 1 failed': the built design is memory-event.json == body.memory and '2 held · 1 failed' (rules/1 counted); V2 steps reading either should use the built shape → entries.jsonl:5
 - Discovery (V1-03, affects V2): M1 left in code: memory-event.json in the record is removed only at memory_pr's start; a fix belongs beside finish's memory.json rm (driver.sh), a finish edit → entries.jsonl:4
 - Discovery (V1-03, affects V2): notify.mjs ROUTED/ROUTED_V2 are mirrored by notify.sh's case arms; notify.test.mjs's ROUTED test parses that line by regex: keep its shape or update the regex → entries.jsonl:4
@@ -25,16 +24,17 @@ Chosen by the harness from entries.jsonl in a fixed order; each item names its l
 
 ## Promote to Gotchas
 
+- gh 2.45's pr close/merge message formats are readable offline: strings $(command -v gh) | grep 'Closed pull request' (agent-harness-2026-11-10 2026-11-10) → entries.jsonl:7
 - a lane's .harness/runs/ is git-ignored by the state dir's exclude file: feature_list.json and entry.json never show in git status there (agent-harness-2026-11-10 2026-11-10) → entries.jsonl:3
 
 ## What it builds on
 
-- 2026-11-10 22:42 · V2-01 · passes: requests.mjs v2: merge/close on a ledger/memory.jsonl PR of the request run (--memory read in node), pr URL shape first, close why ≤300 one line, merge why refused; 12-key result (pr, state), pr= in requests.log, validate pr/review/why lines. Run-level decline: harness memory decline <run> --why (n/key null); latestAnswers keeps it, apply ignores it, answersText renders it. Docs, decision.; tests 1135 → 1149; files lib/requests.mjs, lib/memory.mjs, lib/memory.sh, lib/curator.mjs, bin/harness, … → entries.jsonl:6
+- 2026-11-10 23:06 · V2-02 · passes: harness requests runs v2 merge/close: ledger rule in node, then gh pr view state (merged/closed refused, claim to rejected/), the review rule on merge, then gh pr merge <url> --merge or gh pr close <url> [--comment why] as argv; a close with a why writes decline rows via harness memory decline (requests.mjs declineItems/declines). Stub gh by-URL merge/close; 11 checks, 1 unit test; docs.; tests 1149 → 1161; files lib/requests.sh, lib/requests.mjs, tests/stub-gh.sh, tests/checks/memory-requests.sh, tests/unit/requests.test.mjs, … → entries.jsonl:7
 
 ## Lately in the run
 
+- 2026-11-10 22:42 · V2-01 · passes: requests.mjs v2: merge/close on a ledger/memory.jsonl PR of the request run (--memory read in node), pr URL shape first, close why ≤300 one line, merge why refused; 12-key result (pr, state), pr= in requests.log, validate pr/review/why lines. Run-level decline: harness memory decline <run> --why (n/key null); latestAnswers keeps it, apply ignores it, answersText renders it. Docs, decision.; tests 1135 → 1149; files lib/requests.mjs, lib/memory.mjs, lib/memory.sh, lib/curator.mjs, bin/harness, … → entries.jsonl:6
 - 2026-11-10 22:25 · verify V1 · passes: V1-01, V1-02, V1-03 hold. Full suite 2019/2019 (823 s), fast tier 1135/1135, event-hook event-run memory-event memory-review 59/59. v1 bytes: origin/main's buildEvent and this branch's give the same sha256 over the ten v1 kinds; v2 fixture remade from its comment command is cmp-equal; real curl 8.5.0's 422 on loopback is curl-event-422.out. Two step wordings differ from the design (noted in rows). → entries.jsonl:5
-- 2026-11-10 21:53 · V1-03 · passes: Opus review of V1 (docs/plans/2026-11-10-V1-review.md): 0 Critical, 0 Important, 4 Minor; five invariants hold. Fixed: docs level (memory-event.json lifecycle, memory_event writer, sizes, F3d tense), EVENT_V2 '1 exactly', ROUTED unit test now reads notify.sh's routing arms (renamed, failed on a mutation first), notify.mjs event CLI uses buildEvent's refusals. V1 checks +15 ~1 −0 recorded.; tests 1131 → 1131; files docs/plans/2026-11-10-V1-review.md, docs/architecture.md, journal/decisions/2026-11-10-review-surface-event.md, lib/notify.mjs, lib/notify.sh, … → entries.jsonl:4
 
 ## Current rules
 
