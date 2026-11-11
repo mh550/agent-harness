@@ -60,3 +60,11 @@
 - 2026-11-11 00:13 · curator: session denied Bash(git push:*), Bash(gh:*)
 - 2026-11-11 00:13 · memory: 1 ops · 1 facts · 0 rules · 0 dropped · 0 proposals
 - 2026-11-11 00:13 · memory: evicted "- ask and its spawn can both fail, so an .mjs answer may be empty: give the bash" for add ## Gotchas
+- 2026-11-11 00:14 · memory review: session denied Bash(git push:*), Bash(gh:*)
+- 2026-11-11 00:14 · memory review: 1 reviewed · 0 held · 1 failed
+- 2026-11-11 00:14 · memory review: facts/1 fails: 4 files: docs/architecture.md:81, lib/record.sh:499, tests/unit/curator.test.mjs:215, tests/checks/no-answer.sh:5 (q2)
+- 2026-11-11 00:14 · memory review: cost $0.38 over the curator's $0.27
+- 2026-11-11 00:14 · memory PR opened; left for Michael (MEMORY_POLICY=pr) · https://github.com/mh550/agent-harness/pull/181
+- 2026-11-11 00:14 · memory rules PR: none (no tier-2 change)
+- 2026-11-11 00:14 · memory: facts 0 held · 1 failed (facts/1: 4 files: docs/architecture.md:81, lib/record.sh:499, tests/unit/curator.test.mjs:215, tests/checks/no-answer.sh:5, q2) · rules 0 held · PR https://github.com/mh550/agent-harness/pull/181 · rules PR none
+- 2026-11-11 00:14 · summary.json and report.md kept in the state dir (harness report reads them after gc)
