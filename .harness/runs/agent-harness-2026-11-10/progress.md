@@ -11,6 +11,19 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-10-review-surface-event.md` (V1) and `journal/decisions/2026-11-10-review-surface-verbs.md` (V2). The one live step (appending `EVENT_V2=1` to the user config after the n8n-home deploy) is written out in the V2-03 checklist for you; no session runs it.
 
+### 2026-11-10 21:09 · V1-01 · passes
+
+notify.mjs: KINDS gains memory, ROUTED_V2 exported, buildEvent v2 (14th key memory, v 2) for kind=memory only, memory= refused elsewhere; memreview.mjs card and title (pure, CLI). v2 fixture made from the stub-run files (command in notify.test.mjs, bytes pinned); v1 fixture untouched, v1 kinds' bytes pinned by sha256. Docs, decision file.
+
+- **Files:** lib/notify.mjs, lib/memreview.mjs, tests/unit/notify.test.mjs, tests/unit/memreview.test.mjs, tests/fixtures/n8n-event-v2-memory.json, tests/fixtures/memory/event-card.json, tests/fixtures/memory/README.md, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/architecture.md, docs/specs/2026-10-22-n8n-events.md, journal/decisions/2026-11-10-review-surface-event.md
+- **Verified:** node --test notify+memreview: 29/29 (new ones red first: missing exports / ROUTED_V2); check.sh --fast green, 1130 tests; git diff origin/main -- n8n-event-v1.json empty; LC_ALL=C sort -c on both name files
+- **Tests:** 1123 → 1130
+- **Discovery** (affects V1-02): notify.mjs event treats an empty memory= as none, so V1-02's notify_event may pass memory="$memory" on every kind; only a non-empty memory= on a v1 kind exits 2
+- **Discovery** (affects V1-02): V1-02's title: memreview.mjs title <memory-event.json> <run> (reads the card's held, failed, review); fixture made with actions labels 'Facts PR' and 'Rules PR', run mev, project proj
+- **Discovery** (affects V1-02, V2): the v2 fixture's placeholders: id <uuid>, at <ISO 8601>, the facts PR URL <facts PR url>, the rules PR URL <rules PR url> (jq walk split/join; command in tests/unit/notify.test.mjs)
+- **Discovery** (affects V1-02): the WIP commit's tests/fixtures/memory/event-{input,verdicts,memory}.json are a stub run mev's record (evict-two/evict-fails, pr); card and the v2 fixture are built on them
+- *01-V1-01 · claude-opus-5-5*
+
 ### 2026-11-10 19:41 · init · passes
 
 7 features: V1 3 (V1-01 the v2 event shape and fixture; V1-02 the send at the end of memory_pr behind EVENT_URL and EVENT_V2, else the ntfy line, memory-event.sh slow; V1-03 review), V2 4 (V2-01 request and result v2 and the run-level decline; V2-02 harness requests merge and close, the gh stub, memory-requests.sh fast; V2-03 the n8n-home checklist; V2-04 review). V2 after V1. Budget V1 15, V2 25.

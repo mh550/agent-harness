@@ -22,7 +22,7 @@
         "`bash tests/run.sh --tier fast` ends with every check passing (its `N/M checks passed` line); the suite is green."
       ],
       "after": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "V1-02",

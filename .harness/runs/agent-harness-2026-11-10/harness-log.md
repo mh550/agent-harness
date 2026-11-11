@@ -6,3 +6,8 @@
 - 2026-11-10 19:44 · lane V1: stopped (the driver is exiting)
 - 2026-11-10 19:44 · services stopped (driver exited)
 - 2026-11-10 20:59 · needs: resolved agent-harness-2026-11-10/1 (run continued)
+- 2026-11-10 20:59 · merged main into harness/agent-harness-2026-11-10
+- 2026-11-10 20:59 · lane V1 opened (slot 0, port 7837, from 3f1c299, slot reused)
+- 2026-11-10 21:01 · context.md for V1-01: 4985 bytes
+- 2026-11-10 21:09 · V1-01: suite ran 1x (131 s) in the session
+- 2026-11-10 21:09 · V1-01 · claude-opus-5-5 · passes=true · 8 min · 1/7 passing
