@@ -1,0 +1,70 @@
+- 2026-11-10 19:34 · test count: parsed (generic)
+- 2026-11-10 19:41 · feature list written: 0/7 passing
+- 2026-11-10 19:41 · lint: 1 finding (review-small: 1); the list is not edited — first: V1-03 step - review-small
+- 2026-11-10 19:41 · lane V1 opened (slot 0, port 7837, from c778a57)
+- 2026-11-10 19:41 · context.md for V1-01: 4985 bytes
+- 2026-11-10 19:44 · lane V1: stopped (the driver is exiting)
+- 2026-11-10 19:44 · services stopped (driver exited)
+- 2026-11-10 20:59 · needs: resolved agent-harness-2026-11-10/1 (run continued)
+- 2026-11-10 20:59 · merged main into harness/agent-harness-2026-11-10
+- 2026-11-10 20:59 · lane V1 opened (slot 0, port 7837, from 3f1c299, slot reused)
+- 2026-11-10 21:01 · context.md for V1-01: 4985 bytes
+- 2026-11-10 21:09 · V1-01: suite ran 1x (131 s) in the session
+- 2026-11-10 21:09 · V1-01 · claude-opus-5-5 · passes=true · 8 min · 1/7 passing
+- 2026-11-10 21:09 · context.md for V1-02: 6484 bytes
+- 2026-11-10 21:37 · V1-02: suite ran 2x (264 s) in the session
+- 2026-11-10 21:37 · V1-02: a project fact is 173 characters, over 160
+- 2026-11-10 21:37 · V1-02 · claude-opus-5-5 · passes=true · 27 min · 2/7 passing
+- 2026-11-10 21:37 · review V1-03: 528 changed lines, at or over 0; opus
+- 2026-11-10 21:37 · context.md for V1-03: 7243 bytes
+- 2026-11-10 21:53 · V1-03: suite ran 1x (133 s) in the session
+- 2026-11-10 21:53 · V1-03 · claude-opus-5-5 · passes=true · 15 min · 3/7 passing
+- 2026-11-10 21:53 · merged main into harness-lane/agent-harness-2026-11-10/V1
+- 2026-11-10 21:53 · verify V1: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-10 22:06 · context.md for V1: 10186 bytes
+- 2026-11-10 22:25 · V1: checks +15 ~1 −0 against a budget of 15
+- 2026-11-10 22:25 · V1 verified and tagged run/agent-harness-2026-11-10/V1
+- 2026-11-10 22:26 · lane V2 opened (slot 1, port 7838, from 4eacaad)
+- 2026-11-10 22:26 · context.md for V2-01: 7984 bytes
+- 2026-11-10 22:26 · V1 merged into main · https://github.com/mh550/agent-harness/pull/178
+- 2026-11-10 22:26 · lane V1 closed (V1 merged)
+- 2026-11-10 22:26 · lane V1: branch harness-lane/agent-harness-2026-11-10/V1 deleted (merged)
+- 2026-11-10 22:42 · V2-01: suite ran 2x (267 s) in the session
+- 2026-11-10 22:42 · V2-01: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 22:42 · V2-01 · claude-opus-5-5 · passes=true · 16 min · 4/7 passing
+- 2026-11-10 22:42 · context.md for V2-02: 8017 bytes
+- 2026-11-10 23:05 · V2-02: suite ran 1x (133 s) in the session
+- 2026-11-10 23:06 · V2-02 · claude-opus-5-5 · passes=true · 23 min · 5/7 passing
+- 2026-11-10 23:06 · context.md for V2-03: 7922 bytes
+- 2026-11-10 23:17 · V2-03: suite ran 2x (275 s) in the session
+- 2026-11-10 23:17 · V2-03: a project fact is 170 characters, over 160
+- 2026-11-10 23:17 · V2-03: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 23:17 · V2-03 · claude-opus-5-5 · passes=true · 11 min · 6/7 passing
+- 2026-11-10 23:17 · review V2-04: 1020 changed lines, at or over 0; opus
+- 2026-11-10 23:17 · context.md for V2-04: 7974 bytes
+- 2026-11-10 23:36 · V2-04: suite ran 1x (132 s) in the session
+- 2026-11-10 23:36 · V2-04: 1 question(s) for Michael recorded (harness needs)
+- 2026-11-10 23:36 · V2-04 · claude-opus-5-5 · passes=true · 19 min · 7/7 passing
+- 2026-11-10 23:36 · merged main into harness-lane/agent-harness-2026-11-10/V2
+- 2026-11-10 23:36 · verify V2: suite cache cleared; the suite runs in full on the verified tree
+- 2026-11-10 23:50 · context.md for V2: 15300 bytes
+- 2026-11-11 00:12 · V2: checks +28 ~2 −0 against a budget of 25 (over budget: V2 adds 28 names (+28 ~3 -0) against check_budget 25: V2-02's spec step names twelve stub-gh behaviours and V2-01's every refusal, each its own check so a red one names the rule; V2-04's one is the r…)
+- 2026-11-11 00:12 · V2 verified and tagged run/agent-harness-2026-11-10/V2
+- 2026-11-11 00:12 · V2 merged into main · https://github.com/mh550/agent-harness/pull/180
+- 2026-11-11 00:12 · lane V2 closed (V2 merged)
+- 2026-11-11 00:12 · lane V2: branch harness-lane/agent-harness-2026-11-10/V2 deleted (merged)
+- 2026-11-11 00:12 · every feature passes
+- 2026-11-11 00:12 · run ended (done): 7/7 passing · 10 sessions (10 real) · 7 features passed · $34.38 · 2.8 h · by kind: init 1 ($3.94), coding 7 ($26.42), verify 2 ($4.02) · by model: claude-fable-5-1 1 ($3.94), claude-opus-5-5 9 ($30.44)
+- 2026-11-11 00:12 · services stopped (done)
+- 2026-11-11 00:12 · services stopped (done)
+- 2026-11-11 00:13 · curator: session denied Bash(git push:*), Bash(gh:*)
+- 2026-11-11 00:13 · memory: 1 ops · 1 facts · 0 rules · 0 dropped · 0 proposals
+- 2026-11-11 00:13 · memory: evicted "- ask and its spawn can both fail, so an .mjs answer may be empty: give the bash" for add ## Gotchas
+- 2026-11-11 00:14 · memory review: session denied Bash(git push:*), Bash(gh:*)
+- 2026-11-11 00:14 · memory review: 1 reviewed · 0 held · 1 failed
+- 2026-11-11 00:14 · memory review: facts/1 fails: 4 files: docs/architecture.md:81, lib/record.sh:499, tests/unit/curator.test.mjs:215, tests/checks/no-answer.sh:5 (q2)
+- 2026-11-11 00:14 · memory review: cost $0.38 over the curator's $0.27
+- 2026-11-11 00:14 · memory PR opened; left for Michael (MEMORY_POLICY=pr) · https://github.com/mh550/agent-harness/pull/181
+- 2026-11-11 00:14 · memory rules PR: none (no tier-2 change)
+- 2026-11-11 00:14 · memory: facts 0 held · 1 failed (facts/1: 4 files: docs/architecture.md:81, lib/record.sh:499, tests/unit/curator.test.mjs:215, tests/checks/no-answer.sh:5, q2) · rules 0 held · PR https://github.com/mh550/agent-harness/pull/181 · rules PR none
+- 2026-11-11 00:14 · summary.json and report.md kept in the state dir (harness report reads them after gc)
