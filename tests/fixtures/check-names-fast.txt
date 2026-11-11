@@ -17,6 +17,7 @@ a body over the cap is trimmed
 a claim that never reached the list is named at the session's end
 a cwd that is gone: declined and spawned (the spawn's exit code), not a restart, no line from the helper
 a declined request's stderr is dropped: the spawn says it, once
+a driver that gets a hangup ends with the hangup reason through the EXIT trap: ended, harness-log.md, exit 129
 a failed read inside $( ask ): the spawn's bytes, one line; the parent's next call finds the helper gone, logs nothing more, spawns
 a failure with no STATE in this shell: the spawn's bytes, nothing fatal under set -u, nothing on stderr
 a git or other child a script runs: its stderr lands in the call's 2> file too
@@ -43,6 +44,7 @@ a scratch directory that is missing or unset: a spawn with the spawn's bytes, no
 a second claim gap grants nothing: the lane closes naming the feature, its attempts and the gap
 a session whose entry says passes with the list at false is a claim gap, named with the id
 a session's edits to the journal are restored (E4 review F1)
+a session's environment carries no TMUX or TMUX_PANE while the driver's does (the initializer's and the coding session's recorded)
 a spec check that fails without a line parks with a reason, never an empty one
 a stale green marker is caught at verify: M1 red, not tagged
 a stdin-fed call never lets main read the request pipe: the next ask is answered by the same helper; empty stdin leaves the file
@@ -704,6 +706,7 @@ needs card verify_recheck: from its fixture, every field filled (why of 2-4 sent
 needs card verify_red: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card verify_thin: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
 needs card weekly_budget: from its fixture, every field filled (why of 2-4 sentences, one recommended option, commands)
+needs card: a run driver_crash with an end_reason fact takes it as headline and title; without one the default stays
 needs cards (review): own default-lane merges left out, a re-merge keeps its newest PR; a fence and tabs stay on their lines; a bad at is since ?; no run is exit 1
 needs cards: 17 fixtures, one per reason, and a reason without a template is exit 1
 needs cards: merge_conflict and main_conflict show tried in the card, the notification body and needs.md
@@ -1022,6 +1025,7 @@ the desk prompt reads COLUMNS=60 harness needs and needs --json, never harness p
 the desk prompt: two continues on a card: ask Michael which, run one
 the given-up card says the re-check sent it back and the told retry did not set passes
 the given-up card's why carries the re-check and the claim gap in place of "its entries say what failed"
+the hangup opens driver_crash whose card carries the hangup reason: headline, title and harness needs, needs.md committed
 the helper killed between two calls: the next call is a spawn (+1), the spawn's bytes, one helper restarted: line
 the journal fills an entry question without Files: from the session (its files, then lib/x.sh from its diff, absolute); noted
 the lock file stays empty (a refused asker's open truncates it); scratch holds the environment's names, never a value

@@ -202,6 +202,9 @@ ok() { local out; out=$(jq -c --argjson c "${1:-0.25}" --argjson r "\"${2:-done}
   keep "$out"; }
 keep() { printf '%s\n' "$1"; if [[ -f $SESS/$sid ]]; then jq -c 'select(.type == "result")' <<< "$1" > "$SESS/$sid"; fi; }   # print it, keep its result line
 
+# STUB_RECORD_ENV=1: every headless session appends its kind and its environment's names to $STUB_DIR/sessions.env (a
+# check reads what a session inherits from its driver)
+[[ ${STUB_RECORD_ENV:-} == 1 ]] && { echo "== $first"; env | cut -d= -f1 | sort; } >> "$STUB_DIR/sessions.env"
 case $first in
   "# Initializer session")
     [[ ${STUB_SLOW_INIT:-} ]] && sleep "$STUB_SLOW_INIT"

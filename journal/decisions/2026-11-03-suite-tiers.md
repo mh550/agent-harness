@@ -134,6 +134,7 @@ the one 2026-11-04 timing where that output has none.
 | `night-words` | fast | 0.1 (2026-11-05) | was `89-night-words`; no row until the shape: the same run, ≤ 30 s |
 | `resident-helper-ask` | fast | 14.7 (2026-11-05) | was `91-resident-helper`; no row until the shape: the same run, ≤ 30 s |
 | `weekly-budget` | fast | 2.9 (2026-11-06) | cut out of file 15 by the shape (it reads no run of that file); timed once on 2026-11-06, alone, ≤ 30 s |
+| `session-env` | fast | 1.9 (2026-11-10) | new with decisions/2026-11-10-session-env-no-tmux (one stub run, hung up mid-coding); timed once on 2026-11-10, `TEST_JOBS=4 bash tests/run.sh session-env` alone, ≤ 30 s |
 | `gc-tmux` | fast | 0.5 (2026-11-06) | cut out of file 15 by the shape; timed once on 2026-11-06, alone, ≤ 30 s |
 | `memlint-run` | fast | 17.1 (2026-11-06) | `39-memlint-m4`'s two stub runs; slow by Michael's word (Decision 3 of the redesign's dispatch list, 2026-11-05) while the whole memlint file was over the line; fast since 2026-11-06 by Michael's word (Decision 18, the process session), as the rule has it |
 | `node-memo` | slow | 27.6 (2026-11-04); 28.0, 27.9 (2026-11-06) | moved fast → slow by Michael's word (Decision 3 of the redesign's dispatch list, 2026-11-05: 31.5 s there, 31.0 s in the kept full run of 2026-11-05, `findings-and-research/2026-11-03-resident-helper/suite-after-files.txt`, solo at 4 jobs); under the line in both solo runs of 2026-11-06 |
