@@ -16,6 +16,11 @@
 # `pr view --json commits` object: oid, messageHeadline, messageBody, authoredDate, committedDate, authors); -q as above.
 # STUB_GH_LOST_MERGE=1: a pr merge lands and its answer is lost (that same line, exit 1). Its own git calls are GitHub's
 # side: never the outage stub's.
+# By URL (harness requests' v2 merge and close, docs/specs/2026-11-10-review-surface.md §V2-02), as gh 2.45 does off a
+# TTY (its message formats read from the 2.45.0 binary): "pr merge <url> --merge" with no --match-head-commit merges the
+# head branch's tip into the bare origin's main and prints nothing; "pr close <url> [--comment <text>]" keeps the comment
+# as pr-N.comment, touches pr-N.closed and says "✓ Closed pull request #N (<title>)" on stderr; an already closed PR is
+# "! Pull request #N (<title>) is already closed" (exit 0), a merged one "X … can't be closed because it was already merged" (exit 1).
 HERE=$(cd "$(dirname "$0")" && pwd)
 echo "gh $*" >> "$STUB_DIR/gh.log"
 export STUB_GIT_UP=1
@@ -53,7 +58,18 @@ case "$1 $2" in
     n=$(open_pr "$b") || n=$(prs_of "$b" | tail -1)
     [[ -n $n ]] || { echo "no pull requests found for branch \"$b\"" >&2; exit 1; }
     answer "https://example.test/pr/$n" "$(state "$n")" "$(cat "$P/pr-$n.title" 2> /dev/null)" "$b" "$js" "$q" ;;
-  "pr close")   # one PR: the v2 one if the head has it, else its open one
+  "pr close")   # by URL (the card's close); else one PR of a head: the v2 one if the head has it, else its open one
+    if [[ $3 == https://example.test/pr/* ]]; then
+      n=${3##*/} cm="" hc=""; while (( $# )); do [[ $1 == --comment ]] && { cm=$2 hc=1; }; shift; done
+      [[ -f $P/pr-$n ]] || { echo "GraphQL: Could not resolve to a PullRequest with the number of $n. (repository.pullRequest)" >&2; exit 1; }
+      t=$(cat "$P/pr-$n.title" 2> /dev/null)
+      case $(state "$n") in
+        MERGED) echo "X Pull request #$n ($t) can't be closed because it was already merged" >&2; exit 1 ;;
+        CLOSED) echo "! Pull request #$n ($t) is already closed" >&2; exit 0 ;;
+      esac
+      [[ -n $hc ]] && printf '%s' "$cm" > "$P/pr-$n.comment"
+      touch "$P/pr-$n.closed"; echo "✓ Closed pull request #$n ($t)" >&2; exit 0
+    fi
     if [[ -f $P/branch-${3//\//_} ]]; then rm -f "$P/branch-${3//\//_}"; elif n=$(open_pr "$3"); then touch "$P/pr-$n.closed"; fi ;;
   "pr create")
     head="" title="" bf=""; while (( $# )); do case $1 in --head) head=$2 ;; --title) title=$2 ;; --body-file) bf=$2 ;; esac; shift; done
@@ -68,6 +84,8 @@ case "$1 $2" in
     n=${3##*/} c=""; while (( $# )); do [[ $1 == --match-head-commit ]] && c=$2; shift; done
     [[ ${STUB_REFUSE_MERGE:-} ]] && { echo "$GRAPHQL_MOVED" >&2; exit 1; }
     origin=$(git remote get-url origin) tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT   # the clone goes with the call (88,652 of them leaked under /tmp by 2026-11-06)
+    # no --match-head-commit (the card's merge, run outside any checkout): GitHub merges the head branch's tip
+    [[ -z $c ]] && { origin=$STUB_DIR/origin.git; c=$(git -C "$origin" rev-parse -q --verify "refs/heads/$(cat "$P/pr-$n")") || exit; }
     # --match-head-commit: the PR's head branch must still be at that commit
     [[ -z $c || $(git ls-remote "$origin" "refs/heads/$(cat "$P/pr-$n")" | cut -f1) == "$c" ]] \
       || { echo "$GRAPHQL_MOVED" >&2; exit 1; }

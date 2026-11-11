@@ -38,7 +38,41 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
     `answersText` renders it `- the facts PR of <run>, closed: <why>` under *Michael declined*; `apply` leaves it out of
     its matches (a null key names no line, so it drops no op); `proposalsView` ends with `<run> · the facts PR ·
     declined: <why>` and `answersTally` and `· <k> answered` count it once. Without `--why` it is the usage line, exit 1.
+- **Choice (V2-02, `harness requests` runs them):**
+  - **gh's state first** (*default*): after the claim, `$HARNESS_GH pr view <url> --json state`; `MERGED` and `CLOSED`
+    are refusals (`pr <url> is already merged`, `… already closed`, the claimed request moved to `rejected/`), an
+    unreadable answer is `ok` false with gh's text as the output and no refusal (it ran; the next tap may find GitHub
+    back).
+  - **The review rule for both PRs** (*default*): a `merge` whose row's `review` is not `ok` is refused `the review did
+    not run for <url> (<the row's review>): merge it on GitHub if you mean to` (`its ledger row has no review` for a row
+    before the reviewer); the card shows a verdict, and a one-tap merge of a PR with none is what invariant 3 was written
+    against. A close has no review rule.
+  - **No `--match-head-commit`** (*default*): `gh pr merge <url> --merge`; the card is Michael's hand, as GitHub's
+    button, which has no such guard; a commit added after the event reads as `merged edited`, as for the button.
+  - **`--comment` with the why** (*default*): `gh pr close <url> --comment "<why>"`, so the ledger and the PR say the
+    same; **never `--delete-branch`** (*default*): the branch is the record of what was proposed, as `record_pr`.
+  - **A close with a why is a decline:** after the close succeeded, `harness memory decline <run> --why` for the facts
+    PR (the run-level row) or `harness memory decline <run>/<n> --why` per `rules/<n>` of the ledger's
+    `memory-result.json` for the rules PR (`requests.mjs declines`, pure `declineItems`; its proposals are not on the
+    rules PR), each under the ledger lock as the hand command takes it. **A failed decline leaves the close standing**
+    (*default*): one line of the result's `output` (`memory decline <item> failed, the close stands: …`); the row can be
+    written by hand. The output names the item declined, never the why. A close without a why writes no row: `harness
+    memory` reads it as `closed against a hold` when every op held.
+  - **Both PRs on the card** (*default*): the `merge` verb takes any row's PR, facts or rules, under the same review
+    rule. Invariant 3 holds: `memory_merge` and `merged_by: driver` are the driver's and untouched; a card merge is
+    `harness requests`' call on Michael's request, and `harness memory` reads it as his (`merged_by` null).
+  - **The gh stub's shapes** (*default*): `tests/stub-gh.sh`'s `pr merge <url> --merge` merges the head branch's tip
+    into the bare origin's main and prints nothing (gh 2.45 off a TTY); `pr close <url> [--comment <text>]` keeps the
+    comment as `pr-N.comment` and prints `✓ Closed pull request #N (<title>)` on stderr, an already closed PR `!
+    Pull request #N (<title>) is already closed` (exit 0) and a merged one `X Pull request #N (<title>) can't be closed
+    because it was already merged` (exit 1): the formats read from the 2.45.0 binary on this box, no live call.
 - **Rejected:**
+  - `--match-head-commit` on the card's merge (GitHub's button has none; the card is the same hand);
+  - a facts-only merge (§12's direction is hands-off for code rules, and the rules PR two taps away on GitHub while the
+    facts PR is one would make the card half a surface);
+  - `--delete-branch` on the close (the branch is the record of what was proposed);
+  - a second PR state for a close with a reason (the decline row says it; gh has one `CLOSED`);
+  - a decline that fails stopping the close (the close is what Michael asked; the row can be written by hand);
   - one validator branch for both versions, a v2 `answer` taken (two shapes for one verb: n8n-home would have to choose);
   - a why on a merge kept in a row (the merge's reason is the override the count already reads);
   - a run-level row with a key (`run:<run>`): a key is what `apply` matches, so a made-up one could match a line;

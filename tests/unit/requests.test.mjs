@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { cli } from "./cli-same.mjs";
-import { BACKUP_REFUSAL, inBackupWindow, logLine, resultJson, resultName, validateRequest } from "../../lib/requests.mjs";
+import { BACKUP_REFUSAL, declineItems, inBackupWindow, logLine, resultJson, resultName, validateRequest } from "../../lib/requests.mjs";
 
 // the requests n8n-home's own buildRequest wrote (tests/fixtures/requests/README.md): every shape here is one of them
 const FX = fileURLToPath(new URL("../fixtures/requests/", import.meta.url));
@@ -374,4 +374,15 @@ test("requests.mjs: merge.json, close.json and close-why.json are the README's m
       assert.equal(Object.keys(fx(n)).join(","), n === "close-why" ? "v,id,at,verb,run,pr,why,source,event" : "v,id,at,verb,run,pr,source,event", n);
     }
   } finally { rmSync(T, { recursive: true, force: true }); }
+});
+
+test("requests.mjs: declineItems gives the run for a closed facts PR and <run>/<n> per rules/<n> for a closed rules PR, a why when the result has none", () => {
+  // memory-result.json's shape as curator.mjs apply writes it: rules[] then proposed[], numbered in one series
+  const result = { rules: [{ op: "add", tier: 2, n: 1 }, { op: "add", tier: 2, n: 2 }], proposed: [{ op: "add", tier: 3, n: 3 }] };
+  assert.equal(JSON.stringify(declineItems(LEDGER[0], result)), JSON.stringify({ items: ["r1"] }));
+  assert.equal(JSON.stringify(declineItems(LEDGER[0], null)), JSON.stringify({ items: ["r1"] }));
+  assert.equal(JSON.stringify(declineItems({ run: "r1", url: FACTS_PR }, null)), JSON.stringify({ items: ["r1"] }));   // a row before N1-01: facts
+  assert.equal(JSON.stringify(declineItems(LEDGER[1], result)), JSON.stringify({ items: ["r1/1", "r1/2"] }));
+  assert.equal(declineItems(LEDGER[1], null).why, "no memory-result.json for r1 in the ledger yet");
+  assert.equal(declineItems(LEDGER[1], { rules: [], proposed: [{ n: 1 }] }).why, "r1's memory-result.json has no numbered rules");
 });

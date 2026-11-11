@@ -330,7 +330,7 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   first under `flock` on `requests/.lock`. An `answer` becomes `harness answer <run> <text>`, a `continue` `harness
   queue add --continue <run> [--brief …]` then `harness queue start`, except between 03:15 and 04:30 (the backup
   window: queued, runner not started). Both run as argv calls, never through a shell. Anything else (a third verb, an
-  unknown run, a bad id, an oversize text, `v` not 1, an id already done, a brief that is one option word such as
+  unknown run, a bad id, an oversize text, `v` not 1 or 2, an id already done, a brief that is one option word such as
   `--now`, a file still unparsable after 10 s, anything that isn't a readable regular file) moves to
   `requests/rejected/`. Every request gets a result, `requests/done/<id>.json` (`ok`, `exit`, `output`,
   `runner_started`, `refused`), which the card shows back: "has your answer", "is starting again", "is queued to start
@@ -343,6 +343,16 @@ time` or `· ends <HH:MM>`. The bounds: `docs/architecture.md` §7.
   ```
   The path unit watches `~/.local/state/harness/requests`; a `HARNESS_STATE` elsewhere needs its glob edited. A call
   killed mid-request leaves its card a result saying "interrupted after its claim: it may have run".
+- **Merge and close from the memory card (request v2):** the `memory` event's card offers both memory PRs' two
+  actions, and n8n writes a v2 request (`merge` or `close`, `pr` the PR's URL, a close's optional one-line `why`;
+  `tests/fixtures/requests/merge.json`, `close-why.json`). `harness requests` takes it only for a PR of a
+  `ledger/memory.jsonl` row of that run, asks gh its state (merged or closed: refused), refuses a merge of a PR whose
+  review did not run (merge that one on GitHub), then runs `gh pr merge <url> --merge` or `gh pr close <url>
+  [--comment <why>]`; the result carries `pr` and `state`. The merge is yours, as GitHub's button: `harness memory`
+  counts a merge over a fail as your override. A close with a why is a decline: the next curator reads it under
+  *Michael declined* (the facts PR: `harness memory decline <run> --why`; the rules PR: one `decline <run>/<n>` per
+  rule), and it is no override; a close without one is `closed against a hold` when every op held. Closed on GitHub
+  with a reason the curator should read: `harness memory decline <run> --why "<text>"` by hand.
   After a unit file changes in git, `systemctl --user daemon-reload`. Undo: `systemctl --user disable --now
   harness-requests.path harness-requests.service`; the request files stay (decisions/2026-10-22-request-inbox).
 - **Permissions:** the policy (agents merge, push and clean up; only the irreversible is denied; production is gated
