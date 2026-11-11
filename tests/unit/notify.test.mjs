@@ -153,11 +153,17 @@ test("notify.mjs event: a given id= is the event's id", async () => {
 const v2 = () => JSON.parse(readFileSync(new URL("../fixtures/n8n-event-v2-memory.json", import.meta.url), "utf8"));
 const MEM = new URL("../fixtures/memory/event-card.json", import.meta.url).pathname;
 
-test("notify.mjs event: ROUTED is v1's four and ROUTED_V2 is it plus memory", async () => {
+test("notify.mjs event: ROUTED is v1's four and ROUTED_V2 is it plus memory, the kinds notify.sh's routing arms name", async () => {
   const { ROUTED, ROUTED_V2, KINDS } = await import("../../lib/notify.mjs");
   assert.equal(JSON.stringify(ROUTED), '["park","needs_michael","blocked","debrief"]');
   assert.equal(JSON.stringify(ROUTED_V2), '["park","needs_michael","blocked","debrief","memory"]');
   assert.ok(KINDS.includes("memory"));
+  // notify.sh's case line is what routes: its EVENT_URL arm names ROUTED, its EVENT_URL-and-EVENT_V2 arm the rest of ROUTED_V2
+  const sh = readFileSync(new URL("../../lib/notify.sh", import.meta.url), "utf8"), arms = { v1: [], v2: [] };
+  for (const m of sh.matchAll(/([a-z_|]+)\) \[\[ -n \$\{EVENT_URL:-\}( && \$\{EVENT_V2:-\} == 1)? \]\] && notify_event && return 0/g))
+    arms[m[2] ? "v2" : "v1"].push(...m[1].split("|"));
+  assert.equal(JSON.stringify(arms.v1), JSON.stringify(ROUTED));
+  assert.equal(JSON.stringify(arms.v2), JSON.stringify(ROUTED_V2.filter(k => !ROUTED.includes(k))));
 });
 
 test("notify.mjs event: the memory kind with memory=<file> is v 2, the v2 fixture's 14 keys in order, the file's object under memory", async () => {

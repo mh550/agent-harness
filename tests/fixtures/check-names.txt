@@ -1299,7 +1299,7 @@ no user systemd: the init runs bare, and the run's one uncapped note stays the o
 no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
 not queued: ended done / already queued / no work left / still running
 nothing parked
-notify.mjs event: ROUTED is v1's four and ROUTED_V2 is it plus memory
+notify.mjs event: ROUTED is v1's four and ROUTED_V2 is it plus memory, the kinds notify.sh's routing arms name
 notify.mjs event: a debrief has null project, run and feature
 notify.mjs event: a given id= is the event's id
 notify.mjs event: a kind outside v1 prints nothing and exits 2

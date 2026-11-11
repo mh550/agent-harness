@@ -749,7 +749,7 @@ night words: memlint says run-scope and that it goes in the run's brief
 night words: out of the docs, prompts, templates and code, but for memlint's patterns and the catch-up's lines
 no claim gap for an entry that says not yet while the list says true (the gate's case)
 no claim gap when the list agrees with the entry (passes/true, not yet/false, parked/false)
-notify.mjs event: ROUTED is v1's four and ROUTED_V2 is it plus memory
+notify.mjs event: ROUTED is v1's four and ROUTED_V2 is it plus memory, the kinds notify.sh's routing arms name
 notify.mjs event: a debrief has null project, run and feature
 notify.mjs event: a given id= is the event's id
 notify.mjs event: a kind outside v1 prints nothing and exits 2

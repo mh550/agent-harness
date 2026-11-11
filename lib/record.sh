@@ -595,7 +595,7 @@ memory_pr() {
   memory_record "$r"
   memory_wt_gone
   memory_json "$o" "$a" "$rl" "$d" "$p" "${url:-$MEM_URL}" "${rurl:-$RULES_URL}"
-  # after both PR notes, the one line the F3d card will carry (memreview.mjs line: nothing when nothing was reviewed)
+  # after both PR notes, the one line the memory event carries as its body (memreview.mjs line: nothing when nothing was reviewed)
   x=$(node "$HARNESS_HOME/lib/memreview.mjs" line "$SCRATCH/memory-verdicts.json" "$STATE/memory.json" 2>> "$STATE/run.log") && [[ -n $x ]] && note "$x"
   [[ ($url == http* || $rurl == http*) && -n $x ]] && memory_event "$x"
   return 0

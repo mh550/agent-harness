@@ -49,7 +49,7 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
     would cost up to 60 s after the retro, the curator and the reviewer already ran.
   - **`EVENT_V2` as the switch** (*default*; `lib/config.sh` `""`, `templates/user/config.sh` one commented line):
     `notify` routes `ROUTED`'s kinds when `EVENT_URL` is set and `memory` only when `EVENT_URL` and `EVENT_V2=1` are;
-    otherwise `memory` goes to ntfy or `NOTIFY_CMD` like every non-routed kind, with no POST and no note. Michael sets
+    otherwise `memory` goes to ntfy or `NOTIFY_CMD` like every non-routed kind, with no POST and no note. `1` exactly: any other value (`true`, `yes`) is as unset, with no note either (*default*, V1-03's review M3: the safe direction, and the config comment and the config table say `1` exactly). Michael sets
     it as the n8n-home checklist's last step. A refusal with the switch set is the four kinds' fallback: the note
     `event hook failed (<code>): memory; sent to ntfy` and the same ntfy post.
   - The run's end notification is unchanged (sent in `finish` before the curator, its bytes pinned by
@@ -66,3 +66,11 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
     path.
   - `0 held · 0 failed` as a review none's title.
   - The card reading whether a merge is offered from the body's text.
+- **Checks (V1, `checks: +15 ~1 −0` against the budget of 15):**
+  - Replaced: `notify.mjs event: buildEvent's keys are the v1 fixture's, in order` → `notify.mjs event: every kind but
+    memory is the v1 fixture's 13 keys in order with v 1, the bytes before v2` (V1-01: it also pins the ten v1 kinds'
+    bytes from before v2).
+  - Removed: none.
+  - Renamed within V1 (no count): V1-03's review (`docs/plans/2026-11-10-V1-review.md` M4) widened V1-01's `notify.mjs
+    event: ROUTED is v1's four and ROUTED_V2 is it plus memory` to also read `lib/notify.sh`'s routing arms, as `… plus
+    memory, the kinds notify.sh's routing arms name`, so the constants cannot drift from the `case` line that routes.

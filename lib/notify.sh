@@ -29,7 +29,7 @@ notify() {
     esac
   done
   [[ -n $body ]] && body=$(notify_trim "$body")
-  # 2xx: n8n tells Michael; v2's memory only once its intake reads v2 (EVENT_V2=1), else ntfy with no POST and no note
+  # 2xx: n8n tells Michael (these arms are notify.mjs ROUTED and ROUTED_V2, notify.test.mjs reads them); v2's memory only once its intake reads v2 (EVENT_V2=1), else ntfy with no POST and no note
   case $kind in park|needs_michael|blocked|debrief) [[ -n ${EVENT_URL:-} ]] && notify_event && return 0 ;;
     memory) [[ -n ${EVENT_URL:-} && ${EVENT_V2:-} == 1 ]] && notify_event && return 0 ;; esac
   if [[ -n ${NTFY_URL:-} ]]; then
