@@ -1114,11 +1114,15 @@ memory: the initializer's Gotchas write stays reverted with its outside-the-reco
 memory: the same session's lib, tests and journal/decisions edits stay on the branch and merge
 memory_guard: after a session's own merge of main, main's CLAUDE.md lines stay; only the session's own edit goes
 memreview.mjs: capReading Gotchas entries and lines as the gate counts them; no file is null
+memreview.mjs: card and title as commands print the object as one JSON line and the title
+memreview.mjs: card is the memory event's object: each failed op's id, its input section, q and reason without (q<n>), both PRs, open, merged when merged_by is driver
+memreview.mjs: card on a review none has no failures and review the why
 memreview.mjs: input an apply result with empty applied and rules is an empty list (nothing to review)
 memreview.mjs: input as a command prints the list as one JSON document and exits 0
 memreview.mjs: input facts/<i> in apply's order then rules/<n> with the result's numbers, each with its paths and the cap reading
 memreview.mjs: line is the one memory: line of the note and the card, facts held and failed with each fail's id, reason and question, rules held, both PRs; none: its why; nothing unreviewed
 memreview.mjs: render the ## Review section, one line per op and the verify's five-column table; none: <why> without a review
+memreview.mjs: title is [<run>] memory: <held> held · <failed> failed, or review none when review is not ok
 memreview.mjs: validate passes four rows per item and refuses, naming the row, an unknown id, a q of 5, a doubled (id, q), a non-boolean holds and too many rows
 memreview.mjs: validate, verdicts and render as commands
 memreview.mjs: verdicts holds an op with four holding rows and fails one on its first failing row's saw (q named), one with three rows as thin and one with none as not reviewed
@@ -1287,12 +1291,15 @@ no user systemd: the init runs bare, and the run's one uncapped note stays the o
 no user systemd: the run goes bare with one uncapped note (STUB_NO_SYSTEMD=1)
 not queued: ended done / already queued / no work left / still running
 nothing parked
+notify.mjs event: ROUTED is v1's four and ROUTED_V2 is it plus memory
 notify.mjs event: a debrief has null project, run and feature
 notify.mjs event: a given id= is the event's id
 notify.mjs event: a kind outside v1 prints nothing and exits 2
 notify.mjs event: an empty click, actions or context is null, an empty priority stays the empty string
-notify.mjs event: buildEvent's keys are the v1 fixture's, in order
+notify.mjs event: every kind but memory is the v1 fixture's 13 keys in order with v 1, the bytes before v2
+notify.mjs event: memory= on a v1 kind, and the memory kind without it, print nothing and exit 2; an empty memory= is none
 notify.mjs event: the CLI prints buildEvent's JSON on one line
+notify.mjs event: the memory kind with memory=<file> is v 2, the v2 fixture's 14 keys in order, the file's object under memory
 notify.mjs event: v is 1, id a uuid, at an ISO time
 notify.mjs urls compare <origin> <base> <branch>: the GitHub compare URL; exit 1 off GitHub
 notify.mjs: actionsHeader joins view actions, skips empty urls, at most 3

@@ -1,10 +1,10 @@
 // lib/memreview.mjs: the memory reviewer's input (the ops that would land), its file validated, its verdicts and the ## Review section.   node --test tests/unit/memreview.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { capReading, heldFailed, input, line, main, render, renderNone, validate, verdicts } from "../../lib/memreview.mjs";
+import { capReading, card, heldFailed, input, line, main, render, renderNone, title, validate, verdicts } from "../../lib/memreview.mjs";
 
 const F = (text, o) => ({ op: "add", file: "CLAUDE.md", section: "## Gotchas", text, tier: 1, why: "w", from: "entries.jsonl:2", ...o });
 const RESULT = {
@@ -135,5 +135,58 @@ test("memreview.mjs: line is the one memory: line of the note and the card, fact
     assert.equal(main(["line", join(d, "none.json"), join(d, "n.json")], { env: {} }).out, `${line(null, { ...m, review: "the reviewer failed (exit 124)" })}\n`, "no verdicts file");
     writeFileSync(join(d, "o.json"), JSON.stringify({ applied: 1 }));
     assert.deepEqual(main(["line", join(d, "none.json"), join(d, "o.json")], { env: {} }), { rc: 0, out: "" });
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});
+
+// ---- the memory event's object and title (docs/specs/2026-11-10-review-surface.md §V1-01); the three files are a stub
+// run's record (memory-review.sh's run helper, STUB_CURATOR_OPS=evict-two STUB_MEMORY_REVIEW=evict-fails, MEMORY_POLICY=pr) ----
+const FX = n => new URL(`../fixtures/memory/event-${n}.json`, import.meta.url);
+const fx = n => JSON.parse(readFileSync(FX(n), "utf8"));
+
+test("memreview.mjs: card is the memory event's object: each failed op's id, its input section, q and reason without (q<n>), both PRs, open, merged when merged_by is driver", () => {
+  const c = card(fx("verdicts"), fx("memory"), fx("input"), "pr");
+  assert.equal(Object.keys(c).join(" "), "pr rules_pr policy reviewed held failed failures state review");
+  assert.equal(JSON.stringify([c.pr, c.rules_pr, c.policy, c.reviewed, c.held, c.failed, c.state, c.review]),
+    '["https://example.test/pr/3","https://example.test/pr/4","pr",3,2,1,"open","ok"]');
+  assert.equal(c.failures.length, 1);
+  const [f] = c.failures;
+  assert.equal(Object.keys(f).join(" "), "id section q reason");
+  assert.equal(JSON.stringify([f.id, f.section, f.q]), '["facts/2","## Gotchas",2]');
+  assert.match(f.reason, /^7 files: tests\/checks\/needs-cards\.sh, .*…$/);
+  assert.ok(!f.reason.endsWith("(q2)"), f.reason);
+  assert.equal(card(fx("verdicts"), { ...fx("memory"), merged_by: "driver" }, fx("input"), "auto").state, "merged");
+  // a thin or unreviewed op has no q; an id the input lacks has no section; no PR is null
+  const v = { reviewed: 2, held: 0, failed: 2, ops: [{ id: "rules/1", holds: false, reason: "not reviewed", q: null }, { id: "facts/9", holds: false, reason: "review too thin (2 of 4 rows)", q: null }] };
+  const t = card(v, { reviewed: 2, held: 0, failed: 2, review: "ok", pr: null, rules_pr: "u" }, fx("input"), "pr");
+  assert.equal(JSON.stringify(t.failures), '[{"id":"rules/1","section":"## Code rules","q":null,"reason":"not reviewed"},{"id":"facts/9","section":null,"q":null,"reason":"review too thin (2 of 4 rows)"}]');
+  assert.equal(JSON.stringify([t.pr, t.rules_pr]), '[null,"u"]');
+});
+
+test("memreview.mjs: card on a review none has no failures and review the why", () => {
+  const m = { ...fx("memory"), held: 0, failed: 0, review: "the reviewer failed (exit 124)" };
+  const c = card(null, m, fx("input"), "pr");
+  assert.equal(JSON.stringify([c.failures, c.review, c.state]), '[[],"the reviewer failed (exit 124)","open"]');
+  assert.equal(card(fx("verdicts"), m, fx("input"), "pr").failures.length, 0, "a verdicts file left over is no verdict");
+  assert.equal(card(null, { ...fx("memory"), review: "ok" }, [], "pr").review, "no verdicts", "as line says it");
+});
+
+test("memreview.mjs: title is [<run>] memory: <held> held · <failed> failed, or review none when review is not ok", () => {
+  assert.equal(title(fx("memory"), "r1"), "[r1] memory: 2 held · 1 failed");
+  assert.equal(title({ ...fx("memory"), review: "the reviewer hit a limit" }, "r1"), "[r1] memory: review none");
+  assert.equal(title(card(fx("verdicts"), fx("memory"), fx("input"), "pr"), "r1"), "[r1] memory: 2 held · 1 failed", "the card's object too");
+  assert.equal(title(card(null, fx("memory"), [], "pr"), "r1"), "[r1] memory: review none");
+});
+
+test("memreview.mjs: card and title as commands print the object as one JSON line and the title", () => {
+  const d = mkdtempSync(join(tmpdir(), "memcard-"));
+  try {
+    const out = main(["card", FX("verdicts").pathname, FX("memory").pathname, FX("input").pathname, "pr"], { env: {} });
+    assert.equal(`${out.rc} ${out.out}`, `0 ${JSON.stringify(card(fx("verdicts"), fx("memory"), fx("input"), "pr"))}\n`);
+    const none = main(["card", join(d, "none.json"), FX("memory").pathname, FX("input").pathname, "auto"], { env: {} });
+    assert.equal(none.rc, 0); assert.equal(JSON.parse(none.out).policy, "auto");
+    assert.equal(JSON.parse(none.out).failures.length, 0, "no verdicts file: no failures");
+    writeFileSync(join(d, "c.json"), out.out);
+    assert.equal(main(["title", join(d, "c.json"), "r1"], { env: {} }).out, "[r1] memory: 2 held · 1 failed\n");
+    assert.equal(main(["card", FX("verdicts").pathname], { env: {} }).rc, 2);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
