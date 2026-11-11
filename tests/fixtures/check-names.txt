@@ -1611,6 +1611,7 @@ routine notifications keep the default priority
 routing: coding.md points at the block, draft-claude-md.md asks for the block and Gotchas and no test count
 routing: the project template has the block and an empty Gotchas after Decisions and plans, a commented DECISIONS=
 routing: the rendered initializer prompt sends a durable fact to discoveries affecting project, a run-only fact affecting run, no decision number
+routing: the template and the drafting prompt say how a change lands (the session merges; the harness in a run), the user template no longer does
 routing: the template, the drafting prompt and this repo's Where things go send a fact to the entry, never to CLAUDE.md by a session
 routing: this repo has the block (journal/decisions/, never numbered), an empty Gotchas and DECISIONS=journal/decisions
 run start with the guard: nothing
@@ -1906,6 +1907,7 @@ the tmpfiles template holds the 3-day age rule; README has its install command
 the told retry's flip passes and the milestone verifies and merges
 the unit tier: TEST_XTRACE_DIR=<dir> puts node's coverage in <dir>/unit-tier/v8
 the user config template sets nothing
+the user template keeps the installer heading on line 1, names the settings denies (the Soulseek and /srv/incoming ones too) and no per-project live protocol
 the verify prompt says the suite runs in full
 the weekly budget ends a run after the session that crossed it
 the whole context is capped too

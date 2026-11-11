@@ -74,3 +74,5 @@
       can be undone).
   - **Rejected:** a separate follow-up session per project. Part 1 already edits the settings, so a complete step 4
     costs nothing extra.
+
+- **Updated in place 2026-11-11:** the user file is no longer "the one home" that project files and prompts never restate. How a change lands (merge it yourself, clean up; the harness in a run) is each project's `CLAUDE.md` `## Where things go` (`templates/project/CLAUDE.md`), the run-time rules are the prompts', and the user file keeps what is true of every conversation: the allows, the denies (now naming the Soulseek and `/srv/incoming` ones), a roster of the gated and live projects, other projects, harness commands, a deny is a gate (`decisions/2026-11-11-user-file-homes`).
