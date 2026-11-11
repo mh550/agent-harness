@@ -5,3 +5,4 @@
 - 2026-11-10 19:41 · context.md for V1-01: 4985 bytes
 - 2026-11-10 19:44 · lane V1: stopped (the driver is exiting)
 - 2026-11-10 19:44 · services stopped (driver exited)
+- 2026-11-10 20:59 · needs: resolved agent-harness-2026-11-10/1 (run continued)
