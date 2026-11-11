@@ -48,3 +48,5 @@
 - 2026-11-10 23:36 · merged main into harness-lane/agent-harness-2026-11-10/V2
 - 2026-11-10 23:36 · verify V2: suite cache cleared; the suite runs in full on the verified tree
 - 2026-11-10 23:50 · context.md for V2: 15300 bytes
+- 2026-11-11 00:12 · V2: checks +28 ~2 −0 against a budget of 25 (over budget: V2 adds 28 names (+28 ~3 -0) against check_budget 25: V2-02's spec step names twelve stub-gh behaviours and V2-01's every refusal, each its own check so a red one names the rule; V2-04's one is the r…)
+- 2026-11-11 00:12 · V2 verified and tagged run/agent-harness-2026-11-10/V2
