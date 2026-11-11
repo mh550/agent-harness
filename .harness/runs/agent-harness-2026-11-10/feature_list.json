@@ -61,7 +61,7 @@
         "V1-01",
         "V1-02"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "V2-01",

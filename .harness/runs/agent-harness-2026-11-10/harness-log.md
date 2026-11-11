@@ -15,3 +15,7 @@
 - 2026-11-10 21:37 · V1-02: suite ran 2x (264 s) in the session
 - 2026-11-10 21:37 · V1-02: a project fact is 173 characters, over 160
 - 2026-11-10 21:37 · V1-02 · claude-opus-5-5 · passes=true · 27 min · 2/7 passing
+- 2026-11-10 21:37 · review V1-03: 528 changed lines, at or over 0; opus
+- 2026-11-10 21:37 · context.md for V1-03: 7243 bytes
+- 2026-11-10 21:53 · V1-03: suite ran 1x (133 s) in the session
+- 2026-11-10 21:53 · V1-03 · claude-opus-5-5 · passes=true · 15 min · 3/7 passing

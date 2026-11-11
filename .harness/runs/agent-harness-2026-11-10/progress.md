@@ -11,6 +11,17 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-10-review-surface-event.md` (V1) and `journal/decisions/2026-11-10-review-surface-verbs.md` (V2). The one live step (appending `EVENT_V2=1` to the user config after the n8n-home deploy) is written out in the V2-03 checklist for you; no session runs it.
 
+### 2026-11-10 21:53 · V1-03 · passes
+
+Opus review of V1 (docs/plans/2026-11-10-V1-review.md): 0 Critical, 0 Important, 4 Minor; five invariants hold. Fixed: docs level (memory-event.json lifecycle, memory_event writer, sizes, F3d tense), EVENT_V2 '1 exactly', ROUTED unit test now reads notify.sh's routing arms (renamed, failed on a mutation first), notify.mjs event CLI uses buildEvent's refusals. V1 checks +15 ~1 −0 recorded.
+
+- **Files:** docs/plans/2026-11-10-V1-review.md, docs/architecture.md, journal/decisions/2026-11-10-review-surface-event.md, lib/notify.mjs, lib/notify.sh, lib/config.sh, lib/record.sh, lib/memreview.mjs, tests/unit/notify.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt
+- **Verified:** unit notify+memreview 30/30; bash tests/run.sh memory-event event-hook event-run 31/31; check.sh --fast green 1131 tests; bash -n and node --check on touched files; the renamed ROUTED test failed with notify.sh's arm mutated to …|debrief|limit) and passes on the real one
+- **Tests:** 1131 → 1131
+- **Discovery** (affects V2): M1 left in code: memory-event.json in the record is removed only at memory_pr's start; a fix belongs beside finish's memory.json rm (driver.sh), a finish edit
+- **Discovery** (affects V2): notify.mjs ROUTED/ROUTED_V2 are mirrored by notify.sh's case arms; notify.test.mjs's ROUTED test parses that line by regex: keep its shape or update the regex
+- *03-V1-03 · claude-opus-5-5*
+
 ### 2026-11-10 21:37 · V1-02 · passes
 
 memory_pr ends with memory_event when a PR exists and the memory: line is non-empty: memreview.mjs card → memory-event.json in the record, one notify kind=memory. notify.sh routes memory only with EVENT_URL and EVENT_V2=1 (v2, no bundle), else ntfy, no note. EVENT_V2 in config and template; stub curl 422; card survives a failed input. memory-event.sh (8 runs, 7 checks), docs, decision rows.
