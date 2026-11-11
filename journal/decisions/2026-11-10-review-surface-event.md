@@ -33,7 +33,33 @@ brief of 2026-11-10 19:21: proceed on every default the spec marks *default*, re
     `memreview.mjs card`'s object from a stub run's record files (`tests/fixtures/memory/event-*.json`), with the id,
     `at` and both PR URLs put back as placeholders; the command is a comment in `tests/unit/notify.test.mjs`, and the
     unit test compares the bytes. `tests/fixtures/n8n-event-v1.json` is unchanged.
+- **Choice (V1-02, the send):**
+  - **When**: at the end of `memory_pr`, after the `memory:` note, only when a facts or rules PR URL came back
+    (`http*`) and the line is not empty: `memreview.mjs card` writes `$SCRATCH/memory-event.json`, the record keeps it
+    as `memory-event.json` (an earlier segment's is removed at `memory_pr`'s start), then one `notify "$line"
+    title=<memreview.mjs title> body=<the line> click=<facts PR, else rules PR> actions=<both PRs> kind=memory
+    memory=<the card>`. No PR, no card, no event. The empty-line guard (a reused PR refreshed with nothing reviewed:
+    proposals alone) is *default*: an event with an empty body and a `review none` title would ask Michael about nothing.
+    A review input that failed (its ops landed unreviewed) still gets its card: `card` reads an unreadable input as no
+    items, so the `review none` event goes out where Michael most needs it.
+  - **One event per segment that reached a PR, each with its own id** (*default*): n8n-home stores events by id; the
+    newer card is the one to act on, its counts the latest segment's, as `memory.json` is.
+  - **No bundle for `memory`** (*default*): `notify_event` writes `events/<id>/event.json` and POSTs with `context`
+    null and no `context bundle failed` note; the card is the `memory` field, the body and the PRs, and the bundle
+    would cost up to 60 s after the retro, the curator and the reviewer already ran.
+  - **`EVENT_V2` as the switch** (*default*; `lib/config.sh` `""`, `templates/user/config.sh` one commented line):
+    `notify` routes `ROUTED`'s kinds when `EVENT_URL` is set and `memory` only when `EVENT_URL` and `EVENT_V2=1` are;
+    otherwise `memory` goes to ntfy or `NOTIFY_CMD` like every non-routed kind, with no POST and no note. Michael sets
+    it as the n8n-home checklist's last step. A refusal with the switch set is the four kinds' fallback: the note
+    `event hook failed (<code>): memory; sent to ntfy` and the same ntfy post.
+  - The run's end notification is unchanged (sent in `finish` before the curator, its bytes pinned by
+    `tests/checks/memory-event.sh` against a run with no switch); the memory event is a second notification.
 - **Rejected:**
+  - Probing the intake for v2 (an n8n webhook answers a GET with nothing the harness can read; a request per run).
+  - A per-kind routing list in config: the kinds are the contract's, not a knob.
+  - Sending the v2 event without the switch and swallowing the 422 silently: a refusal the notes don't show is the
+    2026-10-17 kind of miss; noting it every run is a note for a state the harness can be told once.
+  - A context bundle for the memory event (above).
   - `"v": 2` on every event once the switch is set: it changes ten kinds for no gain and makes n8n-home's intake take
     v2 for events whose shape did not move.
   - The `memory` object as inline JSON on the command line: JSON across bash, where every other structured input is a

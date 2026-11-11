@@ -4,7 +4,8 @@
 # STUB_CURL_SPY: a command run with the same arguments at the moment of the call (what did origin have by then?).
 # The event POST (lib/notify.sh's notify_event; the one call with a "Content-Type: application/json" argument) answers
 # per STUB_EVENT instead, with real curl 8.5.0's bytes for `-s -o /dev/null -w '%{http_code}' --max-time` on loopback:
-# unset or 200 → tests/fixtures/curl-event-200.out, exit 0; 500 → curl-event-500.out, exit 0 (no --fail);
+# unset or 200 → tests/fixtures/curl-event-200.out, exit 0; 500 → curl-event-500.out, exit 0 (no --fail); 422 (n8n's
+# refusal of an event it can't read) → curl-event-422.out, exit 0, made as the 500's against a loopback 422;
 # timeout → curl-event-timeout.out ("000"), exit 28, no sleep (-s without -S: real curl writes nothing on stderr).
 printf '%s\n' "$@" === >> "$STUB_DIR/curl.log"
 [[ -n ${STUB_CURL_SPY:-} ]] && bash -c "$STUB_CURL_SPY" _ "$@"
@@ -12,7 +13,7 @@ for a; do
   [[ $a == "Content-Type: application/json" ]] || continue
   f=$(dirname "$0")/fixtures/curl-event
   case ${STUB_EVENT:-200} in
-    500) cat "$f-500.out"; exit 0 ;;
+    500|422) cat "$f-$STUB_EVENT.out"; exit 0 ;;
     timeout) cat "$f-timeout.out"; exit 28 ;;
     *) cat "$f-200.out"; exit 0 ;;
   esac

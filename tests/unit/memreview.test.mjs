@@ -190,3 +190,17 @@ test("memreview.mjs: card and title as commands print the object as one JSON lin
     assert.equal(main(["card", FX("verdicts").pathname], { env: {} }).rc, 2);
   } finally { rmSync(d, { recursive: true, force: true }); }
 });
+
+test("memreview.mjs: card as a command on a review input that failed (empty or missing) prints the review none's object, no failures", () => {
+  const d = mkdtempSync(join(tmpdir(), "memcard-"));
+  try {
+    const m = join(d, "m.json"); writeFileSync(m, JSON.stringify({ ...fx("memory"), reviewed: 0, held: 0, failed: 0, review: "the review input failed (see run.log)" }));
+    writeFileSync(join(d, "empty.json"), "");
+    for (const i of [join(d, "empty.json"), join(d, "missing.json")]) {
+      const out = main(["card", join(d, "none.json"), m, i, "pr"], { env: {} });
+      assert.equal(out.rc, 0, out.err);
+      const c = JSON.parse(out.out);
+      assert.equal(JSON.stringify([c.failures, c.review, c.pr]), JSON.stringify([[], "the review input failed (see run.log)", fx("memory").pr]));
+    }
+  } finally { rmSync(d, { recursive: true, force: true }); }
+});

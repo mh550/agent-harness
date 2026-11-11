@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Usage: source lib/notify.sh; notify "<message>" [title=…] [body=…] [click=…] [actions=…] [priority=…] [tags=…] [kind=…] [feature=…] [bundle=…]
+# Usage: source lib/notify.sh; notify "<message>" [title=…] [body=…] [click=…] [actions=…] [priority=…] [tags=…] [kind=…] [feature=…] [bundle=…] [memory=<file>]
 #        gh_url <path in the repo> [blob|edit]   (the GitHub URL of that file on $BRANCH or the current one, or nothing)
 # Structured notifications (plan: docs/plans/2026-10-19-P1-notifications.md). With NTFY_URL set the harness posts to
 # ntfy itself through ${HARNESS_CURL:-curl} and NOTIFY_CMD is not called; otherwise NOTIFY_CMD gets "$1" as it always
@@ -10,11 +10,13 @@
 # other; feature= is the event's feature. Before the POST the event's context bundle is written to events/<id>/ by
 # ${HARNESS_CONTEXT:-lib/context.sh} (RUN_ID's run, or the debrief's own bundle= copied, its id the event's) and `context` names its
 # context.json; a bundle that fails is a note and a null context (docs/plans/2026-11-07-A2-context-bundle.md §3.4).
+# kind=memory (memory_pr's, its memory= the card memreview.mjs wrote) is v2 (docs/specs/2026-11-10-review-surface.md
+# §V1-02): routed only when EVENT_V2=1 too (n8n-home's intake refuses v2 until its checklist deploys), never bundled.
 NOTIFY_MJS=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/notify.mjs
 declare -F ask > /dev/null || ask() { local s=$1; shift; node "${NOTIFY_MJS%/*}/$s" "$@"; }   # a plain spawn; lib/record.sh's, sourced after this in a driver or lane, answers from its helper
 
 notify() {
-  local msg=${1-} kv k v title=harness body="" click="" actions="" priority="" tags="" kind=other feature="" bundle="" rc a
+  local msg=${1-} kv k v title=harness body="" click="" actions="" priority="" tags="" kind=other feature="" bundle="" memory="" rc a
   shift
   [[ -n ${NOTIFY_TAG:-} ]] && msg="[$NOTIFY_TAG] $msg"
   for kv; do
@@ -23,11 +25,13 @@ notify() {
     [[ $k == body ]] || v=${v//[[:cntrl:]]/ }   # a why must not add a header, nor carry a byte ntfy refuses (400)
     case $k in
       title) [[ -n $v ]] && title=$v ;; body) body=$v ;; click) click=$v ;; actions) actions=$v ;;
-      priority) priority=$v ;; tags) tags=$v ;; kind) [[ -n $v ]] && kind=$v ;; feature) feature=$v ;; bundle) bundle=$v ;;
+      priority) priority=$v ;; tags) tags=$v ;; kind) [[ -n $v ]] && kind=$v ;; feature) feature=$v ;; bundle) bundle=$v ;; memory) memory=$v ;;
     esac
   done
   [[ -n $body ]] && body=$(notify_trim "$body")
-  case $kind in park|needs_michael|blocked|debrief) [[ -n ${EVENT_URL:-} ]] && notify_event && return 0 ;; esac   # 2xx: n8n tells Michael
+  # 2xx: n8n tells Michael; v2's memory only once its intake reads v2 (EVENT_V2=1), else ntfy with no POST and no note
+  case $kind in park|needs_michael|blocked|debrief) [[ -n ${EVENT_URL:-} ]] && notify_event && return 0 ;;
+    memory) [[ -n ${EVENT_URL:-} && ${EVENT_V2:-} == 1 ]] && notify_event && return 0 ;; esac
   if [[ -n ${NTFY_URL:-} ]]; then
     # retries a 429/5xx; --retry-max-time keeps a hung ntfy from holding the run for minutes
     a=(-sS --fail --max-time 15 --retry 2 --retry-delay 3 --retry-max-time 20 -o /dev/null -H "Title: $title")
@@ -57,15 +61,17 @@ notify_event() {
   # the bundle first, synchronous and capped (*default*, decisions/2026-10-22-context-bundle-glossary), so the path the
   # event names exists when n8n reads it; the event takes its id, so event.json lands beside it
   E=${HARNESS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/harness}/events
-  if [[ -n $bundle ]]; then id=$(jq -r '.id // empty' "$bundle/context.json" 2> /dev/null) sc=(--from "$bundle")
+  # memory: no bundle (*default*): its card is the memory field, the PRs and the line, which hold no glossary ID
+  if [[ $kind == memory ]]; then id=$(cat /proc/sys/kernel/random/uuid 2> /dev/null)
+  elif [[ -n $bundle ]]; then id=$(jq -r '.id // empty' "$bundle/context.json" 2> /dev/null) sc=(--from "$bundle")
   else id=$(cat /proc/sys/kernel/random/uuid 2> /dev/null); [[ -n ${RUN_ID:-} ]] && sc=("$RUN_ID"); fi
   if [[ -n $id ]] && (( ${#sc[@]} )) && out=$(timeout 60 "${HARNESS_CONTEXT:-${NOTIFY_MJS%/*}/context.sh}" "${sc[@]}" \
        --out "$E/$id" --id "$id" < /dev/null 2> /dev/null 8>&- 9>&-) && [[ ${out%%$'\n'*} == /* && -s ${out%%$'\n'*}/context.json ]]; then
     E=${out%%$'\n'*}; E=${E%/*} ctx=${out%%$'\n'*}/context.json   # the directory it printed: absolute, no // (n8n's path guard)
     while IFS= read -r l; do [[ $l == "events: removed "* ]] && notify_say "$l"; done <<< "$out"
-  else notify_say "context bundle failed for $kind; event sent without it"; fi
+  elif [[ $kind != memory ]]; then notify_say "context bundle failed for $kind; event sent without it"; fi
   ev=$(ask notify.mjs event kind="$kind" run="${RUN_ID:-}" project="${PROJECT_NAME:-}" feature="$feature" title="$title" \
-    body="${body:-$(notify_trim "$msg")}" priority="$priority" click="$click" actions="$actions" id="$id" context="$ctx" 2> /dev/null)
+    body="${body:-$(notify_trim "$msg")}" priority="$priority" click="$click" actions="$actions" id="$id" context="$ctx" memory="$memory" 2> /dev/null)
   id=$(jq -r '.id // empty' <<< "$ev" 2> /dev/null)
   if [[ -z $id ]]; then why="no event"   # ask and its spawn can both fail
   else

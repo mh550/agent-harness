@@ -1065,6 +1065,13 @@ memory PR: the two project facts land under Gotchas in one commit on harness-mem
 memory PR: under MEMORY_POLICY=auto a PR opened with no new tier-1 commit is left open with one note
 memory PR: under MEMORY_POLICY=auto a reused PR whose body refresh failed gets its commit but no merge, with one note
 memory PR: under auto the next segment refreshes the reused PR's body and leaves it open: the earlier segments' commits on it are not its own, a held trailer on one included
+memory event: a memory event the intake refuses (422) falls back to the same ntfy post after the POST, with one event hook failed (422) note
+memory event: run.log says event → n8n: memory <id> after the memory: note; events/<id>/event.json is the POSTed body and the record keeps memory-event.json, its memory object
+memory event: the run end notification is the same bytes with the memory event POSTed and with no switch set
+memory event: the run's events/<id>/event.json with its id, at and PR URLs as placeholders is tests/fixtures/n8n-event-v2-memory.json byte for byte
+memory event: under auto the event is sent after the merge note, state merged; a run with no memory PR sends none and keeps no memory-event.json; a review none is one event titled review none, no failures
+memory event: with EVENT_URL and EVENT_V2=1 a run with a memory PR POSTs one v2 memory event to EVENT_URL, its body the memory: line, and no ntfy post of it
+memory event: with EVENT_V2 unset (EVENT_URL set or not) the memory notification is one ntfy post: the title, the memory: line, the facts PR's click and both PRs' actions; no POST, no failure note
 memory gate: a stop set while the driver waits for memory starts no coding session and spends no attempt
 memory gate: every session starts with the services up, a verify after its wait included
 memory gate: the real fixture's 9 GB passes without a note
@@ -1115,6 +1122,7 @@ memory: the same session's lib, tests and journal/decisions edits stay on the br
 memory_guard: after a session's own merge of main, main's CLAUDE.md lines stay; only the session's own edit goes
 memreview.mjs: capReading Gotchas entries and lines as the gate counts them; no file is null
 memreview.mjs: card and title as commands print the object as one JSON line and the title
+memreview.mjs: card as a command on a review input that failed (empty or missing) prints the review none's object, no failures
 memreview.mjs: card is the memory event's object: each failed op's id, its input section, q and reason without (q<n>), both PRs, open, merged when merged_by is driver
 memreview.mjs: card on a review none has no failures and review the why
 memreview.mjs: input an apply result with empty applied and rules is an empty list (nothing to review)

@@ -643,6 +643,7 @@ memory: the same session's lib, tests and journal/decisions edits stay on the br
 memory_guard: after a session's own merge of main, main's CLAUDE.md lines stay; only the session's own edit goes
 memreview.mjs: capReading Gotchas entries and lines as the gate counts them; no file is null
 memreview.mjs: card and title as commands print the object as one JSON line and the title
+memreview.mjs: card as a command on a review input that failed (empty or missing) prints the review none's object, no failures
 memreview.mjs: card is the memory event's object: each failed op's id, its input section, q and reason without (q<n>), both PRs, open, merged when merged_by is driver
 memreview.mjs: card on a review none has no failures and review the why
 memreview.mjs: input an apply result with empty applied and rules is an empty list (nothing to review)
