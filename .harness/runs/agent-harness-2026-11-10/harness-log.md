@@ -11,3 +11,7 @@
 - 2026-11-10 21:01 · context.md for V1-01: 4985 bytes
 - 2026-11-10 21:09 · V1-01: suite ran 1x (131 s) in the session
 - 2026-11-10 21:09 · V1-01 · claude-opus-5-5 · passes=true · 8 min · 1/7 passing
+- 2026-11-10 21:09 · context.md for V1-02: 6484 bytes
+- 2026-11-10 21:37 · V1-02: suite ran 2x (264 s) in the session
+- 2026-11-10 21:37 · V1-02: a project fact is 173 characters, over 160
+- 2026-11-10 21:37 · V1-02 · claude-opus-5-5 · passes=true · 27 min · 2/7 passing

@@ -11,6 +11,23 @@ How to steer: edit `INBOX.md` on this branch from the GitHub app. Its first line
 
 Defaults the spec marks *default* are taken without asking (the brief says so) and recorded marked *default* in `journal/decisions/2026-11-10-review-surface-event.md` (V1) and `journal/decisions/2026-11-10-review-surface-verbs.md` (V2). The one live step (appending `EVENT_V2=1` to the user config after the n8n-home deploy) is written out in the V2-03 checklist for you; no session runs it.
 
+### 2026-11-10 21:37 · V1-02 · passes
+
+memory_pr ends with memory_event when a PR exists and the memory: line is non-empty: memreview.mjs card → memory-event.json in the record, one notify kind=memory. notify.sh routes memory only with EVENT_URL and EVENT_V2=1 (v2, no bundle), else ntfy, no note. EVENT_V2 in config and template; stub curl 422; card survives a failed input. memory-event.sh (8 runs, 7 checks), docs, decision rows.
+
+- **Files:** lib/notify.sh, lib/record.sh, lib/config.sh, lib/memreview.mjs, templates/user/config.sh, tests/stub-curl.sh, tests/fixtures/curl-event-422.out, tests/checks/memory-event.sh, tests/unit/memreview.test.mjs, tests/fixtures/check-names.txt, tests/fixtures/check-names-fast.txt, docs/architecture.md, +3 more
+- **Verified:** memory-event.sh red 0/7 before the code, 7/7 after; a mutant without the PR guard turned its last check red (mvo). bash tests/run.sh event-hook event-run memory-event memory-review: 59/59. TEST_JOBS=4 bash tests/run.sh memory-event: 68.2 s. Unit memreview+notify 30/30. check.sh --fast: green, 1130 → 1131 tests (the 7 memory-event checks are slow tier). event-hook.sh, event-run.sh, n8n-event-v1.json and lib/driver.sh unchanged against the merge base.
+- **Tests:** 1130 → 1131
+- **Dead end:** IFS=tab read of card .pr and .rules_pr — tab is IFS whitespace: an empty .pr folds and the rules PR lands in f; two jq calls instead
+- **Discovery** (affects V1-03): The step's ntfy Title [<run>] memory: 1 held · 1 failed for evict-two/evict-fails is 2 held · 1 failed (held counts rules/1, as the fixture's title); the check asserts 2
+- **Discovery** (affects V1-03, V2): The record's memory-event.json is the card (the event's memory object), not the whole event; the check compares it to the POSTed body's .memory
+- **Discovery** (affects V1-03): memory_event also needs a non-empty memory: line (default, in the decision file): a reused PR refreshed with proposals alone sends nothing
+- **Discovery** (affects V1-03): Review minor left for V1-03: a continue segment whose curator never reaches memory_pr (no ops file, memory_base fails) keeps the earlier segment's memory-event.json in the record, as memory-review.json does
+- **Discovery** (affects project): a lane's .harness/runs/ is git-ignored by the state dir's exclude file: feature_list.json and entry.json never show in git status there (agent-harness-2026-11-10 2026-11-10)
+- **Proposed change:** V1-02 step 2's ntfy Title should read `[<run>] memory: 2 held · 1 failed` (the evict-two run holds facts/1 and rules/1)
+- **Proposed change:** V1-02 step 1's `the record's memory-event.json ... equal to the POSTed body` should say `to the POSTed body's memory`
+- *02-V1-02 · claude-opus-5-5*
+
 ### 2026-11-10 21:09 · V1-01 · passes
 
 notify.mjs: KINDS gains memory, ROUTED_V2 exported, buildEvent v2 (14th key memory, v 2) for kind=memory only, memory= refused elsewhere; memreview.mjs card and title (pure, CLI). v2 fixture made from the stub-run files (command in notify.test.mjs, bytes pinned); v1 fixture untouched, v1 kinds' bytes pinned by sha256. Docs, decision file.
