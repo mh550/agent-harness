@@ -155,7 +155,7 @@ HARNESS_NOW=$(date '+%F %H:%M') HARNESS_LEDGER=$LEDGER HARNESS_SINCE=$SINCE \
 log "debrief · $MODEL · ${#RUNS[@]} run(s) since $SINCE · $WS"
 snapshot > "$WS/before.txt"
 t0=$(date +%s)
-( cd "$WS" && timeout "$SESSION_TIMEOUT" "$CLAUDE" -p --model "$MODEL" --permission-mode dontAsk \
+( cd "$WS" && timeout "$SESSION_TIMEOUT" env -u TMUX -u TMUX_PANE "$CLAUDE" -p --model "$MODEL" --permission-mode dontAsk \
     --max-turns 40 --max-budget-usd 3 "${ADD[@]}" --allowedTools "${ALLOW[@]}" --disallowedTools "${DENY[@]}" \
     --output-format stream-json --verbose < "$WS/prompt.md" > "$WS/session.jsonl" 2>&1 9>&- )
 rc=$? wall=$(( $(date +%s) - t0 ))

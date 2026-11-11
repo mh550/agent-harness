@@ -68,7 +68,7 @@ trap 'stop 15' TERM; trap 'stop 2' INT; trap 'stop 1' HUP
 run() {
   local rc
   if (( scoped )); then scope_run "$unit" "" "$max" timeout -k 30s "$to" bash -c "$@" &
-  else timeout -k 30s "$to" bash -c "$@" & fi
+  else env -u TMUX -u TMUX_PANE timeout -k 30s "$to" bash -c "$@" & fi   # as scope_run strips them (decisions/2026-11-10-session-env-no-tmux)
   pid=$!; wait "$pid"; rc=$? pid=""
   (( scoped )) && scope_stop "$unit"; return $rc
 }
