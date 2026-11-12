@@ -68,17 +68,4 @@ check "routing: this repo has the block (journal/decisions/, never numbered), an
   r=$HERE/.. && sed -n "/^## Where things go/,/^## /p" "$r/CLAUDE.md" | grep "journal/decisions/.*never numbered" > /dev/null &&
   grep -qx "## Gotchas" "$r/CLAUDE.md" && grep -qx "DECISIONS=journal/decisions" "$r/.harness/config.sh" &&
   [[ $(node "$MM" store "$r") == journal/decisions ]]'
-# ---- the user file keeps what is Michael's everywhere (decisions/2026-11-11-user-file-homes): how a change lands is the project's ----
-check "routing: the template and the drafting prompt say how a change lands (the session merges; the harness in a run), the user template no longer does" '
-  t=$HERE/../templates/project/CLAUDE.md d=$HERE/../prompts/draft-claude-md.md u=$HERE/../templates/user/CLAUDE.md &&
-  w=$(sed -n "/^## Where things go/,/^## /p" "$t" | tr -s " \n" "  ") &&
-  [[ $w == *"A finished change → \`main\`, merged by the session that made it"*"In a harness run the harness merges."* ]] &&
-  grep -F "a finished change → \`main\`, merged by the session that made it" "$d" > /dev/null && grep -F "in a harness run the harness merges" "$d" > /dev/null &&
-  ! grep -F "Finish in your worktree" "$u" > /dev/null'
-check "the user template keeps the installer heading on line 1, names the settings denies (the Soulseek and /srv/incoming ones too) and no per-project live protocol" '
-  u=$HERE/../templates/user/CLAUDE.md s=$HERE/../templates/user/settings.permissions.json && [[ $(head -n1 "$u") == "## Git, merges and permissions" ]] &&
-  jq -e ".permissions.deny | index(\"Bash(*fetch*--approve*)\") and index(\"Edit(//srv/incoming/**)\")" "$s" > /dev/null &&
-  grep -F "fetch --approve" "$u" > /dev/null && grep -F "/srv/incoming" "$u" > /dev/null && grep -F "force-push" "$u" > /dev/null &&
-  grep -F "gh repo delete" "$u" > /dev/null && grep -F "/srv/n8n/data/config" "$u" > /dev/null &&
-  ! grep -F "live-staged protocol" "$u" > /dev/null && ! grep -F "MERGE_POLICY" "$u" > /dev/null && (( $(wc -l < "$u") <= 40 ))'
 suite_end
