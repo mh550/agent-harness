@@ -26,6 +26,7 @@
       "Read(//**/.env)",
       "Read(//etc/restic/**)",
       "Read(//**/.env.*local)",
+      "Read(//srv/n8n/data/config)",
       "Read(~/.config/voice-concierge/**)",
       "Read(~/.livekit/**)",
       "Bash(sudo:*)",

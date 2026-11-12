@@ -47,3 +47,4 @@
   directory.
 - **Making the per-project PRs from this session.** A project changes only from a session in its own directory or
   worktree (the user file's rule), and their CLAUDE.md edits are tier-2 memory under the curator's gate.
+- **Updated in place 2026-11-12:** `/srv/n8n/data/config` is a `Read` deny in the user settings; the user file names it in the deny list, not as a rule.

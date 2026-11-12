@@ -77,6 +77,7 @@ queue, per-run retros and a debrief). `docs/architecture.md` is the system as it
   never this file (a coding session's edit is reverted).
 - The run's scope (what to build, drop or do first) → the run's brief, never this file.
 - How to work here (rules, conventions, workflow) → Michael's: say it in your entry's `proposed_changes`.
+- A finished change → `main`, merged by the session that made it once the suite is green (push, `gh pr merge --merge` or merge locally, delete the branch, remove the worktree), never left on a branch. In a harness run the harness merges.
 - Anything the code, git or the suite can tell (test counts, file lists, constants) → nowhere.
 
 ## Gotchas

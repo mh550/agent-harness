@@ -14,6 +14,7 @@ What every conversation on this box may do and may not, whatever the project: th
     reflog, the net that makes `reset --hard`, `branch -D` and bad rebases recoverable);
   - `gh repo delete`; `sudo`;
   - `rm -r` under `/srv`, `docker system prune`, `docker volume rm` / `prune` (live data and rollback images);
+  - reading `/srv/n8n/data/config` (n8n's encryption key: credentials are unrecoverable without it);
   - a Soulseek `fetch --approve` and any write under `/srv/incoming` (dj-crate-streaming's live intake);
   - reading secrets: `.env` and `.env.*local` files, `/etc/restic`, `~/.config/voice-concierge`, `~/.livekit`.
 
@@ -22,8 +23,7 @@ What every conversation on this box may do and may not, whatever the project: th
 - **Live, production and hardware rules are per project**, in that project's `CLAUDE.md` and
   `.claude/settings.json`: portfolio_site (Vercel deploys `main`; Michael merges), n8n-home (live: `/srv/n8n`),
   dj-crate-streaming (live: `/srv/docker`, `/srv/music`, `/srv/incoming`), rane-one-mixxx (hardware: the Rane One,
-  `~/.rane-armed`). From any other directory that state is read-only, and `/srv/n8n/data/config` (n8n's encryption
-  key, which no deny covers) is read nowhere.
+  `~/.rane-armed`). From any other directory that state is read-only.
 - **Other projects:** read any of them. Change one only from a session in that project's directory or one of its
   worktrees, since another session may own its checkout.
 - **Harness commands:** any session may run `harness status`, `report`, `parked` and `sync`, and `harness gc` on its
